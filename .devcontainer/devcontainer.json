@@ -1,0 +1,45 @@
+{
+  "name": "Tetraspore Static Web App",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspaces/tetraspore",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-pull-request-github",
+        "Anthropic.claude-code",
+        "ms-vscode.live-server",
+        "mechatroner.rainbow-csv"
+      ]
+    }
+  },
+  "forwardPorts": [3000, 3001, 3002, 8080],
+  "portsAttributes": {
+    "3000": {
+      "label": "Dev Server",
+      "onAutoForward": "notify"
+    }
+  },
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+  },
+  "mounts": [
+    "source=${localWorkspaceFolder}/..,target=/workspaces,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached",
+    "source=claude_auth,target=/home/vscode/.claude,type=volume",
+    "source=gemini_auth,target=/home/vscode/.gemini,type=volume",
+    "source=gh_auth,target=/home/vscode/.config/gh,type=volume",
+    "source=bash_history_data,target=/home/vscode/.bash_history_dir,type=volume"
+  ],
+  "postCreateCommand": ".devcontainer/postCreateCommand.sh",
+  "postStartCommand": ".devcontainer/postStartCommand.sh",
+  "features": {}
+}

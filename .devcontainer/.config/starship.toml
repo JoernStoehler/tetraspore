@@ -1,0 +1,25 @@
+# starship.toml - Starship prompt configuration for tetraspore devcontainer
+#
+# Simple two-line prompt with git integration
+# Shows essential info without clutter
+
+# Clean format - directory, git info, command duration, then new line for prompt
+format = "$directory$git_branch$git_status$cmd_duration$line_break$character "
+
+[directory]
+truncation_length = 4  # Show more directories for better context
+truncate_to_repo = false  # Show full path even inside repos
+
+[git_branch]
+format = "[$symbol$branch]($style) "
+
+[git_status]
+format = "([\\[$all_status$ahead_behind\\]]($style) )"
+
+[cmd_duration]
+min_time = 2000  # Only show for commands taking >2s
+format = "took [$duration]($style) "
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"
