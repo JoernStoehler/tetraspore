@@ -318,6 +318,9 @@ attach_agent() {
 show_status() {
     check_screen
     
+    # Temporarily disable exit on error for status display
+    set +e
+    
     info "Agent Status"
     echo ""
     
@@ -340,7 +343,7 @@ show_status() {
                 if [ -d "$wt" ] && [[ "$wt" =~ tetraspore-${slug}$ ]]; then
                     worktree="$wt"
                     if [ -f "$wt/.agent/session" ]; then
-                        branch=$(cd "$wt" && git branch --show-current 2>/dev/null || echo "unknown")
+                        branch=$(git -C "$wt" branch --show-current 2>/dev/null || echo "unknown")
                     fi
                     break
                 fi
@@ -365,6 +368,9 @@ show_status() {
     
     echo ""
     detail "Use 'workagent attach --branch BRANCH' to connect to an agent"
+    
+    # Re-enable exit on error
+    set -e
 }
 
 # Stop an agent
