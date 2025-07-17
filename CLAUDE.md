@@ -50,9 +50,29 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 
 ## DevOps Setup
 
-### Environment Setup for New Worktrees
+### Git Worktree Management
 
-When creating a new git worktree, you need to set up environment files:
+Use the `worktree.sh` script to manage git worktrees with automatic environment setup:
+
+```bash
+# Create new worktree with auto port allocation
+./worktree.sh add feature/new-ui
+
+# Remove worktree
+./worktree.sh remove feature/new-ui
+
+# List all worktrees and their ports
+./worktree.sh list
+```
+
+The script automatically:
+- Creates branch if needed
+- Copies `.env` from main worktree
+- Auto-allocates unique ports in `.env.local`
+- Runs `npm install`
+- Shows next steps
+
+### Manual Environment Setup (if not using worktree.sh)
 
 1. **Copy the main `.env` file** (contains secrets like API keys):
    ```bash
@@ -67,9 +87,9 @@ When creating a new git worktree, you need to set up environment files:
 
 ### Environment Files Overview
 - **`.env.example`** - Template showing required variables (committed)
-- **`.env`** - Actual configuration with secrets (git-ignored, copy from main)
+- **`.env`** - Actual configuration (git-ignored, copy from main)
 - **`.env.local`** - Worktree-specific overrides like ports (git-ignored)
-- **`.devcontainer/.env`** - Container-specific Honeycomb config
+- **`.devcontainer/.env`** - Container-specific config: Honeycomb telemetry, API keys (git-ignored)
 - **`.logs/`** - Directory for development server logs (git-ignored)
 
 ### Port Management
@@ -189,9 +209,30 @@ tetraspore/
 └── CLAUDE.md            # This file
 ```
 
+## AI-Specific DevOps
+
+### MCP Servers Configuration
+The `.mcp.json` file configures additional capabilities for AI agents:
+- **tavily**: Fast web search (requires `TAVILY_API_KEY` in `.devcontainer/.env`)
+- **context7**: Library documentation access
+- **puppeteer**: Browser automation for testing live website
+
+### Agent Command
+The `agent` command is aliased to include telemetry and permissions:
+```bash
+# Runs claude with Honeycomb telemetry and --dangerously-skip-permissions
+agent [your-command]
+```
+
+### AI Development Tips
+- Use `worktree.sh` to quickly create isolated branches
+- MCP servers provide enhanced search and documentation access
+- The `--dangerously-skip-permissions` flag is set by default for smoother workflows
+- Always document decisions in specification.md Development History
+
 ## Notes for Agents
 - Always use `agent` command for Claude with telemetry
-- Check `.ports` file for your assigned ports
+- Use `./worktree.sh` for managing git worktrees
 - Start dev server non-blocking with log redirection
 - Use cloudflared for external sharing when needed
 - **REMEMBER**: Update this file when you learn new requirements or make mistakes that others should avoid
