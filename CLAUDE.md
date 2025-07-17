@@ -50,33 +50,40 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 
 ## DevOps Setup
 
-### Environment Files
-- **`.devcontainer/.env`** - Contains Honeycomb API key and telemetry config
-- **`.ports`** - Git-ignored file containing port assignments for this worktree
+### Environment Setup for New Worktrees
+
+When creating a new git worktree, you need to set up environment files:
+
+1. **Copy the main `.env` file** (contains secrets like API keys):
+   ```bash
+   cp /path/to/main/worktree/.env .env
+   ```
+
+2. **Create `.env.local` for port overrides** (only for non-main branches):
+   ```bash
+   cp .env.local.example .env.local
+   # Edit .env.local to set unique ports for this worktree
+   ```
+
+### Environment Files Overview
+- **`.env.example`** - Template showing required variables (committed)
+- **`.env`** - Actual configuration with secrets (git-ignored, copy from main)
+- **`.env.local`** - Worktree-specific overrides like ports (git-ignored)
+- **`.devcontainer/.env`** - Container-specific Honeycomb config
 - **`.logs/`** - Directory for development server logs (git-ignored)
 
-### Required Environment Variables
-```bash
-# .devcontainer/.env
-HONEYCOMB_API_KEY=your_actual_api_key_here
-OTEL_SERVICE_NAME=tetraspore-claude
-```
-
 ### Port Management
-Each git worktree gets unique ports to avoid conflicts:
+Vite automatically loads environment files. Each worktree uses different ports:
 - Main branch: Default ports (3000, 3001, 3002, 8080)
-- Other branches: Custom ports defined in `.ports` file
+- Other branches: Override in `.env.local`
 
-#### Port Configuration
-Create `.ports` file in your worktree root:
+Example `.env.local` for a feature branch:
 ```bash
-# .ports
-DEV_PORT=3010
-PREVIEW_PORT=3011
-DEBUG_PORT=3012
+# Override default ports to avoid conflicts
+VITE_DEV_PORT=3010
+VITE_PREVIEW_PORT=3011
+VITE_DEBUG_PORT=3012
 ```
-
-@.ports
 
 ### Development Commands
 
@@ -95,14 +102,30 @@ tail -f .logs/dev.log
 npm install
 
 # Run tests
-npm test
+npm test                    # Run tests in watch mode
+npm test -- --run          # Run tests once
+npm run test:ui            # Open Vitest UI
+npm run test:coverage      # Generate coverage report
 
 # Build for production
-npm run build
+npm run build              # TypeScript check + Vite build
+npm run preview            # Preview production build
+
+# Linting
+npm run lint               # Run ESLint
 
 # Use Claude with telemetry
 agent [your-command]
 ```
+
+#### DevOps Verification Checklist
+After setting up a new worktree or major changes:
+- [ ] `npm install` - Dependencies installed
+- [ ] `npm run dev` - Dev server starts on correct port
+- [ ] `npm test -- --run` - All tests pass
+- [ ] `npm run build` - Production build succeeds
+- [ ] Check `.env` exists (copy from main worktree)
+- [ ] Check `.env.local` for port overrides (if needed)
 
 ### Cloudflared Tunneling
 Use cloudflared to expose your dev server via `tetraspore.joernstoehler.com`:
