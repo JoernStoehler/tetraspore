@@ -50,29 +50,32 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 
 ## DevOps Setup
 
-### Git Worktree Management
+### Agent Management
 
-Use the `worktree.sh` script to manage git worktrees with automatic environment setup:
+Use the `workagent` command to manage AI coding agents:
 
 ```bash
-# Create new worktree with auto port allocation
-./worktree.sh add feature/new-ui
+# Prepare workspace and spawn agent
+workagent prepare --branch feature/new-ui --task "Build the UI component"
+workagent spawn --branch feature/new-ui
 
-# Remove worktree
-./worktree.sh remove feature/new-ui
+# Monitor agents
+workagent status
+workagent attach --branch feature/new-ui
 
-# List all worktrees and their ports
-./worktree.sh list
+# Stop agent
+workagent stop --branch feature/new-ui
 ```
 
-The script automatically:
-- Creates branch if needed
+The tool automatically:
+- Creates git worktree with branch
 - Copies `.env` from main worktree
 - Auto-allocates unique ports in `.env.local`
 - Runs `npm install`
-- Shows next steps
+- Creates TASK.md with assignment
+- Spawns agent in GNU Screen session
 
-### Manual Environment Setup (if not using worktree.sh)
+### Manual Environment Setup (if needed)
 
 1. **Copy the main `.env` file** (contains secrets like API keys):
    ```bash
@@ -225,14 +228,141 @@ agent [your-command]
 ```
 
 ### AI Development Tips
-- Use `worktree.sh` to quickly create isolated branches
+- Use `workagent` to manage isolated agent workspaces
 - MCP servers provide enhanced search and documentation access
 - The `--dangerously-skip-permissions` flag is set by default for smoother workflows
 - Always document decisions in specification.md Development History
 
 ## Notes for Agents
 - Always use `agent` command for Claude with telemetry
-- Use `./worktree.sh` for managing git worktrees
+- Use `workagent` for creating workspaces and spawning agents
+- Use `mail` for inter-agent communication
 - Start dev server non-blocking with log redirection
 - Use cloudflared for external sharing when needed
 - **REMEMBER**: Update this file when you learn new requirements or make mistakes that others should avoid
+
+## Multi-Agent Orchestration
+
+### Overview
+Tetraspore uses multiple AI agents working in parallel on different git worktrees. This enables rapid development while avoiding conflicts. See `docs/agents/` for comprehensive guides.
+
+### Quick Agent Commands
+
+```bash
+# Create and spawn agent for specific component
+workagent prepare --branch feature/tree-ui --task "Implement Tree of Life visualization"
+workagent spawn --branch feature/tree-ui
+
+# Monitor agent progress
+workagent status
+mail inbox
+
+# Research agent (in main branch)
+agent "Research: Find all LLM integration points. Document in HANDOFF.md"
+
+# Integration (after features complete)
+agent "@HANDOFF.md Integrate tree-ui and tree-data branches"
+```
+
+### Agent Division Strategy
+
+Divide work along architectural boundaries:
+
+**UI Agent**: React components, visualizations, user interactions
+- Tree of Life, Region Map, Choice Cards
+- D3.js and Three.js visualizations
+- Event handlers and UI state
+
+**Event Agent**: Event sourcing and state management
+- Event types and validation
+- Event store and persistence  
+- State projection from events
+
+**LLM Agent**: AI integration
+- LLM service wrapper
+- Prompt formatting
+- Response parsing
+- Mock mode
+
+**3D Agent**: Three.js and spatial calculations
+- Globe rendering
+- Spherical Voronoi
+- Camera controls
+
+### Agent Handoffs
+
+Always create HANDOFF.md when transitioning work:
+
+```markdown
+# Feature Name Handoff
+## Completed by: [agent-name]
+## Date: [date]
+## Status: [what's done, what's not]
+
+### What was implemented:
+- List completed items
+- Key files created/modified
+
+### Integration points:
+- How it connects to other systems
+- Required interfaces
+
+### Next steps:
+- Remaining work
+- Known issues
+
+### How to test:
+- Commands to run
+- Expected behavior
+```
+
+### Common Multi-Agent Patterns
+
+**Fork-Join** (parallel then integrate):
+```bash
+workagent prepare --branch feat/ui --task "Build UI"
+workagent spawn --branch feat/ui
+workagent prepare --branch feat/backend --task "Build backend"
+workagent spawn --branch feat/backend
+# Later: integrate both branches
+```
+
+**Pipeline** (sequential):
+```
+design-agent → implement-agent → test-agent
+```
+
+**Research-Implementation**:
+```
+research-agent (read-only) → implementation-agents
+```
+
+### Best Practices
+
+1. **Clear Boundaries**: Each agent owns specific files/directories
+2. **Explicit Interfaces**: Document contracts between components
+3. **Frequent Integration**: Merge related work often
+4. **HANDOFF.md**: Required for all transitions
+5. **Clean Commits**: One feature per commit
+6. **Mail Communication**: Use `mail` for all agent coordination
+
+### Troubleshooting
+
+**Agent gets stuck**: 
+```bash
+workagent attach --branch feat/stuck  # Check what's happening
+workagent stop --branch feat/stuck    # Stop if needed
+```
+
+**Check agent logs**:
+```bash
+cd ../tetraspore-feat-branch
+tail -f .agent/session.log
+```
+
+**Integration issues**: Use integration agent to resolve
+
+See `docs/` for detailed guides:
+- [Delegation Guide](docs/delegation-to-agents-with-worktrees.md) - Orchestration patterns
+- [WorkAgent Guide](docs/tool-guide-workagent.md) - Agent lifecycle management
+- [Mail Guide](docs/tool-guide-mail.md) - Agent communication

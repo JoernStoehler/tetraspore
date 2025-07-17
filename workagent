@@ -1,0 +1,464 @@
+#!/bin/bash
+
+# workagent - Complete lifecycle management for AI coding agents
+#
+# ARCHITECTURE DECISIONS:
+#
+# 1. GNU Screen for session management
+#    - Detachable sessions for long-running agents
+#    - Can reattach to see agent output
+#    - More universally available than tmux
+#    - Named sessions for easy management
+#
+# 2. Explicit command structure
+#    - prepare: Set up worktree and task (replaces worktree.sh)
+#    - spawn: Actually start agent in detached screen
+#    - attach: Connect to running agent's screen
+#    - status: Show all agents and their states
+#    - stop: Terminate agent session
+#
+# 3. Clear success/failure reporting
+#    - Each step reports what it did
+#    - Exit on first failure
+#    - No hidden state changes
+#
+# 4. Session naming convention
+#    - Screen session: "agent-<branch-slug>"
+#    - Predictable names for management
+#    - Branch name sanitization for screen compatibility
+#
+# 5. Integrated workflow
+#    - Combines worktree, mail, and agent management
+#    - Single tool for entire lifecycle
+#    - Reduces cognitive load on orchestrator
+
+set -e
+
+# Configuration
+AGENT_CMD="${AGENT_CMD:-agent}"
+SCREEN_PREFIX="agent"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Helper functions
+error() {
+    echo -e "${RED}✗ Error: $1${NC}" >&2
+    exit 1
+}
+
+success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+info() {
+    echo -e "${YELLOW}→ $1${NC}"
+}
+
+detail() {
+    echo -e "  ${BLUE}$1${NC}"
+}
+
+# Slugify branch name for screen session
+slugify() {
+    echo "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g' | sed -e 's/--*/-/g' | sed -e 's/^-//;s/-$//'
+}
+
+# Check if screen is available
+check_screen() {
+    if ! command -v screen &> /dev/null; then
+        error "GNU Screen is required but not installed. In devcontainer it should be pre-installed."
+    fi
+}
+
+# Prepare worktree and task
+prepare_worktree() {
+    local branch="$1"
+    local task="$2"
+    
+    [ -z "$branch" ] && error "Branch name required"
+    [ -z "$task" ] && error "Task description required"
+    
+    local slug=$(slugify "$branch")
+    local worktree_dir="../tetraspore-$slug"
+    
+    info "Preparing worktree for branch: $branch"
+    
+    # Check prerequisites
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        error "Not in a git repository"
+    fi
+    
+    if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+        detail "Uncommitted changes detected - they won't be in the new worktree"
+    fi
+    
+    # Create worktree
+    if [ -d "$worktree_dir" ]; then
+        info "Worktree already exists at $worktree_dir"
+    else
+        info "Creating worktree at $worktree_dir"
+        if git show-ref --verify --quiet "refs/heads/$branch"; then
+            git worktree add "$worktree_dir" "$branch"
+            detail "Using existing branch: $branch"
+        else
+            git worktree add -b "$branch" "$worktree_dir"
+            detail "Created new branch: $branch"
+        fi
+        success "Worktree created"
+    fi
+    
+    # Copy environment files
+    info "Setting up environment"
+    if [ -f .env ]; then
+        cp .env "$worktree_dir/.env"
+        detail "Copied .env file"
+    else
+        detail "Warning: No .env file found in main worktree"
+    fi
+    
+    # Set up ports (simplified from worktree.sh)
+    if [ ! -f "$worktree_dir/.env.local" ]; then
+        # Find next available ports
+        local port=3010
+        while lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; do
+            ((port++))
+        done
+        
+        cat > "$worktree_dir/.env.local" << EOF
+# Auto-generated ports for $branch
+VITE_DEV_PORT=$port
+VITE_PREVIEW_PORT=$((port + 1))
+VITE_DEBUG_PORT=$((port + 2))
+EOF
+        detail "Allocated ports: dev=$port, preview=$((port + 1)), debug=$((port + 2))"
+    fi
+    
+    # Install dependencies
+    info "Installing dependencies"
+    (cd "$worktree_dir" && npm install --quiet)
+    success "Dependencies installed"
+    
+    # Create task file
+    info "Creating task documentation"
+    cat > "$worktree_dir/TASK.md" << EOF
+# Task Assignment
+
+**Branch**: $branch
+**Created**: $(date +"%Y-%m-%d %H:%M")
+**Session**: $SCREEN_PREFIX-$slug
+
+## Task Description
+$task
+
+## Communication
+- Check inbox: \`mail inbox --for $branch\`
+- Send updates: \`mail send --from $branch --to main --subject "..." --body "..."\`
+- View this task: \`cat TASK.md\`
+
+## Success Criteria
+- [ ] Implementation complete
+- [ ] Tests pass (\`npm test\`)
+- [ ] Lint clean (\`npm run lint\`)
+- [ ] Types check (\`npm run typecheck\`)
+- [ ] HANDOFF.md created
+
+## Getting Started
+1. Read any mail: \`mail inbox --for $branch\`
+2. Review this task: \`cat TASK.md\`
+3. Check the codebase: \`ls -la\`
+4. Start implementing!
+EOF
+    detail "Created TASK.md"
+    
+    # Send initial mail
+    info "Sending task assignment via mail"
+    ./mail send --from main --to "$branch" \
+        --subject "Task: $task" \
+        --body "Welcome agent $branch! Your task is documented in TASK.md. Good luck!"
+    
+    success "Worktree prepared successfully!"
+    echo ""
+    echo "Next step:"
+    echo "  workagent spawn --branch $branch"
+}
+
+# Spawn agent in screen session
+spawn_agent() {
+    local branch="$1"
+    
+    [ -z "$branch" ] && error "Branch name required"
+    
+    check_screen
+    
+    local slug=$(slugify "$branch")
+    local session_name="$SCREEN_PREFIX-$slug"
+    local worktree_dir="../tetraspore-$slug"
+    
+    # Check if worktree exists
+    if [ ! -d "$worktree_dir" ]; then
+        error "Worktree not found. Run: workagent prepare --branch $branch --task \"...\""
+    fi
+    
+    # Check if session already exists
+    if screen -list | grep -q "$session_name"; then
+        error "Agent already running in session $session_name. Use: workagent attach --branch $branch"
+    fi
+    
+    info "Spawning agent for branch: $branch"
+    detail "Session name: $session_name"
+    detail "Working directory: $worktree_dir"
+    
+    # Create agent startup script
+    local startup_script="$worktree_dir/.agent-startup.sh"
+    cat > "$startup_script" << EOF
+#!/bin/bash
+cd "$worktree_dir"
+echo "Starting agent for branch: $branch"
+echo "Session: $session_name"
+echo "Time: $(date)"
+echo "----------------------------------------"
+echo ""
+
+# Set up logging
+mkdir -p .agent
+exec > >(tee -a .agent/session.log)
+exec 2>&1
+
+# Record session info
+echo "$session_name" > .agent/session
+echo "ACTIVE" > .agent/status
+date -u +"%Y-%m-%dT%H:%M:%SZ" > .agent/started
+
+# Start agent with initial prompt
+$AGENT_CMD "You are agent $branch working on a specific task. Start by running these commands:
+1. mail inbox --for $branch
+2. cat TASK.md
+
+Then begin work on your assigned task. Send progress updates via mail to 'main'."
+EOF
+    chmod +x "$startup_script"
+    
+    # Start screen session
+    screen -dmS "$session_name" bash "$startup_script"
+    
+    # Give it a moment to start
+    sleep 1
+    
+    # Verify it started
+    if screen -list | grep -q "$session_name"; then
+        success "Agent spawned successfully!"
+        echo ""
+        echo "Agent is running in background session: $session_name"
+        echo ""
+        echo "To interact with agent:"
+        echo "  workagent attach --branch $branch    # Connect to agent"
+        echo "  workagent status                      # Check all agents"
+        echo "  workagent stop --branch $branch       # Stop agent"
+    else
+        error "Failed to spawn agent"
+    fi
+}
+
+# Attach to running agent
+attach_agent() {
+    local branch="$1"
+    
+    [ -z "$branch" ] && error "Branch name required"
+    
+    check_screen
+    
+    local slug=$(slugify "$branch")
+    local session_name="$SCREEN_PREFIX-$slug"
+    
+    if ! screen -list | grep -q "$session_name"; then
+        error "No agent found for branch $branch. Run: workagent spawn --branch $branch"
+    fi
+    
+    info "Attaching to agent session: $session_name"
+    echo "Press Ctrl+A then D to detach and return to orchestrator"
+    echo ""
+    sleep 1
+    
+    # Attach to screen
+    screen -r "$session_name"
+}
+
+# Show status of all agents
+show_status() {
+    check_screen
+    
+    info "Agent Status"
+    echo ""
+    
+    # Header
+    printf "%-20s %-15s %-30s %s\n" "BRANCH" "STATUS" "SESSION" "WORKTREE"
+    echo "--------------------------------------------------------------------------------"
+    
+    # Check all screen sessions
+    local found=0
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:space:]]*([0-9]+)\.($SCREEN_PREFIX-[^[:space:]]+) ]]; then
+            local pid="${BASH_REMATCH[1]}"
+            local session="${BASH_REMATCH[2]}"
+            local slug="${session#$SCREEN_PREFIX-}"
+            
+            # Try to find corresponding branch
+            local branch=""
+            local worktree=""
+            for wt in ../tetraspore-*; do
+                if [ -d "$wt" ] && [[ "$wt" =~ tetraspore-${slug}$ ]]; then
+                    worktree="$wt"
+                    if [ -f "$wt/.agent/session" ]; then
+                        branch=$(cd "$wt" && git branch --show-current 2>/dev/null || echo "unknown")
+                    fi
+                    break
+                fi
+            done
+            
+            # Check if screen is attached
+            local status="RUNNING"
+            if [[ "$line" =~ Attached ]]; then
+                status="ATTACHED"
+            elif [[ "$line" =~ Detached ]]; then
+                status="DETACHED"
+            fi
+            
+            printf "%-20s %-15s %-30s %s\n" "${branch:-$slug}" "$status" "$session (PID $pid)" "${worktree:-unknown}"
+            ((found++))
+        fi
+    done < <(screen -list 2>/dev/null || true)
+    
+    if [ $found -eq 0 ]; then
+        echo "No agents running"
+    fi
+    
+    echo ""
+    detail "Use 'workagent attach --branch BRANCH' to connect to an agent"
+}
+
+# Stop an agent
+stop_agent() {
+    local branch="$1"
+    
+    [ -z "$branch" ] && error "Branch name required"
+    
+    check_screen
+    
+    local slug=$(slugify "$branch")
+    local session_name="$SCREEN_PREFIX-$slug"
+    local worktree_dir="../tetraspore-$slug"
+    
+    if ! screen -list | grep -q "$session_name"; then
+        error "No agent found for branch $branch"
+    fi
+    
+    info "Stopping agent for branch: $branch"
+    
+    # Send quit command to screen session
+    screen -S "$session_name" -X quit
+    
+    # Update status file if exists
+    if [ -f "$worktree_dir/.agent/status" ]; then
+        echo "STOPPED" > "$worktree_dir/.agent/status"
+        date -u +"%Y-%m-%dT%H:%M:%SZ" > "$worktree_dir/.agent/stopped"
+    fi
+    
+    success "Agent stopped"
+}
+
+# Show help
+show_help() {
+    echo "workagent - Complete lifecycle management for AI coding agents"
+    echo ""
+    echo "Commands:"
+    echo "  prepare  --branch BRANCH --task \"TASK\"   Set up worktree and task"
+    echo "  spawn    --branch BRANCH                  Start agent in background"
+    echo "  attach   --branch BRANCH                  Connect to running agent"
+    echo "  status                                     Show all agents"
+    echo "  stop     --branch BRANCH                  Stop agent"
+    echo "  help                                       Show this help"
+    echo ""
+    echo "Typical workflow:"
+    echo "  1. workagent prepare --branch feat/ui --task \"Build navigation component\""
+    echo "  2. workagent spawn --branch feat/ui"
+    echo "  3. workagent attach --branch feat/ui  # Optional: watch agent work"
+    echo "  4. mail inbox --for main              # Check agent messages"
+    echo "  5. workagent stop --branch feat/ui    # When done"
+    echo ""
+    echo "Requirements:"
+    echo "  - GNU Screen for session management"
+    echo "  - git for worktree management"
+    echo "  - npm for dependency installation"
+}
+
+# Main command dispatcher
+case "${1:-help}" in
+    prepare)
+        shift
+        branch=""
+        task=""
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --branch) branch="$2"; shift 2 ;;
+                --task) task="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        prepare_worktree "$branch" "$task"
+        ;;
+        
+    spawn)
+        shift
+        branch=""
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --branch) branch="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        spawn_agent "$branch"
+        ;;
+        
+    attach)
+        shift
+        branch=""
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --branch) branch="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        attach_agent "$branch"
+        ;;
+        
+    status)
+        show_status
+        ;;
+        
+    stop)
+        shift
+        branch=""
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --branch) branch="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        stop_agent "$branch"
+        ;;
+        
+    help|--help|-h)
+        show_help
+        ;;
+        
+    *)
+        echo "Error: Unknown command '$1'"
+        echo "Run 'workagent help' for usage"
+        exit 1
+        ;;
+esac
