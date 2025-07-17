@@ -37,7 +37,9 @@
 
 set -e
 
-MAIL_DIR=".agent-mail"
+# Use shared directory for all agents
+SHARED_DIR="/workspaces/.agent-shared"
+MAIL_DIR="$SHARED_DIR/mail"
 MESSAGES_DIR="$MAIL_DIR/messages"
 INDEX_FILE="$MAIL_DIR/index.json"
 SEQ_FILE="$MAIL_DIR/seq"

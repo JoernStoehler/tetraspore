@@ -121,12 +121,38 @@ prepare_worktree() {
         detail "Warning: No .env file found in main worktree"
     fi
     
-    # Set up ports (simplified from worktree.sh)
+    # Set up ports using shared allocation registry
     if [ ! -f "$worktree_dir/.env.local" ]; then
-        # Find next available ports
+        # Create shared ports registry if needed
+        local SHARED_DIR="/workspaces/.agent-shared"
+        local PORTS_FILE="$SHARED_DIR/allocated-ports"
+        mkdir -p "$SHARED_DIR"
+        [ ! -f "$PORTS_FILE" ] && echo "# Branch:Port" > "$PORTS_FILE"
+        
+        # Find next available port range (3 consecutive ports)
         local port=3010
-        while lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; do
-            ((port++))
+        while true; do
+            # Check if any of the 3 ports are in use (listening or allocated)
+            local port_in_use=false
+            for offset in 0 1 2; do
+                if lsof -Pi :$((port + offset)) -sTCP:LISTEN -t >/dev/null 2>&1; then
+                    port_in_use=true
+                    break
+                fi
+                if grep -q ":$((port + offset))$" "$PORTS_FILE" 2>/dev/null; then
+                    port_in_use=true
+                    break
+                fi
+            done
+            
+            if [ "$port_in_use" = false ]; then
+                # Allocate these ports
+                echo "$branch:$port" >> "$PORTS_FILE"
+                break
+            fi
+            
+            # Try next range
+            port=$((port + 3))
         done
         
         cat > "$worktree_dir/.env.local" << EOF
