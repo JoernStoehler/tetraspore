@@ -4,16 +4,16 @@
 #
 # ARCHITECTURE DECISIONS:
 #
-# 1. GNU Screen for session management
+# 1. Tmux for session management
 #    - Detachable sessions for long-running agents
 #    - Can reattach to see agent output
-#    - More universally available than tmux
+#    - Better color and terminal handling than screen
 #    - Named sessions for easy management
 #
 # 2. Explicit command structure
 #    - prepare: Set up worktree and task (replaces worktree.sh)
-#    - spawn: Actually start agent in detached screen
-#    - attach: Connect to running agent's screen
+#    - spawn: Actually start agent in detached tmux
+#    - attach: Connect to running agent's tmux session
 #    - status: Show all agents and their states
 #    - stop: Terminate agent session
 #
@@ -23,9 +23,9 @@
 #    - No hidden state changes
 #
 # 4. Session naming convention
-#    - Screen session: "agent-<branch-slug>"
+#    - Tmux session: "agent-<branch-slug>"
 #    - Predictable names for management
-#    - Branch name sanitization for screen compatibility
+#    - Branch name sanitization for tmux compatibility
 #
 # 5. Integrated workflow
 #    - Combines worktree, mail, and agent management
@@ -68,10 +68,10 @@ slugify() {
     echo "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g' | sed -e 's/--*/-/g' | sed -e 's/^-//;s/-$//'
 }
 
-# Check if screen is available
-check_screen() {
-    if ! command -v screen &> /dev/null; then
-        error "GNU Screen is required but not installed. In devcontainer it should be pre-installed."
+# Check if tmux is available
+check_tmux() {
+    if ! command -v tmux &> /dev/null; then
+        error "tmux is required but not installed. In devcontainer it should be pre-installed."
     fi
 }
 
@@ -219,7 +219,7 @@ spawn_agent() {
     
     [ -z "$branch" ] && error "Branch name required"
     
-    check_screen
+    check_tmux
     
     local slug=$(slugify "$branch")
     local session_name="$SCREEN_PREFIX-$slug"
@@ -231,7 +231,7 @@ spawn_agent() {
     fi
     
     # Check if session already exists
-    if screen -list | grep -q "$session_name"; then
+    if tmux has-session -t "$session_name" 2>/dev/null; then
         error "Agent already running in session $session_name. Use: workagent attach --branch $branch"
     fi
     
@@ -270,14 +270,14 @@ Then begin work on your assigned task. Send progress updates via mail to 'main'.
 EOF
     chmod +x "$startup_script"
     
-    # Start screen session
-    screen -dmS "$session_name" bash "$startup_script"
+    # Start tmux session
+    tmux new-session -d -s "$session_name" -c "$worktree_dir" bash "$startup_script"
     
     # Give it a moment to start
     sleep 1
     
     # Verify it started
-    if screen -list | grep -q "$session_name"; then
+    if tmux has-session -t "$session_name" 2>/dev/null; then
         success "Agent spawned successfully!"
         echo ""
         echo "Agent is running in background session: $session_name"
@@ -297,27 +297,27 @@ attach_agent() {
     
     [ -z "$branch" ] && error "Branch name required"
     
-    check_screen
+    check_tmux
     
     local slug=$(slugify "$branch")
     local session_name="$SCREEN_PREFIX-$slug"
     
-    if ! screen -list | grep -q "$session_name"; then
+    if ! tmux has-session -t "$session_name" 2>/dev/null; then
         error "No agent found for branch $branch. Run: workagent spawn --branch $branch"
     fi
     
     info "Attaching to agent session: $session_name"
-    echo "Press Ctrl+A then D to detach and return to orchestrator"
+    echo "Press Ctrl+B then D to detach and return to orchestrator"
     echo ""
     sleep 1
     
-    # Attach to screen
-    screen -r "$session_name"
+    # Attach to tmux
+    tmux attach-session -t "$session_name"
 }
 
 # Show status of all agents
 show_status() {
-    check_screen
+    check_tmux
     
     # Temporarily disable exit on error for status display
     set +e
@@ -329,13 +329,11 @@ show_status() {
     printf "%-20s %-15s %-30s %s\n" "BRANCH" "STATUS" "SESSION" "WORKTREE"
     echo "--------------------------------------------------------------------------------"
     
-    # Check all screen sessions
+    # Check all tmux sessions
     local found=0
-    while IFS= read -r line; do
-        if [[ "$line" =~ ^[[:space:]]*([0-9]+)\.($SCREEN_PREFIX-[^[:space:]]+) ]]; then
-            local pid="${BASH_REMATCH[1]}"
-            local session="${BASH_REMATCH[2]}"
-            local slug="${session#$SCREEN_PREFIX-}"
+    while IFS=: read -r session_name session_info; do
+        if [[ "$session_name" =~ ^$SCREEN_PREFIX-(.+)$ ]]; then
+            local slug="${BASH_REMATCH[1]}"
             
             # Try to find corresponding branch
             local branch=""
@@ -350,18 +348,16 @@ show_status() {
                 fi
             done
             
-            # Check if screen is attached
-            local status="RUNNING"
-            if [[ "$line" =~ Attached ]]; then
+            # Check if session is attached
+            local status="DETACHED"
+            if tmux list-clients -t "$session_name" 2>/dev/null | grep -q .; then
                 status="ATTACHED"
-            elif [[ "$line" =~ Detached ]]; then
-                status="DETACHED"
             fi
             
-            printf "%-20s %-15s %-30s %s\n" "${branch:-$slug}" "$status" "$session (PID $pid)" "${worktree:-unknown}"
+            printf "%-20s %-15s %-30s %s\n" "${branch:-$slug}" "$status" "$session_name" "${worktree:-unknown}"
             ((found++))
         fi
-    done < <(screen -list 2>/dev/null || true)
+    done < <(tmux list-sessions -F "#{session_name}:#{session_created}" 2>/dev/null || true)
     
     if [ $found -eq 0 ]; then
         echo "No agents running"
@@ -380,20 +376,20 @@ stop_agent() {
     
     [ -z "$branch" ] && error "Branch name required"
     
-    check_screen
+    check_tmux
     
     local slug=$(slugify "$branch")
     local session_name="$SCREEN_PREFIX-$slug"
     local worktree_dir="../tetraspore-$slug"
     
-    if ! screen -list | grep -q "$session_name"; then
+    if ! tmux has-session -t "$session_name" 2>/dev/null; then
         error "No agent found for branch $branch"
     fi
     
     info "Stopping agent for branch: $branch"
     
-    # Send quit command to screen session
-    screen -S "$session_name" -X quit
+    # Kill the tmux session
+    tmux kill-session -t "$session_name"
     
     # Update status file if exists
     if [ -f "$worktree_dir/.agent/status" ]; then
@@ -424,7 +420,7 @@ show_help() {
     echo "  5. workagent stop --branch feat/ui    # When done"
     echo ""
     echo "Requirements:"
-    echo "  - GNU Screen for session management"
+    echo "  - tmux for session management"
     echo "  - git for worktree management"
     echo "  - npm for dependency installation"
 }

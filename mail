@@ -92,6 +92,20 @@ EOF
         ;;
         
     inbox)
+        # Parse --for option
+        filter_for=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --for)
+                    filter_for="$2"
+                    shift 2
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
+        
         printf "%-20s %-4s %-7s %-14s %-14s %s\n" "TIMESTAMP" "ID" "STATUS" "FROM" "TO" "SUBJECT"
         echo "--------------------------------------------------------------------------------"
         
@@ -105,6 +119,11 @@ EOF
                 subject=$(grep "^subject:" "$msg_file" | cut -d' ' -f2-)
                 status=$(grep "^status:" "$msg_file" | cut -d' ' -f2)
                 date=$(grep "^date:" "$msg_file" | cut -d' ' -f2)
+                
+                # Apply filter if specified
+                if [ -n "$filter_for" ] && [ "$to" != "$filter_for" ] && [ "$from" != "$filter_for" ]; then
+                    continue
+                fi
                 
                 printf "%-20s %-4s %-7s %-14s %-14s %s\n" "${date:0:19}" "$id" "$status" "$from" "$to" "${subject:0:40}"
             done
@@ -138,7 +157,7 @@ EOF
         echo ""
         echo "Usage:"
         echo "  mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
-        echo "  mail inbox                    # List all messages"
+        echo "  mail inbox [--for AGENT]     # List all messages (or filtered by agent)"
         echo "  mail read MESSAGE_ID          # Read and mark message as read"
         echo "  mail help                     # Show this help"
         echo ""
@@ -147,7 +166,7 @@ EOF
         echo "  mail send --from main --to feat/ui --subject \"Task\" --body \"Build the Tree component\""
         echo ""
         echo "  # Check messages for a specific agent"
-        echo "  mail inbox | grep feat/ui"
+        echo "  mail inbox --for feat/ui"
         echo ""
         echo "  # Read a specific message"
         echo "  mail read 017"
