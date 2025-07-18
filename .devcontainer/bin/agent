@@ -9,20 +9,32 @@ if [ -f "/workspaces/tetraspore/.devcontainer/.env" ]; then
     source "/workspaces/tetraspore/.devcontainer/.env"
 fi
 
-# Set up Honeycomb telemetry environment variables
-# These can be overridden by the env file above
-export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-https://api.honeycomb.io}"
-export OTEL_EXPORTER_OTLP_HEADERS="${OTEL_EXPORTER_OTLP_HEADERS:-x-honeycomb-team=${HONEYCOMB_API_KEY}}"
-export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-tetraspore-claude}"
-export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES:-service.name=${OTEL_SERVICE_NAME},service.version=1.0.0}"
+# Validate Honeycomb API key
+if [ -z "$HONEYCOMB_API_KEY" ] || [ "$HONEYCOMB_API_KEY" = "your_actual_api_key_here" ]; then
+    echo "⚠️  Warning: Honeycomb API key not configured (telemetry disabled)"
+else
+    # Extract base domain for validation
+    if [[ "$OTEL_EXPORTER_OTLP_ENDPOINT" == *"eu1"* ]]; then
+        VALIDATION_URL="https://api.eu1.honeycomb.io/1/auth"
+    else
+        VALIDATION_URL="https://api.honeycomb.io/1/auth"
+    fi
+    
+    # Check if key works (2 second timeout)
+    if ! curl -s -f -m 2 -H "X-Honeycomb-Team: $HONEYCOMB_API_KEY" "$VALIDATION_URL" > /dev/null 2>&1; then
+        echo "⚠️  Warning: Honeycomb API key validation failed (endpoint: $VALIDATION_URL)"
+    fi
+fi
 
-# Enable OpenTelemetry for claude-code
-export OTEL_TRACES_EXPORTER="${OTEL_TRACES_EXPORTER:-otlp}"
-export OTEL_METRICS_EXPORTER="${OTEL_METRICS_EXPORTER:-otlp}"
-export OTEL_LOGS_EXPORTER="${OTEL_LOGS_EXPORTER:-otlp}"
-
-# Set log level for debugging if needed
-# export OTEL_LOG_LEVEL=debug
+# Validate Tavily API key
+if [ -z "$TAVILY_API_KEY" ] || [ "$TAVILY_API_KEY" = "your_tavily_api_key_here" ]; then
+    echo "⚠️  Warning: Tavily API key not configured (web search disabled)"
+else
+    # Check if key works using usage endpoint (2 second timeout)
+    if ! curl -s -f -m 2 -H "Authorization: Bearer $TAVILY_API_KEY" "https://api.tavily.com/usage" > /dev/null 2>&1; then
+        echo "⚠️  Warning: Tavily API key validation failed"
+    fi
+fi
 
 # Execute claude command with all arguments
 # Include --dangerously-skip-permissions by default for smoother AI workflows
