@@ -252,8 +252,9 @@ echo ""
 
 # Set up logging
 mkdir -p .agent
-exec > >(tee -a .agent/session.log)
-exec 2>&1
+# Don't redirect stdout/stderr for TUI mode - it needs terminal access
+# exec > >(tee -a .agent/session.log)
+# exec 2>&1
 
 # Record session info
 echo "$session_name" > .agent/session
