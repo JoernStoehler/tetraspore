@@ -9,7 +9,7 @@ Human Owner
     ↓
 Orchestrator Agent (main branch)
     ↓
-Coding Agents (feature branches in separate screen sessions)
+Coding Agents (feature branches in separate tmux sessions)
 - feat/tree-ui
 - feat/galaxy  
 - feat/data-layer
@@ -41,7 +41,7 @@ The `workagent` command handles the complete agent lifecycle:
 workagent prepare --branch feat/tree-ui \
   --task "Implement Tree of Life visualization"
 
-# Spawn agent in background screen session
+# Spawn agent in background tmux session
 workagent spawn --branch feat/tree-ui
 
 # Check all agents

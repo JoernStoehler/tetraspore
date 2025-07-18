@@ -1,16 +1,26 @@
 # Tool Guide: workagent
 
-Complete lifecycle management for AI coding agents, including workspace preparation, agent spawning, and session management.
+Complete lifecycle management for AI coding agents using tmux sessions, git worktrees, and shared infrastructure.
+
+## Overview
+
+The `workagent` tool manages AI agents that work on separate git branches in isolated environments. Each agent:
+- Gets its own git worktree
+- Runs in a tmux session with full TUI support
+- Has unique ports to avoid conflicts
+- Communicates via shared mail system
 
 ## Prerequisites
 
-- GNU Screen (`sudo apt-get install screen`)
+- tmux (`sudo apt-get install tmux`)
 - Git with worktree support
 - Node.js and npm
+- `agent` command (Claude CLI)
 
 ## Commands
 
 ### workagent prepare
+
 Set up a new worktree with task documentation.
 
 ```bash
@@ -23,34 +33,14 @@ workagent prepare --branch feat/nav --task "Build navigation component with drop
 What it does:
 1. Creates git worktree at `../tetraspore-<branch-slug>`
 2. Copies `.env` from main worktree
-3. Allocates unique ports in `.env.local`
+3. Allocates unique ports in `.env.local` via shared registry
 4. Runs `npm install`
 5. Creates `TASK.md` with assignment details
 6. Sends welcome mail to agent
 
-Output shows each step:
-```
-→ Preparing worktree for branch: feat/nav
-→ Creating worktree at ../tetraspore-feat-nav
-  Created new branch: feat/nav
-✓ Worktree created
-→ Setting up environment
-  Copied .env file
-  Allocated ports: dev=3010, preview=3011, debug=3012
-→ Installing dependencies
-✓ Dependencies installed
-→ Creating task documentation
-  Created TASK.md
-→ Sending task assignment via mail
-Mail sent. ID: 001
-✓ Worktree prepared successfully!
-
-Next step:
-  workagent spawn --branch feat/nav
-```
-
 ### workagent spawn
-Start an agent in a detached screen session.
+
+Start an agent in a detached tmux session.
 
 ```bash
 workagent spawn --branch BRANCH
@@ -59,14 +49,16 @@ workagent spawn --branch BRANCH
 workagent spawn --branch feat/nav
 ```
 
-What it does:
-1. Creates screen session named `agent-<branch-slug>`
-2. Starts agent with instructions to check mail and read task
-3. Logs all output to `.agent/session.log`
-4. Runs in background (detached)
+Starts the agent with:
+- Session name: `agent-<branch-slug>`
+- Working directory: The worktree
+- Initial prompt to check mail and read TASK.md
+- Full TUI support with proper colors
+- Background execution in tmux
 
 ### workagent attach
-Connect to a running agent's session.
+
+Connect to a running agent's interactive session.
 
 ```bash
 workagent attach --branch BRANCH
@@ -75,11 +67,13 @@ workagent attach --branch BRANCH
 workagent attach --branch feat/nav
 ```
 
-- Attaches to the agent's screen session
-- See live agent output and interactions
-- Press `Ctrl+A` then `D` to detach without stopping agent
+- Connects to the agent's tmux session
+- Shows agent's interactive TUI
+- Press `Ctrl+B` then `D` to detach
+- Full color support (better than screen)
 
 ### workagent status
+
 Show all running agents.
 
 ```bash
@@ -92,11 +86,12 @@ Output:
 
 BRANCH              STATUS          SESSION                        WORKTREE
 --------------------------------------------------------------------------------
-feat/nav            DETACHED        agent-feat-nav (PID 12345)    ../tetraspore-feat-nav
-feat/api            ATTACHED        agent-feat-api (PID 12346)    ../tetraspore-feat-api
+feat/nav            DETACHED        agent-feat-nav                 ../tetraspore-feat-nav
+feat/api            ATTACHED        agent-feat-api                 ../tetraspore-feat-api
 ```
 
 ### workagent stop
+
 Stop a running agent.
 
 ```bash
@@ -106,59 +101,117 @@ workagent stop --branch BRANCH
 workagent stop --branch feat/nav
 ```
 
-## Complete Workflow
+## Complete Workflow Example
 
 ```bash
 # 1. Prepare workspace and task
-workagent prepare --branch feat/button --task "Create reusable Button component with variants"
+workagent prepare --branch feat/button --task "Create reusable Button component with hover states"
 
 # 2. Spawn the agent
 workagent spawn --branch feat/button
 
 # 3. Optional: Watch the agent work
 workagent attach --branch feat/button
-# (Press Ctrl+A then D to detach)
+# (Press Ctrl+B then D to detach)
 
 # 4. Monitor from orchestrator side
-mail inbox --for main
+mail inbox --for main | tail
 workagent status
 
 # 5. Communicate with agent
-mail send --from main --to feat/button --subject "Update" --body "Please add hover states"
+mail send --to feat/button --subject "Update" --body "Please add disabled state too"
 
 # 6. When complete, stop agent
 workagent stop --branch feat/button
 
-# 7. Review and integrate
-cd ../tetraspore-feat-button
-git diff
-cat HANDOFF.md
-cd ../tetraspore
-git merge feat/button
-
-# 8. Clean up
+# 7. Clean up worktree
 git worktree remove ../tetraspore-feat-button
+git branch -d feat/button
 ```
 
-## Screen Session Management
+## Architecture
 
-Each agent runs in a named GNU Screen session:
-- Session name: `agent-<branch-slug>`
-- Logs: `.agent/session.log` in worktree
-- Can have multiple agents running in parallel
-- Sessions persist even if you disconnect
+### Shared Infrastructure
 
-## Tips
+All agents share common resources through `/workspaces/.agent-shared/`:
+- `mail/` - Inter-agent communication
+- `allocated-ports` - Port registry to prevent conflicts
 
-1. **Multiple agents**: Run each in its own screen session
-2. **Monitoring**: Use `workagent status` to see all agents
-3. **Debugging**: Check `.agent/session.log` for full history
-4. **Recovery**: If agent crashes, just `workagent spawn` again
+### Port Allocation
 
-## Benefits
+Each agent gets 3 consecutive ports:
+- `VITE_DEV_PORT` - Development server
+- `VITE_PREVIEW_PORT` - Preview server  
+- `VITE_DEBUG_PORT` - Debug port
 
-- Actually spawns agent processes in background
-- Integrated workflow in one tool
-- Clear status reporting at each step
-- Proper session management with GNU Screen
-- Explicit operations with no hidden magic
+Ports are allocated from a shared registry to prevent conflicts between parallel agents.
+
+### Session Management
+
+Agents run in tmux sessions named `agent-<branch-slug>`. Benefits over screen:
+- Better color rendering
+- More modern terminal emulation
+- Same detach/attach workflow
+
+## Tips & Troubleshooting
+
+### Branch Names
+- Automatically "slugified" for compatibility
+- `feat/my-branch` becomes `feat-my-branch` in session names
+
+### Finding Agent Output
+- Agents run interactively in tmux (no automatic logging)
+- Use `workagent attach` to see what agent is doing
+- Check worktree for files agent creates
+
+### Port Conflicts
+- Check `/workspaces/.agent-shared/allocated-ports`
+- Each line shows `branch:port` allocation
+- Ports are reserved even after agent stops (prevents reuse issues)
+
+### Mail Integration
+- Agents start with instruction to check mail
+- Use `mail inbox --for BRANCH` to see agent's messages
+- See [mail tool guide](tool-guide-mail.md) for details
+
+### Multiple Agents
+- Run many agents in parallel on different branches
+- Each gets isolated worktree and ports
+- Monitor all with `workagent status`
+
+## Common Patterns
+
+### Research Agent
+```bash
+# Agent that analyzes without changing code
+workagent prepare --branch research/architecture \
+  --task "Document current architecture and suggest improvements"
+```
+
+### Parallel Feature Development
+```bash
+# Start multiple agents on related features
+workagent prepare --branch feat/ui --task "Build UI components"
+workagent spawn --branch feat/ui
+
+workagent prepare --branch feat/api --task "Build API endpoints"  
+workagent spawn --branch feat/api
+
+# Monitor both
+workagent status
+```
+
+### Agent Handoff
+```bash
+# Agent 1 completes initial work
+workagent prepare --branch feat/backend --task "Build data models"
+workagent spawn --branch feat/backend
+
+# Later, prepare handoff for Agent 2
+echo "Backend models complete. See models.py" > HANDOFF.md
+git add . && git commit -m "Complete data models"
+
+# Agent 2 continues the work
+workagent prepare --branch feat/backend-api \
+  --task "Build REST API using models from feat/backend branch"
+```
