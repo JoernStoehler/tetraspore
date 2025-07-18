@@ -106,11 +106,8 @@ EOF
             esac
         done
         
-        printf "%-20s %-4s %-7s %-14s %-14s %s\n" "TIMESTAMP" "ID" "STATUS" "FROM" "TO" "SUBJECT"
-        echo "--------------------------------------------------------------------------------"
-        
         if [ -d "$MESSAGES_DIR" ]; then
-            for msg_file in $(find "$MESSAGES_DIR" -name "*.md" -type f 2>/dev/null | sort -r); do
+            for msg_file in $(find "$MESSAGES_DIR" -name "*.md" -type f 2>/dev/null | sort); do
                 [ ! -f "$msg_file" ] && continue
                 
                 id=$(grep "^id:" "$msg_file" | cut -d' ' -f2)
@@ -125,7 +122,8 @@ EOF
                     continue
                 fi
                 
-                printf "%-20s %-4s %-7s %-14s %-14s %s\n" "${date:0:19}" "$id" "$status" "$from" "$to" "${subject:0:40}"
+                # Self-contained format: ID [STATUS] TIMESTAMP FROM->TO: SUBJECT
+                printf "%s [%-6s] %s %s->%s: %s\n" "$id" "$status" "${date:0:19}" "${from:--}" "${to:--}" "${subject:0:50}"
             done
         fi
         ;;
