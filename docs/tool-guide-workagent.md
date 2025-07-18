@@ -43,11 +43,27 @@ What it does:
 Start an agent in a detached tmux session.
 
 ```bash
-workagent spawn --branch BRANCH
+workagent spawn --branch BRANCH [--model MODEL]
 
-# Example
+# Example with default model
 workagent spawn --branch feat/nav
+
+# Example with specific model
+workagent spawn --branch feat/nav --model opus
+workagent spawn --branch feat/simple-ui --model sonnet
 ```
+
+Model options:
+- `opus` - Claude Opus 4: Slower, expensive, deep intelligence. Best for:
+  - Designing architectures
+  - Decomposing complex tasks
+  - Research and analysis
+  - Critical decision making
+- `sonnet` - Claude Sonnet 4: Faster, cheaper, effective. Best for:
+  - Implementing designed architectures
+  - Straightforward coding tasks
+  - Following clear specifications
+  - Routine development work
 
 Starts the agent with:
 - Session name: `agent-<branch-slug>`
@@ -55,6 +71,7 @@ Starts the agent with:
 - Initial prompt to check mail and read TASK.md
 - Full TUI support with proper colors
 - Background execution in tmux
+- Specified AI model (or default if not provided)
 
 ### workagent attach
 
@@ -107,8 +124,8 @@ workagent stop --branch feat/nav
 # 1. Prepare workspace and task
 workagent prepare --branch feat/button --task "Create reusable Button component with hover states"
 
-# 2. Spawn the agent
-workagent spawn --branch feat/button
+# 2. Spawn the agent (sonnet is good for straightforward implementation)
+workagent spawn --branch feat/button --model sonnet
 
 # 3. Optional: Watch the agent work
 workagent attach --branch feat/button
@@ -191,11 +208,13 @@ workagent prepare --branch research/architecture \
 ### Parallel Feature Development
 ```bash
 # Start multiple agents on related features
-workagent prepare --branch feat/ui --task "Build UI components"
-workagent spawn --branch feat/ui
+# Complex UI design needs opus
+workagent prepare --branch feat/ui --task "Design and build complex interactive UI"
+workagent spawn --branch feat/ui --model opus
 
-workagent prepare --branch feat/api --task "Build API endpoints"  
-workagent spawn --branch feat/api
+# Straightforward API implementation can use sonnet
+workagent prepare --branch feat/api --task "Build REST API endpoints per spec"  
+workagent spawn --branch feat/api --model sonnet
 
 # Monitor both
 workagent status

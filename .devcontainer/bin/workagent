@@ -216,6 +216,7 @@ EOF
 # Spawn agent in screen session
 spawn_agent() {
     local branch="$1"
+    local model="$2"
     
     [ -z "$branch" ] && error "Branch name required"
     
@@ -238,6 +239,11 @@ spawn_agent() {
     info "Spawning agent for branch: $branch"
     detail "Session name: $session_name"
     detail "Working directory: $worktree_dir"
+    if [ -n "$model" ]; then
+        detail "AI model: $model"
+    else
+        detail "AI model: default"
+    fi
     
     # Create agent startup script
     local startup_script="$worktree_dir/.agent-startup.sh"
@@ -262,7 +268,12 @@ echo "ACTIVE" > .agent/status
 date -u +"%Y-%m-%dT%H:%M:%SZ" > .agent/started
 
 # Start agent with initial prompt
-$AGENT_CMD "You are agent $branch working on a specific task. Start by running these commands:
+AGENT_ARGS=""
+if [ -n "$model" ]; then
+    AGENT_ARGS="--model $model"
+fi
+
+$AGENT_CMD \$AGENT_ARGS "You are agent $branch working on a specific task. Start by running these commands:
 1. mail inbox --for $branch
 2. cat TASK.md
 
@@ -406,15 +417,19 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  prepare  --branch BRANCH --task \"TASK\"   Set up worktree and task"
-    echo "  spawn    --branch BRANCH                  Start agent in background"
+    echo "  spawn    --branch BRANCH [--model MODEL]  Start agent in background"
     echo "  attach   --branch BRANCH                  Connect to running agent"
     echo "  status                                     Show all agents"
     echo "  stop     --branch BRANCH                  Stop agent"
     echo "  help                                       Show this help"
     echo ""
+    echo "Model options (for spawn command):"
+    echo "  --model opus    Claude Opus 4: Deep intelligence for complex tasks"
+    echo "  --model sonnet  Claude Sonnet 4: Fast, efficient for routine tasks"
+    echo ""
     echo "Typical workflow:"
     echo "  1. workagent prepare --branch feat/ui --task \"Build navigation component\""
-    echo "  2. workagent spawn --branch feat/ui"
+    echo "  2. workagent spawn --branch feat/ui --model sonnet"
     echo "  3. workagent attach --branch feat/ui  # Optional: watch agent work"
     echo "  4. mail inbox --for main              # Check agent messages"
     echo "  5. workagent stop --branch feat/ui    # When done"
@@ -444,13 +459,15 @@ case "${1:-help}" in
     spawn)
         shift
         branch=""
+        model=""
         while [[ $# -gt 0 ]]; do
             case $1 in
                 --branch) branch="$2"; shift 2 ;;
+                --model) model="$2"; shift 2 ;;
                 *) shift ;;
             esac
         done
-        spawn_agent "$branch"
+        spawn_agent "$branch" "$model"
         ;;
         
     attach)

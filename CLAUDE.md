@@ -252,19 +252,28 @@ Tetraspore uses multiple AI agents working in parallel on different git worktree
 
 ```bash
 # Create and spawn agent for specific component
+# Complex visualization needs deep intelligence
 workagent prepare --branch feature/tree-ui --task "Implement Tree of Life visualization"
-workagent spawn --branch feature/tree-ui
+workagent spawn --branch feature/tree-ui --model opus
+
+# Simple data fetching can use sonnet
+workagent prepare --branch feature/api-client --task "Implement API client per spec"
+workagent spawn --branch feature/api-client --model sonnet
 
 # Monitor agent progress
 workagent status
 mail inbox
 
-# Research agent (in main branch)
-agent "Research: Find all LLM integration points. Document in HANDOFF.md"
+# Research agent (in main branch) - research needs opus
+agent --model opus "Research: Find all LLM integration points. Document in HANDOFF.md"
 
-# Integration (after features complete)
-agent "@HANDOFF.md Integrate tree-ui and tree-data branches"
+# Integration (after features complete) - complex integration needs opus
+agent --model opus "@HANDOFF.md Integrate tree-ui and tree-data branches"
 ```
+
+#### Model Selection:
+- **opus**: Claude Opus 4 - Slower, expensive, deep intelligence for complex tasks
+- **sonnet**: Claude Sonnet 4 - Faster, cheaper, effective for routine tasks
 
 ### Agent Division Strategy
 
@@ -347,6 +356,10 @@ research-agent (read-only) → implementation-agents
 4. **HANDOFF.md**: Required for all transitions
 5. **Clean Commits**: One feature per commit
 6. **Mail Communication**: Use `mail` for all agent coordination
+7. **Model Selection**: Choose models based on task complexity:
+   - **Opus 4** for: Architecture design, complex algorithms, research, integration
+   - **Sonnet 4** for: Implementation from specs, tests, CRUD, simple UI components
+   - Consider cost (~3x difference) and time requirements
 
 ### Troubleshooting
 

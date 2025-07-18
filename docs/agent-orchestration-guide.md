@@ -57,21 +57,39 @@ mail send --to main --subject "Login form complete" --body "See LoginForm.tsx"
 ```
 
 ### 2. Task Delegation
+
+Choose models based on task complexity:
+
 ```bash
-# Prepare UI agent
+# Complex UI needs deep intelligence for design decisions
 workagent prepare --branch feat/login-ui \
   --task "Create login form component with validation"
-workagent spawn --branch feat/login-ui
+workagent spawn --branch feat/login-ui --model opus
 
-# Prepare API agent  
+# API implementation follows clear patterns
 workagent prepare --branch feat/login-api \
   --task "Create /auth/login endpoint with JWT"
-workagent spawn --branch feat/login-api
+workagent spawn --branch feat/login-api --model sonnet
 
 # Monitor progress
 workagent status
 mail inbox --for main | tail
 ```
+
+**Model Selection Guidelines:**
+- **Opus 4** (slower, expensive, deep intelligence):
+  - Architecture design and system planning
+  - Complex problem decomposition
+  - Research and analysis tasks
+  - Critical integration work
+  - Debugging complex issues
+  
+- **Sonnet 4** (faster, cheaper, effective):
+  - Implementing from clear specifications
+  - Routine CRUD operations
+  - Simple UI components
+  - Test writing
+  - Documentation updates
 
 ### 3. Coordination
 ```bash
@@ -134,6 +152,34 @@ mail send --to main --subject "Task complete" \
 
 ## Best Practices
 
+### Model Selection Strategy
+
+As an orchestrator, choose models based on task requirements:
+
+**Use Opus 4 for:**
+- System architecture and design
+- Complex algorithm development
+- Multi-step problem decomposition
+- Research and technology evaluation
+- Integration of multiple components
+- Debugging complex issues
+- Tasks requiring creativity or novel solutions
+
+**Use Sonnet 4 for:**
+- Implementing from clear specifications
+- Writing tests for existing code
+- Simple CRUD operations
+- UI components from mockups
+- Documentation and comments
+- Refactoring with clear goals
+- Routine maintenance tasks
+
+**Cost-Benefit Considerations:**
+- Opus 4 is ~3x more expensive than Sonnet 4
+- Reserve Opus 4 for tasks where intelligence matters
+- Use Sonnet 4 for volume work and clear implementations
+- Consider task criticality and budget constraints
+
 ### For Orchestrators
 
 1. **Clear Task Definition**
@@ -174,9 +220,16 @@ mail send --to main --subject "Task complete" \
 Split work, then integrate:
 ```bash
 # Fork: Start parallel work
+# Simple components can use sonnet
 workagent prepare --branch feat/header --task "Build header component"
+workagent spawn --branch feat/header --model sonnet
+
 workagent prepare --branch feat/footer --task "Build footer component"
-workagent prepare --branch feat/sidebar --task "Build sidebar component"
+workagent spawn --branch feat/footer --model sonnet
+
+# Complex interactive sidebar might need opus
+workagent prepare --branch feat/sidebar --task "Build collapsible sidebar with state management"
+workagent spawn --branch feat/sidebar --model opus
 
 # Work happens in parallel...
 
@@ -187,38 +240,45 @@ git merge feat/header feat/footer feat/sidebar
 ### Pipeline Pattern
 Sequential phases with handoffs:
 ```bash
-# Phase 1: Design
+# Phase 1: Design (needs deep thinking)
 workagent prepare --branch design/ui --task "Create component designs"
+workagent spawn --branch design/ui --model opus
 
-# Phase 2: Implementation (after design)
+# Phase 2: Implementation (follows design)
 workagent prepare --branch feat/ui --task "Implement designs from design/ui"
+workagent spawn --branch feat/ui --model sonnet
 
-# Phase 3: Testing (after implementation)
+# Phase 3: Testing (straightforward)
 workagent prepare --branch test/ui --task "Write tests for feat/ui components"
+workagent spawn --branch test/ui --model sonnet
 ```
 
 ### Research Pattern
 Exploration before implementation:
 ```bash
-# Research agent explores options
+# Research needs deep analysis
 workagent prepare --branch research/frameworks \
   --task "Evaluate form validation libraries"
+workagent spawn --branch research/frameworks --model opus
 
-# Implementation uses research results
+# Implementation follows research guidance
 workagent prepare --branch feat/forms \
   --task "Implement forms using library recommended by research/frameworks"
+workagent spawn --branch feat/forms --model sonnet
 ```
 
 ## Quick Reference
 
 ### Start Multiple Agents
 ```bash
-# Orchestrator delegates tasks
-workagent prepare --branch feat/auth --task "Complete auth system" && \
-workagent spawn --branch feat/auth
+# Orchestrator delegates tasks with appropriate models
+# Complex auth system design
+workagent prepare --branch feat/auth --task "Design and implement complete auth system" && \
+workagent spawn --branch feat/auth --model opus
 
-workagent prepare --branch feat/profile --task "User profile page" && \
-workagent spawn --branch feat/profile
+# Simple profile page
+workagent prepare --branch feat/profile --task "User profile page per mockup" && \
+workagent spawn --branch feat/profile --model sonnet
 ```
 
 ### Monitor Everything
