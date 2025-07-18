@@ -244,7 +244,9 @@ agent [your-command]
 ## Multi-Agent Orchestration
 
 ### Overview
-Tetraspore uses multiple AI agents working in parallel on different git worktrees. This enables rapid development while avoiding conflicts. See `docs/agents/` for comprehensive guides.
+Tetraspore uses multiple AI agents working in parallel on different git worktrees. This enables rapid development while avoiding conflicts.
+
+**IMPORTANT**: All agents (orchestrator and workers) should read the [Agent Orchestration Guide](docs/agent-orchestration-guide.md) to understand the workflow and patterns for parallel development.
 
 ### Quick Agent Commands
 
@@ -363,6 +365,6 @@ tail -f .agent/session.log
 **Integration issues**: Use integration agent to resolve
 
 See `docs/` for detailed guides:
-- [Delegation Guide](docs/delegation-to-agents-with-worktrees.md) - Orchestration patterns
-- [WorkAgent Guide](docs/tool-guide-workagent.md) - Agent lifecycle management
-- [Mail Guide](docs/tool-guide-mail.md) - Agent communication
+- [Agent Orchestration Guide](docs/agent-orchestration-guide.md) - Multi-agent workflow and patterns
+- [WorkAgent Tool Guide](docs/tool-guide-workagent.md) - workagent command reference
+- [Mail Tool Guide](docs/tool-guide-mail.md) - mail command reference
