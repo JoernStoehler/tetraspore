@@ -71,10 +71,6 @@ RUN npm config set prefix '/home/vscode/.local' \
 # Add .local/bin to PATH for npm global packages
 ENV PATH="/home/vscode/.local/bin:$PATH"
 
-# Copy agent wrapper script and configs
-COPY --chown=vscode:vscode agent.sh /home/vscode/.local/bin/agent
-RUN chmod +x /home/vscode/.local/bin/agent
-
 # Copy starship config
 COPY --chown=vscode:vscode .config/starship.toml /home/vscode/.config/starship.toml
 

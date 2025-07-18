@@ -1,0 +1,179 @@
+#!/bin/bash
+
+# mail - Agent-to-agent communication system
+#
+# ARCHITECTURE DECISIONS:
+#
+# 1. File-based storage instead of database
+#    - Simple to debug and inspect
+#    - Git-friendly (can track message history)
+#    - No dependencies on external services
+#    - Each message is a markdown file with YAML frontmatter
+#
+# 2. Synchronous, poll-based instead of real-time
+#    - Agents explicitly check mail (no hidden state changes)
+#    - No background processes or daemons needed
+#    - Fits agent's turn-based interaction model
+#
+# 3. No authentication or encryption
+#    - All agents are trusted (same user, same machine)
+#    - Simplifies implementation significantly
+#    - Security through filesystem permissions
+#
+# 4. Sequential message IDs instead of UUIDs
+#    - Easier to reference in conversation ("see message 017")
+#    - Natural ordering for humans and agents
+#    - Simple sequence file instead of complex ID generation
+#
+# 5. Markdown format for messages
+#    - Human readable and agent parseable
+#    - Supports rich formatting if needed
+#    - Standard format that agents understand
+#
+# DESIGN PRINCIPLES:
+# - KISS: Every feature must justify its complexity
+# - Explicit > Implicit: No hidden behaviors
+# - Debuggable: Can inspect system state with ls and cat
+
+set -e
+
+# Use shared directory for all agents
+SHARED_DIR="/workspaces/.agent-shared"
+MAIL_DIR="$SHARED_DIR/mail"
+MESSAGES_DIR="$MAIL_DIR/messages"
+INDEX_FILE="$MAIL_DIR/index.json"
+SEQ_FILE="$MAIL_DIR/seq"
+
+# Initialize
+mkdir -p "$MESSAGES_DIR"
+[ ! -f "$SEQ_FILE" ] && echo "1" > "$SEQ_FILE"
+[ ! -f "$INDEX_FILE" ] && echo '{"messages":[]}' > "$INDEX_FILE"
+
+case "${1:-}" in
+    send)
+        # Parse arguments
+        from=""
+        to=""
+        subject=""
+        body=""
+        shift
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --from) from="$2"; shift 2 ;;
+                --to) to="$2"; shift 2 ;;
+                --subject) subject="$2"; shift 2 ;;
+                --body) body="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        
+        # Get message ID
+        id=$(cat "$SEQ_FILE")
+        printf "%03d" "$id" > "$SEQ_FILE.tmp"
+        echo $((id + 1)) > "$SEQ_FILE"
+        msg_id=$(cat "$SEQ_FILE.tmp")
+        rm "$SEQ_FILE.tmp"
+        
+        # Create message
+        cat > "$MESSAGES_DIR/$msg_id.md" << EOF
+---
+id: $msg_id
+from: $from
+to: $to
+subject: $subject
+date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+status: UNREAD
+---
+
+$body
+EOF
+        
+        echo "Mail sent. ID: $msg_id"
+        ;;
+        
+    inbox)
+        # Parse --for option
+        filter_for=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --for)
+                    filter_for="$2"
+                    shift 2
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
+        
+        if [ -d "$MESSAGES_DIR" ]; then
+            for msg_file in $(find "$MESSAGES_DIR" -name "*.md" -type f 2>/dev/null | sort); do
+                [ ! -f "$msg_file" ] && continue
+                
+                id=$(grep "^id:" "$msg_file" | cut -d' ' -f2)
+                from=$(grep "^from:" "$msg_file" | cut -d' ' -f2) 
+                to=$(grep "^to:" "$msg_file" | cut -d' ' -f2)
+                subject=$(grep "^subject:" "$msg_file" | cut -d' ' -f2-)
+                status=$(grep "^status:" "$msg_file" | cut -d' ' -f2)
+                date=$(grep "^date:" "$msg_file" | cut -d' ' -f2)
+                
+                # Apply filter if specified
+                if [ -n "$filter_for" ] && [ "$to" != "$filter_for" ] && [ "$from" != "$filter_for" ]; then
+                    continue
+                fi
+                
+                # Self-contained format: ID [STATUS] TIMESTAMP FROM->TO: SUBJECT
+                printf "%s [%-6s] %s %s->%s: %s\n" "$id" "$status" "${date:0:19}" "${from:--}" "${to:--}" "${subject:0:50}"
+            done
+        fi
+        ;;
+        
+    read)
+        msg_id="$2"
+        msg_file="$MESSAGES_DIR/$msg_id.md"
+        
+        if [ -f "$msg_file" ]; then
+            echo "Message $msg_id"
+            echo "--------------------------------------------------------------------------------"
+            grep "^from:" "$msg_file"
+            grep "^to:" "$msg_file"
+            grep "^subject:" "$msg_file"
+            grep "^date:" "$msg_file"
+            echo "--------------------------------------------------------------------------------"
+            tail -n +10 "$msg_file"
+            
+            # Mark as read
+            sed -i 's/^status: UNREAD$/status: READ/' "$msg_file"
+        else
+            echo "Message $msg_id not found"
+            exit 1
+        fi
+        ;;
+        
+    help|--help|-h|"")
+        echo "mail - Agent-to-agent communication system"
+        echo ""
+        echo "Usage:"
+        echo "  mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
+        echo "  mail inbox [--for AGENT]     # List all messages (or filtered by agent)"
+        echo "  mail read MESSAGE_ID          # Read and mark message as read"
+        echo "  mail help                     # Show this help"
+        echo ""
+        echo "Examples:"
+        echo "  # Send a task assignment"
+        echo "  mail send --from main --to feat/ui --subject \"Task\" --body \"Build the Tree component\""
+        echo ""
+        echo "  # Check messages for a specific agent"
+        echo "  mail inbox --for feat/ui"
+        echo ""
+        echo "  # Read a specific message"
+        echo "  mail read 017"
+        echo ""
+        echo "Storage: Messages are stored in .agent-mail/messages/"
+        ;;
+    *)
+        echo "Error: Unknown command '$1'"
+        echo "Run 'mail help' for usage"
+        exit 1
+        ;;
+esac

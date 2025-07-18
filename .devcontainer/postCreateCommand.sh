@@ -3,15 +3,11 @@
 # Post-create setup script for devcontainer
 # This runs once after the container is created
 
-# Make agent script executable
-mkdir -p "$HOME/.local/bin"
-chmod +x "$HOME/.local/bin/agent" 2>/dev/null || true
+# Add .devcontainer/bin to PATH
+echo 'export PATH="/workspaces/tetraspore/.devcontainer/bin:$PATH"' >> "$HOME/.bashrc"
 
 # Add helpful aliases to .bashrc
 cat >> "$HOME/.bashrc" << EOF
-
-# Tetraspore aliases
-alias agent='$HOME/.local/bin/agent'
 
 # Node.js development aliases
 alias dev='npm run dev'

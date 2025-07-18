@@ -235,8 +235,8 @@ agent [your-command]
 
 ## Notes for Agents
 - Always use `agent` command for Claude with telemetry
-- Use `workagent` for creating workspaces and spawning agents
-- Use `mail` for inter-agent communication
+- Use `workagent` for creating workspaces and spawning agents (installed as command in .devcontainer/bin/)
+- Use `mail` for inter-agent communication (installed as command in .devcontainer/bin/)
 - Start dev server non-blocking with log redirection
 - Use cloudflared for external sharing when needed
 - **REMEMBER**: Update this file when you learn new requirements or make mistakes that others should avoid
