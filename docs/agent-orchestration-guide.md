@@ -62,14 +62,24 @@ Choose models based on task complexity:
 
 ```bash
 # Complex UI needs deep intelligence for design decisions
-workagent prepare --branch feat/login-ui \
-  --task "Create login form component with validation"
-workagent spawn --branch feat/login-ui --model opus
+workagent prepare --branch feat/login-ui
+Write('../tetraspore-feat-login-ui/AGENT_BRANCH_TASK.md', '
+Create login form component with validation
+- Email and password fields
+- Client-side validation
+- Error handling
+')
+workagent run --branch feat/login-ui --model opus --message "Read AGENT_BRANCH_TASK.md and implement"
 
 # API implementation follows clear patterns
-workagent prepare --branch feat/login-api \
-  --task "Create /auth/login endpoint with JWT"
-workagent spawn --branch feat/login-api --model sonnet
+workagent prepare --branch feat/login-api
+Write('../tetraspore-feat-login-api/AGENT_BRANCH_TASK.md', '
+Create /auth/login endpoint with JWT
+- POST endpoint
+- Validate credentials
+- Return JWT token
+')
+workagent run --branch feat/login-api --model sonnet --message "Read AGENT_BRANCH_TASK.md and implement"
 
 # Monitor progress
 workagent status
@@ -123,7 +133,7 @@ npm run dev
 Agents start by checking their assignment:
 ```bash
 mail inbox --for BRANCH
-cat TASK.md
+cat AGENT_BRANCH_TASK.md
 ```
 
 ### 2. Implementation
@@ -221,15 +231,15 @@ Split work, then integrate:
 ```bash
 # Fork: Start parallel work
 # Simple components can use sonnet
-workagent prepare --branch feat/header --task "Build header component"
-workagent spawn --branch feat/header --model sonnet
+workagent prepare --branch feat/header
+workagent run --branch feat/header --model sonnet --message "Build header component with logo and navigation"
 
-workagent prepare --branch feat/footer --task "Build footer component"
-workagent spawn --branch feat/footer --model sonnet
+workagent prepare --branch feat/footer
+workagent run --branch feat/footer --model sonnet --message "Build footer component with links and copyright"
 
 # Complex interactive sidebar might need opus
-workagent prepare --branch feat/sidebar --task "Build collapsible sidebar with state management"
-workagent spawn --branch feat/sidebar --model opus
+workagent prepare --branch feat/sidebar
+workagent run --branch feat/sidebar --model opus --message "Build collapsible sidebar with state management and animations"
 
 # Work happens in parallel...
 
@@ -241,30 +251,32 @@ git merge feat/header feat/footer feat/sidebar
 Sequential phases with handoffs:
 ```bash
 # Phase 1: Design (needs deep thinking)
-workagent prepare --branch design/ui --task "Create component designs"
-workagent spawn --branch design/ui --model opus
+workagent prepare --branch design/ui
+workagent run --branch design/ui --model opus --message "Create component designs and architecture in DESIGN.md"
+
+# Wait for completion...
 
 # Phase 2: Implementation (follows design)
-workagent prepare --branch feat/ui --task "Implement designs from design/ui"
-workagent spawn --branch feat/ui --model sonnet
+workagent prepare --branch feat/ui --from design/ui
+workagent run --branch feat/ui --model sonnet --message "Implement components following DESIGN.md"
 
 # Phase 3: Testing (straightforward)
-workagent prepare --branch test/ui --task "Write tests for feat/ui components"
-workagent spawn --branch test/ui --model sonnet
+workagent prepare --branch test/ui --from feat/ui
+workagent run --branch test/ui --model sonnet --message "Write comprehensive tests for all components"
 ```
 
 ### Research Pattern
 Exploration before implementation:
 ```bash
 # Research needs deep analysis
-workagent prepare --branch research/frameworks \
-  --task "Evaluate form validation libraries"
-workagent spawn --branch research/frameworks --model opus
+workagent prepare --branch research/frameworks
+workagent run --branch research/frameworks --model opus --message "Evaluate form validation libraries and document findings in RESEARCH.md"
+
+# Wait for research completion...
 
 # Implementation follows research guidance
-workagent prepare --branch feat/forms \
-  --task "Implement forms using library recommended by research/frameworks"
-workagent spawn --branch feat/forms --model sonnet
+workagent prepare --branch feat/forms --from research/frameworks
+workagent run --branch feat/forms --model sonnet --message "Implement forms using the library recommended in RESEARCH.md"
 ```
 
 ## Quick Reference
@@ -273,12 +285,13 @@ workagent spawn --branch feat/forms --model sonnet
 ```bash
 # Orchestrator delegates tasks with appropriate models
 # Complex auth system design
-workagent prepare --branch feat/auth --task "Design and implement complete auth system" && \
-workagent spawn --branch feat/auth --model opus
+workagent prepare --branch feat/auth
+Write('../tetraspore-feat-auth/AGENT_BRANCH_TASK.md', 'Design and implement complete auth system...')
+workagent run --branch feat/auth --model opus --message "Read AGENT_BRANCH_TASK.md and implement"
 
 # Simple profile page
-workagent prepare --branch feat/profile --task "User profile page per mockup" && \
-workagent spawn --branch feat/profile --model sonnet
+workagent prepare --branch feat/profile
+workagent run --branch feat/profile --model sonnet --message "Create user profile page following the mockup in docs/profile.png"
 ```
 
 ### Monitor Everything
