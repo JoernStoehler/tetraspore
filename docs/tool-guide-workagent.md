@@ -1,14 +1,16 @@
 # Tool Guide: workagent
 
-Complete lifecycle management for AI coding agents using tmux sessions, git worktrees, and shared infrastructure.
+Git worktree and AI agent lifecycle management with explicit ownership and clear communication.
 
 ## Overview
 
-The `workagent` tool manages AI agents that work on separate git branches in isolated environments. Each agent:
-- Gets its own git worktree
-- Runs in a tmux session with full TUI support
-- Has unique ports to avoid conflicts
-- Communicates via shared mail system
+The `workagent` tool manages AI agents working on separate git branches in isolated environments. Key principles:
+
+- **One branch = One agent = One lifecycle** (no agent reuse)
+- **Explicit over implicit** - fail fast on ambiguity
+- **Append-only context** - use --continue or start fresh
+- **Clear ownership** - each worktree belongs to one agent forever
+- **Print mode execution** - agents terminate naturally, no stdin issues
 
 ## Prerequisites
 
@@ -21,77 +23,68 @@ The `workagent` tool manages AI agents that work on separate git branches in iso
 
 ### workagent prepare
 
-Set up a new worktree with task documentation.
+Set up a new worktree with environment.
 
 ```bash
-workagent prepare --branch BRANCH --task "TASK DESCRIPTION"
+workagent prepare --branch BRANCH [--from SOURCE]
 
-# Example
-workagent prepare --branch feat/nav --task "Build navigation component with dropdown menus"
+# Examples
+workagent prepare --branch feat/auth                    # From main (when in main worktree)
+workagent prepare --branch feat/auth --from develop     # From specific branch
+workagent prepare --branch review/auth-v1 --from feat/auth  # For reviews
 ```
 
 What it does:
 1. Creates git worktree at `../tetraspore-<branch-slug>`
-2. Copies `.env` from main worktree
-3. Allocates unique ports in `.env.local` via shared registry
-4. Runs `npm install`
-5. Creates `TASK.md` with assignment details
-6. Sends welcome mail to agent
+2. Creates new branch from SOURCE (or checks out existing)
+3. Copies `.env` from main worktree
+4. Allocates unique ports in `.env.local`
+5. Runs `npm install`
+6. Creates `.agent/` metadata directory
 
-### workagent spawn
+Smart defaults:
+- In main worktree: `--from main` is implicit
+- Elsewhere: `--from` is required for new branches
+- Existing branches: just check out (no --from needed)
 
-Start an agent in a detached tmux session.
+Output reminds you to create task file and shows run command.
+
+### workagent run
+
+Execute agent with a message.
 
 ```bash
-workagent spawn --branch BRANCH [--model MODEL]
+workagent run --branch BRANCH --message "MESSAGE" [--continue] [--model MODEL]
 
-# Example with default model
-workagent spawn --branch feat/nav
+# Start fresh (first run)
+workagent run --branch feat/auth --message "Read AGENT_BRANCH_TASK.md and implement authentication"
 
-# Example with specific model
-workagent spawn --branch feat/nav --model opus
-workagent spawn --branch feat/simple-ui --model sonnet
+# Continue conversation (after agent stopped)
+workagent run --branch feat/auth --continue --message "Add input validation to the login endpoint"
+
+# With specific model
+workagent run --branch feat/auth --message "Design the auth architecture" --model opus
+
+# Message from file
+cat instructions.md | workagent run --branch feat/auth --message -
 ```
+
+Key behaviors:
+- **Must specify --continue** if agent has history
+- **Must NOT use --continue** if starting fresh
+- Runs with `agent --print` (no TUI, proper logs)
+- Agent terminates when done (natural pause points)
+- Creates `.agent/session.log` with full history
+- Errors on unknown parameters
 
 Model options:
-- `opus` - Claude Opus 4: Slower, expensive, deep intelligence. Best for:
-  - Designing architectures
-  - Decomposing complex tasks
-  - Research and analysis
-  - Critical decision making
-- `sonnet` - Claude Sonnet 4: Faster, cheaper, effective. Best for:
-  - Implementing designed architectures
-  - Straightforward coding tasks
-  - Following clear specifications
-  - Routine development work
-
-Starts the agent with:
-- Session name: `agent-<branch-slug>`
-- Working directory: The worktree
-- Initial prompt to check mail and read TASK.md
-- Full TUI support with proper colors
-- Background execution in tmux
-- Specified AI model (or default if not provided)
-
-### workagent attach
-
-Connect to a running agent's interactive session.
-
-```bash
-workagent attach --branch BRANCH
-
-# Example
-workagent attach --branch feat/nav
-```
-
-- Connects to the agent's tmux session
-- Shows agent's interactive TUI
-- Press `Ctrl+B` then `D` to detach
-- Full color support (better than screen)
+- `opus` - Claude Opus 4: Deep intelligence for complex tasks
+- `sonnet` - Claude Sonnet 4: Fast and efficient for routine tasks
+- Default: Uses agent command default
 
 ### workagent status
 
-Show all running agents.
+Show all agents and their status.
 
 ```bash
 workagent status
@@ -101,136 +94,188 @@ Output:
 ```
 → Agent Status
 
-BRANCH              STATUS          SESSION                        WORKTREE
+BRANCH                   STATUS       SESSION              LAST ACTIVITY
 --------------------------------------------------------------------------------
-feat/nav            DETACHED        agent-feat-nav                 ../tetraspore-feat-nav
-feat/api            ATTACHED        agent-feat-api                 ../tetraspore-feat-api
+feat/auth                RUNNING      agent-feat-auth      2025-07-19T10:30:00Z
+review/auth-v1           STOPPED      agent-review-auth-v1 2025-07-19T10:45:00Z
 ```
 
-### workagent stop
+Status values:
+- **RUNNING** - Agent process is active
+- **STOPPED** - No agent process
 
-Stop a running agent.
+### workagent attach
+
+Connect to a running agent's output.
 
 ```bash
-workagent stop --branch BRANCH
+workagent attach --branch BRANCH
 
 # Example
-workagent stop --branch feat/nav
+workagent attach --branch feat/auth
 ```
 
-## Complete Workflow Example
+- Shows agent's real-time output
+- Press `Ctrl+B` then `D` to detach
+- Read-only observation (no stdin to agent)
+
+## Complete Workflow Examples
+
+### New Feature Development
 
 ```bash
-# 1. Prepare workspace and task
-workagent prepare --branch feat/button --task "Create reusable Button component with hover states"
+# 1. Prepare workspace
+workagent prepare --branch feat/auth
 
-# 2. Spawn the agent (sonnet is good for straightforward implementation)
-workagent spawn --branch feat/button --model sonnet
+# 2. Create task file (optional but recommended)
+Write('../tetraspore-feat-auth/AGENT_BRANCH_TASK.md', '# Authentication Implementation
 
-# 3. Optional: Watch the agent work
-workagent attach --branch feat/button
-# (Press Ctrl+B then D to detach)
+## Requirements
+- JWT-based authentication
+- Login/logout endpoints
+- Session management
+- Password hashing with bcrypt
 
-# 4. Monitor from orchestrator side
-mail inbox --for main | tail
+## Success Criteria
+- All tests pass
+- Secure implementation
+- Follows project patterns
+')
+
+# 3. Start agent
+workagent run --branch feat/auth --message "Read AGENT_BRANCH_TASK.md and implement the authentication system"
+
+# 4. Monitor progress
 workagent status
+mail inbox --for main
 
-# 5. Communicate with agent
-mail send --to feat/button --subject "Update" --body "Please add disabled state too"
+# 5. Continue conversation after agent stops
+workagent run --branch feat/auth --continue --message "Good work! Now add rate limiting to prevent brute force attacks"
 
-# 6. When complete, stop agent
-workagent stop --branch feat/button
-
-# 7. Clean up worktree
-git worktree remove ../tetraspore-feat-button
-git branch -d feat/button
+# 6. Attach to see output (if still running)
+workagent attach --branch feat/auth
 ```
+
+### Code Review Workflow
+
+```bash
+# 1. Create review branch from feature
+workagent prepare --branch review/auth-v1 --from feat/auth
+
+# 2. Run review
+workagent run --branch review/auth-v1 --message "Review this branch for security vulnerabilities, code quality, and adherence to project patterns. Create REVIEW_REPORT.md with findings."
+
+# 3. Fix issues based on review
+workagent prepare --branch fix/auth-review --from feat/auth
+workagent run --branch fix/auth-review --message "Read ../tetraspore-review-auth-v1/REVIEW_REPORT.md and fix all critical issues"
+```
+
+### Research and Architecture
+
+```bash
+# Use Opus for complex analysis
+workagent prepare --branch research/performance
+workagent run --branch research/performance --model opus --message "Analyze the codebase for performance bottlenecks. Focus on database queries, API endpoints, and React rendering. Document findings in PERFORMANCE_ANALYSIS.md"
+```
+
+## Key Differences from Old Design
+
+| Old Behavior | New Behavior | Why |
+|--------------|--------------|-----|
+| `spawn` with hardcoded prompt | `run` with custom message | Flexibility |
+| `--task` parameter on spawn | Manual task file creation | Explicit > implicit |
+| Agents could be reused | One agent per branch forever | No context confusion |
+| TUI mode (stdin issues) | Print mode only | Clean termination |
+| Silent parameter failures | Errors on unknown args | Fail fast |
+| ATTACHED/DETACHED status | RUNNING/STOPPED | Clarity |
 
 ## Architecture
 
-### Shared Infrastructure
+### Directory Structure
 
-All agents share common resources through `/workspaces/.agent-shared/`:
-- `mail/` - Inter-agent communication
-- `allocated-ports` - Port registry to prevent conflicts
+Each worktree contains:
+```
+../tetraspore-feat-auth/
+├── .agent/
+│   ├── branch           # Branch name
+│   ├── status           # RUNNING or STOPPED
+│   ├── session.log      # Full agent history
+│   ├── history.jsonl    # Conversation history
+│   ├── prepared         # When worktree was prepared
+│   ├── last_run         # Last run timestamp
+│   └── stopped          # Stop timestamp
+├── .env                 # Copied from main
+├── .env.local           # Unique ports
+├── AGENT_BRANCH_TASK.md # Task description (optional)
+└── ... (project files)
+```
 
 ### Port Allocation
 
-Each agent gets 3 consecutive ports:
-- `VITE_DEV_PORT` - Development server
-- `VITE_PREVIEW_PORT` - Preview server  
-- `VITE_DEBUG_PORT` - Debug port
+Same as before - each agent gets 3 consecutive ports via shared registry.
 
-Ports are allocated from a shared registry to prevent conflicts between parallel agents.
+### Communication Patterns
 
-### Session Management
+1. **Initial task**: Via message + optional task file
+2. **During execution**: Via mail system
+3. **Continuation**: Via --continue with new message
+4. **Monitoring**: Via attach (output) and mail (messages)
 
-Agents run in tmux sessions named `agent-<branch-slug>`. Benefits over screen:
-- Better color rendering
-- More modern terminal emulation
-- Same detach/attach workflow
+## Tips & Best Practices
 
-## Tips & Troubleshooting
+### Task Files
 
-### Branch Names
-- Automatically "slugified" for compatibility
-- `feat/my-branch` becomes `feat-my-branch` in session names
+While optional, creating `AGENT_BRANCH_TASK.md` is recommended:
+- Provides persistent reference for agent
+- Documents requirements clearly
+- Can be updated between runs
 
-### Finding Agent Output
-- Agents run interactively in tmux (no automatic logging)
-- Use `workagent attach` to see what agent is doing
-- Check worktree for files agent creates
+### Message Patterns
 
-### Port Conflicts
-- Check `/workspaces/.agent-shared/allocated-ports`
-- Each line shows `branch:port` allocation
-- Ports are reserved even after agent stops (prevents reuse issues)
-
-### Mail Integration
-- Agents start with instruction to check mail
-- Use `mail inbox --for BRANCH` to see agent's messages
-- See [mail tool guide](tool-guide-mail.md) for details
-
-### Multiple Agents
-- Run many agents in parallel on different branches
-- Each gets isolated worktree and ports
-- Monitor all with `workagent status`
-
-## Common Patterns
-
-### Research Agent
 ```bash
-# Agent that analyzes without changing code
-workagent prepare --branch research/architecture \
-  --task "Document current architecture and suggest improvements"
+# Reference task file
+--message "Read AGENT_BRANCH_TASK.md and implement"
+
+# Direct instructions
+--message "Fix the type errors in auth.service.ts"
+
+# Continue with context
+--continue --message "Great! Now add error handling"
+
+# From file
+cat detailed_instructions.md | workagent run --branch feat/ui --message -
 ```
 
-### Parallel Feature Development
+### Model Selection
+
+- **Opus**: Architecture, complex algorithms, security analysis, integration
+- **Sonnet**: Implementation from specs, tests, documentation, simple fixes
+
+### Avoiding Common Mistakes
+
+1. **Don't reuse old worktrees** - Always use fresh branches for new tasks
+2. **Check --continue carefully** - Script will error if used incorrectly  
+3. **Create task files explicitly** - No hidden TASK.md creation
+4. **One agent at a time** - Can't run multiple agents on same branch
+
+### Debugging
+
+- Check `.agent/session.log` for full history
+- Use `workagent status` to see what's running
+- Attach to see real-time output
+- Check mail for agent messages
+
+## Migration from Old Tool
+
 ```bash
-# Start multiple agents on related features
-# Complex UI design needs opus
-workagent prepare --branch feat/ui --task "Design and build complex interactive UI"
-workagent spawn --branch feat/ui --model opus
+# Old way (don't do this anymore)
+workagent prepare --branch feat/ui --task "Build UI"  # Created TASK.md
+workagent spawn --branch feat/ui                       # Fixed prompt
 
-# Straightforward API implementation can use sonnet
-workagent prepare --branch feat/api --task "Build REST API endpoints per spec"  
-workagent spawn --branch feat/api --model sonnet
-
-# Monitor both
-workagent status
+# New way
+workagent prepare --branch feat/ui
+Write('../tetraspore-feat-ui/AGENT_BRANCH_TASK.md', 'Build UI components...')
+workagent run --branch feat/ui --message "Read AGENT_BRANCH_TASK.md and build the UI"
 ```
 
-### Agent Handoff
-```bash
-# Agent 1 completes initial work
-workagent prepare --branch feat/backend --task "Build data models"
-workagent spawn --branch feat/backend
-
-# Later, prepare handoff for Agent 2
-echo "Backend models complete. See models.py" > HANDOFF.md
-git add . && git commit -m "Complete data models"
-
-# Agent 2 continues the work
-workagent prepare --branch feat/backend-api \
-  --task "Build REST API using models from feat/backend branch"
-```
+The new design prevents the context confusion issues we experienced with review agents!

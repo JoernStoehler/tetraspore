@@ -1,42 +1,25 @@
 #!/bin/bash
 
-# workagent - Complete lifecycle management for AI coding agents
+# workagent - Git worktree and AI agent lifecycle management
 #
-# ARCHITECTURE DECISIONS:
+# DESIGN PRINCIPLES:
+# - Explicit over implicit: Fail fast on ambiguity
+# - One branch = One agent = One lifecycle (no reuse)
+# - Append-only context: Use --continue or start fresh
+# - Clear ownership: Each worktree belongs to one agent forever
+# - Two commands only: prepare (setup) and run (execute)
 #
-# 1. Tmux for session management
-#    - Detachable sessions for long-running agents
-#    - Can reattach to see agent output
-#    - Better color and terminal handling than screen
-#    - Named sessions for easy management
-#
-# 2. Explicit command structure
-#    - prepare: Set up worktree and task (replaces worktree.sh)
-#    - spawn: Actually start agent in detached tmux
-#    - attach: Connect to running agent's tmux session
-#    - status: Show all agents and their states
-#    - stop: Terminate agent session
-#
-# 3. Clear success/failure reporting
-#    - Each step reports what it did
-#    - Exit on first failure
-#    - No hidden state changes
-#
-# 4. Session naming convention
-#    - Tmux session: "agent-<branch-slug>"
-#    - Predictable names for management
-#    - Branch name sanitization for tmux compatibility
-#
-# 5. Integrated workflow
-#    - Combines worktree, mail, and agent management
-#    - Single tool for entire lifecycle
-#    - Reduces cognitive load on orchestrator
+# USAGE:
+#   workagent prepare --branch BRANCH [--from SOURCE]
+#   workagent run --branch BRANCH [--continue] --message MESSAGE [--model MODEL]
+#   workagent status
+#   workagent attach --branch BRANCH
+#   workagent help
 
 set -e
 
 # Configuration
 AGENT_CMD="${AGENT_CMD:-agent}"
-SCREEN_PREFIX="agent"
 
 # Colors
 RED='\033[0;31m'
@@ -63,7 +46,7 @@ detail() {
     echo -e "  ${BLUE}$1${NC}"
 }
 
-# Slugify branch name for screen session
+# Slugify branch name for directory
 slugify() {
     echo "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g' | sed -e 's/--*/-/g' | sed -e 's/^-//;s/-$//'
 }
@@ -75,13 +58,12 @@ check_tmux() {
     fi
 }
 
-# Prepare worktree and task
+# Prepare worktree and environment
 prepare_worktree() {
     local branch="$1"
-    local task="$2"
+    local from="$2"
     
-    [ -z "$branch" ] && error "Branch name required"
-    [ -z "$task" ] && error "Task description required"
+    [ -z "$branch" ] && error "Branch name required. Usage: workagent prepare --branch BRANCH [--from SOURCE]"
     
     local slug=$(slugify "$branch")
     local worktree_dir="../tetraspore-$slug"
@@ -93,21 +75,57 @@ prepare_worktree() {
         error "Not in a git repository"
     fi
     
+    # Check if branch exists
+    local branch_exists=false
+    if git show-ref --verify --quiet "refs/heads/$branch"; then
+        branch_exists=true
+    fi
+    
+    # Determine source branch
+    if [ "$branch_exists" = true ]; then
+        # Branch exists, no --from needed
+        if [ -n "$from" ]; then
+            detail "Warning: --from ignored because branch '$branch' already exists"
+        fi
+    else
+        # Branch doesn't exist, need to create
+        if [ -z "$from" ]; then
+            # Check if we're in main worktree
+            if [ "$(git branch --show-current)" = "main" ]; then
+                from="main"
+                detail "Creating new branch from main (implicit)"
+            else
+                error "Not in main worktree. Specify source branch with --from\nCurrent branch: $(git branch --show-current)\nExample: workagent prepare --branch $branch --from main"
+            fi
+        else
+            # Verify source branch exists
+            if ! git show-ref --verify --quiet "refs/heads/$from"; then
+                error "Source branch '$from' does not exist\nAvailable branches: $(git branch -a | grep -v 'HEAD' | sed 's/^[* ]*//' | head -10 | tr '\n' ' ')"
+            fi
+        fi
+    fi
+    
+    # Check for uncommitted changes warning
     if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-        detail "Uncommitted changes detected - they won't be in the new worktree"
+        detail "Warning: Uncommitted changes in current worktree won't be in new worktree"
     fi
     
     # Create worktree
     if [ -d "$worktree_dir" ]; then
         info "Worktree already exists at $worktree_dir"
+        # Verify it's the right branch
+        local current_branch=$(git -C "$worktree_dir" branch --show-current 2>/dev/null || echo "unknown")
+        if [ "$current_branch" != "$branch" ]; then
+            error "Worktree exists but is on branch '$current_branch', expected '$branch'"
+        fi
     else
         info "Creating worktree at $worktree_dir"
-        if git show-ref --verify --quiet "refs/heads/$branch"; then
+        if [ "$branch_exists" = true ]; then
             git worktree add "$worktree_dir" "$branch"
-            detail "Using existing branch: $branch"
+            detail "Checked out existing branch: $branch"
         else
-            git worktree add -b "$branch" "$worktree_dir"
-            detail "Created new branch: $branch"
+            git worktree add -b "$branch" "$worktree_dir" "$from"
+            detail "Created new branch: $branch from $from"
         fi
         success "Worktree created"
     fi
@@ -115,8 +133,10 @@ prepare_worktree() {
     # Copy environment files
     info "Setting up environment"
     if [ -f .env ]; then
-        cp .env "$worktree_dir/.env"
-        detail "Copied .env file"
+        if [ ! -f "$worktree_dir/.env" ] || [ .env -nt "$worktree_dir/.env" ]; then
+            cp .env "$worktree_dir/.env"
+            detail "Copied .env file"
+        fi
     else
         detail "Warning: No .env file found in main worktree"
     fi
@@ -132,7 +152,7 @@ prepare_worktree() {
         # Find next available port range (3 consecutive ports)
         local port=3010
         while true; do
-            # Check if any of the 3 ports are in use (listening or allocated)
+            # Check if any of the 3 ports are in use
             local port_in_use=false
             for offset in 0 1 2; do
                 if lsof -Pi :$((port + offset)) -sTCP:LISTEN -t >/dev/null 2>&1; then
@@ -153,6 +173,9 @@ prepare_worktree() {
             
             # Try next range
             port=$((port + 3))
+            if [ $port -gt 4000 ]; then
+                error "No available ports found (searched 3010-4000)"
+            fi
         done
         
         cat > "$worktree_dir/.env.local" << EOF
@@ -169,137 +192,121 @@ EOF
     (cd "$worktree_dir" && npm install --quiet)
     success "Dependencies installed"
     
-    # Create task file
-    info "Creating task documentation"
-    cat > "$worktree_dir/TASK.md" << EOF
-# Task Assignment
-
-**Branch**: $branch
-**Created**: $(date +"%Y-%m-%d %H:%M")
-**Session**: $SCREEN_PREFIX-$slug
-
-## Task Description
-$task
-
-## Communication
-- Check inbox: \`mail inbox --for $branch\`
-- Send updates: \`mail send --from $branch --to main --subject "..." --body "..."\`
-- View this task: \`cat TASK.md\`
-
-## Success Criteria
-- [ ] Implementation complete
-- [ ] Tests pass (\`npm test\`)
-- [ ] Lint clean (\`npm run lint\`)
-- [ ] Types check (\`npm run typecheck\`)
-- [ ] HANDOFF.md created
-
-## Getting Started
-1. Read any mail: \`mail inbox --for $branch\`
-2. Review this task: \`cat TASK.md\`
-3. Check the codebase: \`ls -la\`
-4. Start implementing!
-EOF
-    detail "Created TASK.md"
-    
-    # Send initial mail
-    info "Sending task assignment via mail"
-    mail send --from main --to "$branch" \
-        --subject "Task: $task" \
-        --body "Welcome agent $branch! Your task is documented in TASK.md. Good luck!"
+    # Create .agent directory
+    mkdir -p "$worktree_dir/.agent"
+    echo "$branch" > "$worktree_dir/.agent/branch"
+    date -u +"%Y-%m-%dT%H:%M:%SZ" > "$worktree_dir/.agent/prepared"
     
     success "Worktree prepared successfully!"
     echo ""
-    echo "Next step:"
-    echo "  workagent spawn --branch $branch"
+    echo "Next steps:"
+    echo "  1. Create task file (optional):"
+    echo "     ${BLUE}Write('../tetraspore-$slug/AGENT_BRANCH_TASK.md', 'Task description...')${NC}"
+    echo ""
+    echo "  2. Run agent:"
+    echo "     ${BLUE}workagent run --branch $branch --message \"Your instructions here\"${NC}"
 }
 
-# Spawn agent in screen session
-spawn_agent() {
+# Run agent (new or continue)
+run_agent() {
     local branch="$1"
-    local model="$2"
+    local continue_flag="$2"
+    local message="$3"
+    local model="$4"
     
     [ -z "$branch" ] && error "Branch name required"
+    [ -z "$message" ] && error "Message required. Use --message \"...\" or pipe to stdin"
     
     check_tmux
     
     local slug=$(slugify "$branch")
-    local session_name="$SCREEN_PREFIX-$slug"
+    local session_name="agent-$slug"
     local worktree_dir="../tetraspore-$slug"
     
     # Check if worktree exists
     if [ ! -d "$worktree_dir" ]; then
-        error "Worktree not found. Run: workagent prepare --branch $branch --task \"...\""
+        error "Worktree not found. Run: workagent prepare --branch $branch"
     fi
     
-    # Check if session already exists
+    # Check agent history
+    local has_history=false
+    if [ -f "$worktree_dir/.agent/history.jsonl" ]; then
+        has_history=true
+    fi
+    
+    # Validate --continue flag
+    if [ "$continue_flag" = true ]; then
+        if [ "$has_history" = false ]; then
+            error "Cannot use --continue: No previous agent history found"
+        fi
+    else
+        if [ "$has_history" = true ]; then
+            error "Previous agent history exists. Use --continue to resume, or use a new branch"
+        fi
+    fi
+    
+    # Check if already running
     if tmux has-session -t "$session_name" 2>/dev/null; then
-        error "Agent already running in session $session_name. Use: workagent attach --branch $branch"
+        local status="UNKNOWN"
+        if tmux list-clients -t "$session_name" 2>/dev/null | grep -q .; then
+            status="ATTACHED"
+        else
+            status="RUNNING"
+        fi
+        error "Agent already running for branch $branch (status: $status)\nUse: workagent attach --branch $branch"
     fi
     
-    info "Spawning agent for branch: $branch"
-    detail "Session name: $session_name"
+    info "Running agent for branch: $branch"
     detail "Working directory: $worktree_dir"
+    detail "Continue: $continue_flag"
     if [ -n "$model" ]; then
         detail "AI model: $model"
-    else
-        detail "AI model: default"
     fi
     
-    # Create agent startup script
-    local startup_script="$worktree_dir/.agent-startup.sh"
-    cat > "$startup_script" << EOF
+    # Build agent command
+    local agent_args="--print"  # Always use print mode
+    if [ "$continue_flag" = true ]; then
+        agent_args="$agent_args --continue"
+    fi
+    if [ -n "$model" ]; then
+        agent_args="$agent_args --model $model"
+    fi
+    
+    # Update agent metadata
+    echo "RUNNING" > "$worktree_dir/.agent/status"
+    date -u +"%Y-%m-%dT%H:%M:%SZ" > "$worktree_dir/.agent/last_run"
+    
+    # Create run script
+    local run_script="$worktree_dir/.agent/run.sh"
+    cat > "$run_script" << EOF
 #!/bin/bash
-cd "$(realpath "$worktree_dir")"
-echo "Starting agent for branch: $branch"
-echo "Session: $session_name"
+cd "$worktree_dir"
+echo "=================================="
+echo "Agent: $branch"
 echo "Time: $(date)"
-echo "----------------------------------------"
+echo "Continue: $continue_flag"
+echo "Model: ${model:-default}"
+echo "=================================="
 echo ""
 
-# Set up logging
-mkdir -p .agent
-# Don't redirect stdout/stderr for TUI mode - it needs terminal access
-# exec > >(tee -a .agent/session.log)
-# exec 2>&1
+# Run agent with message
+$AGENT_CMD $agent_args "$message" 2>&1 | tee -a .agent/session.log
 
-# Record session info
-echo "$session_name" > .agent/session
-echo "ACTIVE" > .agent/status
-date -u +"%Y-%m-%dT%H:%M:%SZ" > .agent/started
-
-# Start agent with initial prompt
-AGENT_ARGS=""
-if [ -n "$model" ]; then
-    AGENT_ARGS="--model $model"
-fi
-
-$AGENT_CMD \$AGENT_ARGS "You are agent $branch working on a specific task. Start by running these commands:
-1. mail inbox --for $branch
-2. cat TASK.md
-
-Then begin work on your assigned task. Send progress updates via mail to 'main'."
+# Update status when done
+echo "STOPPED" > .agent/status
+date -u +"%Y-%m-%dT%H:%M:%SZ" > .agent/stopped
 EOF
-    chmod +x "$startup_script"
+    chmod +x "$run_script"
     
-    # Start tmux session
-    tmux new-session -d -s "$session_name" -c "$worktree_dir" bash "$startup_script"
+    # Start in tmux
+    tmux new-session -d -s "$session_name" -c "$worktree_dir" "$run_script"
     
-    # Give it a moment to start
-    sleep 1
-    
-    # Verify it started
-    if tmux has-session -t "$session_name" 2>/dev/null; then
-        success "Agent spawned successfully!"
-        echo ""
-        echo "Agent is running in background session: $session_name"
-        echo ""
-        echo "To interact with agent:"
-        echo "  workagent attach --branch $branch    # Connect to agent"
-        echo "  workagent status                      # Check all agents"
-        echo "  workagent stop --branch $branch       # Stop agent"
-    else
-        error "Failed to spawn agent"
-    fi
+    success "Agent started"
+    echo ""
+    echo "To monitor:"
+    echo "  ${BLUE}workagent attach --branch $branch${NC}    # Watch output"
+    echo "  ${BLUE}workagent status${NC}                      # Check all agents"
+    echo "  ${BLUE}mail inbox --for main${NC}                 # Check messages"
 }
 
 # Attach to running agent
@@ -311,14 +318,14 @@ attach_agent() {
     check_tmux
     
     local slug=$(slugify "$branch")
-    local session_name="$SCREEN_PREFIX-$slug"
+    local session_name="agent-$slug"
     
     if ! tmux has-session -t "$session_name" 2>/dev/null; then
-        error "No agent found for branch $branch. Run: workagent spawn --branch $branch"
+        error "No agent running for branch $branch"
     fi
     
     info "Attaching to agent session: $session_name"
-    echo "Press Ctrl+B then D to detach and return to orchestrator"
+    echo "Press Ctrl+B then D to detach"
     echo ""
     sleep 1
     
@@ -330,114 +337,89 @@ attach_agent() {
 show_status() {
     check_tmux
     
-    # Temporarily disable exit on error for status display
-    set +e
-    
     info "Agent Status"
     echo ""
     
     # Header
-    printf "%-20s %-15s %-30s %s\n" "BRANCH" "STATUS" "SESSION" "WORKTREE"
+    printf "%-25s %-12s %-20s %s\n" "BRANCH" "STATUS" "SESSION" "LAST ACTIVITY"
     echo "--------------------------------------------------------------------------------"
     
-    # Check all tmux sessions
+    # Check all worktrees
     local found=0
-    while IFS=: read -r session_name session_info; do
-        if [[ "$session_name" =~ ^$SCREEN_PREFIX-(.+)$ ]]; then
-            local slug="${BASH_REMATCH[1]}"
+    for worktree in ../tetraspore-*; do
+        if [ -d "$worktree/.agent" ] && [ -f "$worktree/.agent/branch" ]; then
+            local branch=$(cat "$worktree/.agent/branch")
+            local slug=$(slugify "$branch")
+            local session_name="agent-$slug"
+            local status="STOPPED"
+            local last_activity=""
             
-            # Try to find corresponding branch
-            local branch=""
-            local worktree=""
-            for wt in ../tetraspore-*; do
-                if [ -d "$wt" ] && [[ "$wt" =~ tetraspore-${slug}$ ]]; then
-                    worktree="$wt"
-                    if [ -f "$wt/.agent/session" ]; then
-                        branch=$(git -C "$wt" branch --show-current 2>/dev/null || echo "unknown")
-                    fi
-                    break
-                fi
-            done
-            
-            # Check if session is attached
-            local status="DETACHED"
-            if tmux list-clients -t "$session_name" 2>/dev/null | grep -q .; then
-                status="ATTACHED"
+            # Check if running
+            if tmux has-session -t "$session_name" 2>/dev/null; then
+                status="RUNNING"
+            elif [ -f "$worktree/.agent/status" ]; then
+                status=$(cat "$worktree/.agent/status")
             fi
             
-            printf "%-20s %-15s %-30s %s\n" "${branch:-$slug}" "$status" "$session_name" "${worktree:-unknown}"
+            # Get last activity
+            if [ -f "$worktree/.agent/last_run" ]; then
+                last_activity=$(cat "$worktree/.agent/last_run")
+            elif [ -f "$worktree/.agent/prepared" ]; then
+                last_activity=$(cat "$worktree/.agent/prepared")
+            fi
+            
+            printf "%-25s %-12s %-20s %s\n" "$branch" "$status" "$session_name" "$last_activity"
             ((found++))
         fi
-    done < <(tmux list-sessions -F "#{session_name}:#{session_created}" 2>/dev/null || true)
+    done
     
     if [ $found -eq 0 ]; then
-        echo "No agents running"
+        echo "No agents found"
     fi
     
     echo ""
-    detail "Use 'workagent attach --branch BRANCH' to connect to an agent"
-    
-    # Re-enable exit on error
-    set -e
-}
-
-# Stop an agent
-stop_agent() {
-    local branch="$1"
-    
-    [ -z "$branch" ] && error "Branch name required"
-    
-    check_tmux
-    
-    local slug=$(slugify "$branch")
-    local session_name="$SCREEN_PREFIX-$slug"
-    local worktree_dir="../tetraspore-$slug"
-    
-    if ! tmux has-session -t "$session_name" 2>/dev/null; then
-        error "No agent found for branch $branch"
-    fi
-    
-    info "Stopping agent for branch: $branch"
-    
-    # Kill the tmux session
-    tmux kill-session -t "$session_name"
-    
-    # Update status file if exists
-    if [ -f "$worktree_dir/.agent/status" ]; then
-        echo "STOPPED" > "$worktree_dir/.agent/status"
-        date -u +"%Y-%m-%dT%H:%M:%SZ" > "$worktree_dir/.agent/stopped"
-    fi
-    
-    success "Agent stopped"
+    detail "Use 'workagent attach --branch BRANCH' to monitor a running agent"
 }
 
 # Show help
 show_help() {
-    echo "workagent - Complete lifecycle management for AI coding agents"
+    echo "workagent - Git worktree and AI agent lifecycle management"
     echo ""
     echo "Commands:"
-    echo "  prepare  --branch BRANCH --task \"TASK\"   Set up worktree and task"
-    echo "  spawn    --branch BRANCH [--model MODEL]  Start agent in background"
-    echo "  attach   --branch BRANCH                  Connect to running agent"
-    echo "  status                                     Show all agents"
-    echo "  stop     --branch BRANCH                  Stop agent"
-    echo "  help                                       Show this help"
+    echo "  prepare  --branch BRANCH [--from SOURCE]      Set up worktree and environment"
+    echo "  run      --branch BRANCH --message MSG        Run agent with message"
+    echo "           [--continue] [--model MODEL]          (--continue required if agent has history)"
+    echo "  status                                         Show all agents and their status"
+    echo "  attach   --branch BRANCH                      Connect to running agent output"
+    echo "  help                                           Show this help"
     echo ""
-    echo "Model options (for spawn command):"
-    echo "  --model opus    Claude Opus 4: Deep intelligence for complex tasks"
-    echo "  --model sonnet  Claude Sonnet 4: Fast, efficient for routine tasks"
+    echo "Model options:"
+    echo "  --model opus    Claude Opus 4 (deep intelligence, slower)"
+    echo "  --model sonnet  Claude Sonnet 4 (fast, efficient)"
+    echo "  (default: model from agent command)"
     echo ""
-    echo "Typical workflow:"
-    echo "  1. workagent prepare --branch feat/ui --task \"Build navigation component\""
-    echo "  2. workagent spawn --branch feat/ui --model sonnet"
-    echo "  3. workagent attach --branch feat/ui  # Optional: watch agent work"
-    echo "  4. mail inbox --for main              # Check agent messages"
-    echo "  5. workagent stop --branch feat/ui    # When done"
+    echo "Workflow example:"
+    echo "  ${BLUE}# Prepare new feature branch${NC}"
+    echo "  workagent prepare --branch feat/auth"
+    echo "  "
+    echo "  ${BLUE}# Create task file (optional)${NC}"
+    echo "  Write('../tetraspore-feat-auth/AGENT_BRANCH_TASK.md', 'Implement auth...')"
+    echo "  "
+    echo "  ${BLUE}# Start agent${NC}"
+    echo "  workagent run --branch feat/auth --message \"Read AGENT_BRANCH_TASK.md and implement\""
+    echo "  "
+    echo "  ${BLUE}# Continue after agent stops${NC}"
+    echo "  workagent run --branch feat/auth --continue --message \"Add tests for the auth module\""
+    echo "  "
+    echo "  ${BLUE}# Review workflow${NC}"
+    echo "  workagent prepare --branch review/auth-v1 --from feat/auth"
+    echo "  workagent run --branch review/auth-v1 --message \"Review code in this branch\""
     echo ""
-    echo "Requirements:"
-    echo "  - tmux for session management"
-    echo "  - git for worktree management"
-    echo "  - npm for dependency installation"
+    echo "Design principles:"
+    echo "  • One branch = One agent = One lifecycle (no agent reuse)"
+    echo "  • Explicit --continue required to resume vs start fresh"
+    echo "  • Agents run with --print mode and terminate naturally"
+    echo "  • Clear ownership: worktree belongs to one agent forever"
 }
 
 # Main command dispatcher
@@ -445,29 +427,34 @@ case "${1:-help}" in
     prepare)
         shift
         branch=""
-        task=""
+        from=""
         while [[ $# -gt 0 ]]; do
             case $1 in
                 --branch) branch="$2"; shift 2 ;;
-                --task) task="$2"; shift 2 ;;
-                *) shift ;;
+                --from) from="$2"; shift 2 ;;
+                *) error "Unknown option: $1" ;;
             esac
         done
-        prepare_worktree "$branch" "$task"
+        prepare_worktree "$branch" "$from"
         ;;
         
-    spawn)
+    run)
         shift
         branch=""
+        message=""
         model=""
+        continue_flag=false
         while [[ $# -gt 0 ]]; do
             case $1 in
                 --branch) branch="$2"; shift 2 ;;
+                --message) message="$2"; shift 2 ;;
                 --model) model="$2"; shift 2 ;;
-                *) shift ;;
+                --continue) continue_flag=true; shift ;;
+                -) message=$(cat); shift ;;
+                *) error "Unknown option: $1" ;;
             esac
         done
-        spawn_agent "$branch" "$model"
+        run_agent "$branch" "$continue_flag" "$message" "$model"
         ;;
         
     attach)
@@ -476,7 +463,7 @@ case "${1:-help}" in
         while [[ $# -gt 0 ]]; do
             case $1 in
                 --branch) branch="$2"; shift 2 ;;
-                *) shift ;;
+                *) error "Unknown option: $1" ;;
             esac
         done
         attach_agent "$branch"
@@ -486,25 +473,11 @@ case "${1:-help}" in
         show_status
         ;;
         
-    stop)
-        shift
-        branch=""
-        while [[ $# -gt 0 ]]; do
-            case $1 in
-                --branch) branch="$2"; shift 2 ;;
-                *) shift ;;
-            esac
-        done
-        stop_agent "$branch"
-        ;;
-        
     help|--help|-h)
         show_help
         ;;
         
     *)
-        echo "Error: Unknown command '$1'"
-        echo "Run 'workagent help' for usage"
-        exit 1
+        error "Unknown command: $1\nRun 'workagent help' for usage"
         ;;
 esac

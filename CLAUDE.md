@@ -47,6 +47,10 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 - 2025-07-16: Using LS tool instead of `ls -la` - LS tool doesn't show hidden files, always use shell commands for file investigation
 - 2025-07-16: Creating duplicate files instead of moving - when told to relocate files, move them completely, don't create copies
 - 2025-07-16: Hardcoding user paths like `/home/node/` - always use `$HOME` for user directories to work with any username
+- 2025-07-19: Agents trying to cd into other directories - agents can only operate smoothly within a single top-level directory (their git worktree). Tools may malfunction if agent tries to cd elsewhere
+- 2025-07-19: Claiming to monitor without actually monitoring - when waiting for agents to complete, use a bash loop with sleep, not just claim you're monitoring while sitting in input mode
+- 2025-07-19: Trying to have one agent review multiple worktrees - agents are confined to their worktree, spawn separate review agents per branch
+- 2025-07-19: Using unknown parameters with tools - always verify command syntax before use (e.g., workagent spawn had no --task parameter)
 
 ## DevOps Setup
 
@@ -55,25 +59,37 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 Use the `workagent` command to manage AI coding agents:
 
 ```bash
-# Prepare workspace and spawn agent
-workagent prepare --branch feature/new-ui --task "Build the UI component"
-workagent spawn --branch feature/new-ui
+# Prepare workspace
+workagent prepare --branch feature/new-ui
+
+# Create task file (optional but recommended)
+Write('../tetraspore-feature-new-ui/AGENT_BRANCH_TASK.md', 'Build the UI component...')
+
+# Run agent with message
+workagent run --branch feature/new-ui --message "Read AGENT_BRANCH_TASK.md and implement"
+
+# Continue conversation after agent stops
+workagent run --branch feature/new-ui --continue --message "Add responsive design"
 
 # Monitor agents
 workagent status
 workagent attach --branch feature/new-ui
-
-# Stop agent
-workagent stop --branch feature/new-ui
 ```
+
+Key design principles:
+- **One branch = One agent = One lifecycle** (no reuse)
+- **Explicit --continue** required to resume vs start fresh  
+- **Print mode only** - agents terminate naturally
+- **Clear ownership** - worktree belongs to one agent forever
+- **Fail fast** - errors on unknown parameters
 
 The tool automatically:
 - Creates git worktree with branch
 - Copies `.env` from main worktree
 - Auto-allocates unique ports in `.env.local`
 - Runs `npm install`
-- Creates TASK.md with assignment
-- Spawns agent in GNU Screen session
+- Creates `.agent/` metadata directory
+- Manages agent lifecycle with tmux sessions
 
 ### Manual Environment Setup (if needed)
 
