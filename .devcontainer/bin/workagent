@@ -228,20 +228,20 @@ run_agent() {
         error "Worktree not found. Run: workagent prepare --branch $branch"
     fi
     
-    # Check agent history
+    # Check if this is a continuation by looking at agent's status file
     local has_history=false
-    if [ -f "$worktree_dir/.agent/history.jsonl" ]; then
+    if [ -f "$worktree_dir/.agent/stopped" ]; then
         has_history=true
     fi
     
     # Validate --continue flag
     if [ "$continue_flag" = true ]; then
         if [ "$has_history" = false ]; then
-            error "Cannot use --continue: No previous agent history found"
+            error "Cannot use --continue: No previous agent run found"
         fi
     else
         if [ "$has_history" = true ]; then
-            error "Previous agent history exists. Use --continue to resume, or use a new branch"
+            error "Previous agent run detected. Use --continue to resume conversation"
         fi
     fi
     
@@ -369,7 +369,7 @@ show_status() {
             fi
             
             printf "%-25s %-12s %-20s %s\n" "$branch" "$status" "$session_name" "$last_activity"
-            ((found++))
+            ((found++)) || true  # Prevent exit on arithmetic that evaluates to 0
         fi
     done
     
@@ -379,6 +379,9 @@ show_status() {
     
     echo ""
     detail "Use 'workagent attach --branch BRANCH' to monitor a running agent"
+    
+    # Always return success for status command
+    return 0
 }
 
 # Show help
