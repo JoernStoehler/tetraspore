@@ -47,26 +47,23 @@ session.log
 coverage/
 *.lcov
 
-# Agent communication files (branch-specific, will cause conflicts!)
+# Root-level markdown files (orchestration, planning, temporary)
+# By default, ignore ALL .md files in root
+/*.md
+
+# But explicitly keep these documentation files
+!README.md
+!CLAUDE.md
+!specification.md
+!ARCHITECTURE_DECISIONS.md
+!HOW_TO_ADD_FEATURES.md
+
+# Agent communication files in any directory
 TASK.md
 HANDOFF.md
 REVIEW_REPORT.md
 AGENT_BRANCH_TASK.md
 AGENT_REVIEW_TASK.md
-TASK_WAVE*.md
-TASK_REVIEW*.md
-DEPENDENCY_ANALYSIS.md
-EXECUTION_PLAN.md
-WAVE*_COMPLETE.md
-WAVE*_SUMMARY.md
-WAVE*_REVIEW*.md
-
-# Orchestration files (often created in main but shouldn't be committed)
-*_PLAN.md
-*_STATUS.md
-*_PROGRESS.md
-TODO_*.md
-NOTES_*.md
 
 # Agent test files
 TEST*.txt
@@ -93,9 +90,3 @@ scratch/
 *.bak
 *.orig
 
-# Exception: Keep specification and architecture docs
-!specification.md
-!ARCHITECTURE_DECISIONS.md
-!HOW_TO_ADD_FEATURES.md
-!CLAUDE.md
-!README.md
