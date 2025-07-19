@@ -33,3 +33,21 @@ Thumbs.db
 # Port assignments and logs (per worktree)
 .ports
 .logs/
+
+# Agent-related files
+.agent/
+.agent-startup.sh
+.agent-session.log
+session.log
+
+# Vite cache
+.vite/
+
+# Test coverage
+coverage/
+*.lcov
+
+# Agent communication files (keep these in git for history)
+# TASK.md
+# HANDOFF.md
+# REVIEW_REPORT.md
