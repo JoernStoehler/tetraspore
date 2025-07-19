@@ -44,7 +44,7 @@ export interface GameState {
   isInitialized: boolean
 }
 
-export type ViewType = 'main' | 'tree' | 'map' | 'history'
+export type ViewType = 'main' | 'tree' | 'map' | 'choices'
 
 export interface UIState {
   currentView: ViewType

@@ -26,7 +26,7 @@ describe('App', () => {
 
   it('displays version number', () => {
     render(<App />)
-    const version = screen.getByText(/v0\.0\.1/)
+    const version = screen.getByText(/v0\.1\.0/)
     expect(version).toBeInTheDocument()
   })
 })
