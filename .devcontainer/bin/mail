@@ -92,19 +92,37 @@ EOF
         ;;
         
     inbox)
-        # Parse --for option
+        # Parse options
         filter_for=""
+        show_trash=false
+        
+        if [ $# -eq 1 ]; then
+            echo "Error: inbox requires --for AGENT"
+            echo "Usage: mail inbox --for AGENT [--trash]"
+            exit 1
+        fi
+        
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 --for)
                     filter_for="$2"
                     shift 2
                     ;;
+                --trash)
+                    show_trash=true
+                    shift
+                    ;;
                 *)
                     shift
                     ;;
             esac
         done
+        
+        if [ -z "$filter_for" ]; then
+            echo "Error: --for AGENT is required"
+            echo "Usage: mail inbox --for AGENT [--trash]"
+            exit 1
+        fi
         
         if [ -d "$MESSAGES_DIR" ]; then
             for msg_file in $(find "$MESSAGES_DIR" -name "*.md" -type f 2>/dev/null | sort); do
@@ -117,13 +135,23 @@ EOF
                 status=$(grep "^status:" "$msg_file" | cut -d' ' -f2)
                 date=$(grep "^date:" "$msg_file" | cut -d' ' -f2)
                 
-                # Apply filter if specified
-                if [ -n "$filter_for" ] && [ "$to" != "$filter_for" ] && [ "$from" != "$filter_for" ]; then
+                # Skip trashed messages unless --trash flag
+                if [ "$status" = "TRASHED" ] && [ "$show_trash" = false ]; then
+                    continue
+                fi
+                
+                # Skip non-trashed messages if --trash flag
+                if [ "$status" != "TRASHED" ] && [ "$show_trash" = true ]; then
+                    continue
+                fi
+                
+                # Apply filter
+                if [ "$to" != "$filter_for" ] && [ "$from" != "$filter_for" ]; then
                     continue
                 fi
                 
                 # Self-contained format: ID [STATUS] TIMESTAMP FROM->TO: SUBJECT
-                printf "%s [%-6s] %s %s->%s: %s\n" "$id" "$status" "${date:0:19}" "${from:--}" "${to:--}" "${subject:0:50}"
+                printf "%s [%-7s] %s %s->%s: %s\n" "$id" "$status" "${date:0:19}" "${from:--}" "${to:--}" "${subject:0:50}"
             done
         fi
         ;;
@@ -133,6 +161,13 @@ EOF
         msg_file="$MESSAGES_DIR/$msg_id.md"
         
         if [ -f "$msg_file" ]; then
+            # Check if trashed
+            status=$(grep "^status:" "$msg_file" | cut -d' ' -f2)
+            if [ "$status" = "TRASHED" ]; then
+                echo "Message $msg_id is in trash. Use 'mail restore $msg_id' to restore it."
+                exit 1
+            fi
+            
             echo "Message $msg_id"
             echo "--------------------------------------------------------------------------------"
             grep "^from:" "$msg_file"
@@ -142,8 +177,43 @@ EOF
             echo "--------------------------------------------------------------------------------"
             tail -n +10 "$msg_file"
             
-            # Mark as read
-            sed -i 's/^status: UNREAD$/status: READ/' "$msg_file"
+            # Mark as read if unread
+            if [ "$status" = "UNREAD" ]; then
+                sed -i 's/^status: UNREAD$/status: READ/' "$msg_file"
+            fi
+        else
+            echo "Message $msg_id not found"
+            exit 1
+        fi
+        ;;
+        
+    trash)
+        msg_id="$2"
+        msg_file="$MESSAGES_DIR/$msg_id.md"
+        
+        if [ -f "$msg_file" ]; then
+            sed -i 's/^status: .*/status: TRASHED/' "$msg_file"
+            echo "Message $msg_id moved to trash"
+        else
+            echo "Message $msg_id not found"
+            exit 1
+        fi
+        ;;
+        
+    restore)
+        msg_id="$2"
+        msg_file="$MESSAGES_DIR/$msg_id.md"
+        
+        if [ -f "$msg_file" ]; then
+            # Check if it was previously read
+            if grep -q "status: TRASHED" "$msg_file"; then
+                # Restore to READ (assume it was read before trashing)
+                sed -i 's/^status: TRASHED$/status: READ/' "$msg_file"
+                echo "Message $msg_id restored from trash"
+            else
+                echo "Message $msg_id is not in trash"
+                exit 1
+            fi
         else
             echo "Message $msg_id not found"
             exit 1
@@ -155,21 +225,31 @@ EOF
         echo ""
         echo "Usage:"
         echo "  mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
-        echo "  mail inbox [--for AGENT]     # List all messages (or filtered by agent)"
-        echo "  mail read MESSAGE_ID          # Read and mark message as read"
-        echo "  mail help                     # Show this help"
+        echo "  mail inbox --for AGENT [--trash]  # List messages for agent (--for is required)"
+        echo "  mail read MESSAGE_ID               # Read and mark message as read"
+        echo "  mail trash MESSAGE_ID              # Move message to trash"
+        echo "  mail restore MESSAGE_ID            # Restore message from trash"
+        echo "  mail help                          # Show this help"
         echo ""
         echo "Examples:"
         echo "  # Send a task assignment"
         echo "  mail send --from main --to feat/ui --subject \"Task\" --body \"Build the Tree component\""
         echo ""
-        echo "  # Check messages for a specific agent"
-        echo "  mail inbox --for feat/ui"
+        echo "  # Check messages for current branch"
+        echo "  mail inbox --for main"
+        echo ""
+        echo "  # Check trashed messages"
+        echo "  mail inbox --for main --trash"
         echo ""
         echo "  # Read a specific message"
         echo "  mail read 017"
         echo ""
-        echo "Storage: Messages are stored in .agent-mail/messages/"
+        echo "  # Clean up old messages"
+        echo "  mail trash 001"
+        echo "  mail trash 002"
+        echo ""
+        echo "Storage: Messages are stored in .agent-shared/mail/messages/"
+        echo "Status: UNREAD, READ, TRASHED"
         ;;
     *)
         echo "Error: Unknown command '$1'"

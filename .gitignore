@@ -58,8 +58,44 @@ TASK_REVIEW*.md
 DEPENDENCY_ANALYSIS.md
 EXECUTION_PLAN.md
 WAVE*_COMPLETE.md
+WAVE*_SUMMARY.md
+WAVE*_REVIEW*.md
+
+# Orchestration files (often created in main but shouldn't be committed)
+*_PLAN.md
+*_STATUS.md
+*_PROGRESS.md
+TODO_*.md
+NOTES_*.md
+
+# Agent test files
+TEST*.txt
+HELLO.txt
+SIMPLE.txt
+STARTED.txt
+AGENT*.txt
+test-*.log
+
+# Mail system
+.mail/
+
+# AI conversation context
+2025-*-you-are-*.txt
+*-conversation-*.txt
+claude-*.log
+
+# Temporary experiment files
+tmp/
+temp/
+scratch/
+*.tmp
+*.temp
+*.bak
+*.orig
 
 # Exception: Keep specification and architecture docs
 !specification.md
 !ARCHITECTURE_DECISIONS.md
 !HOW_TO_ADD_FEATURES.md
+!CLAUDE.md
+!README.md
