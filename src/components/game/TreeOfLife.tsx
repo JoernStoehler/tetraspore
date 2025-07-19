@@ -34,6 +34,33 @@ export const TreeOfLife: React.FC<TreeOfLifeProps> = ({
   // Use test data if specified
   const treeData = useTestData ? mockTreeDataLarge : mockTreeData
 
+  // Update minimap viewport indicator
+  const updateMinimap = useCallback(() => {
+    if (!minimapRef.current || !showMinimap) return
+    
+    const minimapSvg = d3.select(minimapRef.current)
+    const viewport = minimapSvg.select('.minimap-viewport')
+    
+    if (!viewport.empty()) {
+      const scale = currentTransform.current.k
+      const tx = currentTransform.current.x
+      const ty = currentTransform.current.y
+      
+      // Calculate viewport dimensions in minimap scale
+      const minimapScale = 0.1
+      const viewportWidth = width / scale * minimapScale
+      const viewportHeight = height / scale * minimapScale
+      const viewportX = -tx / scale * minimapScale
+      const viewportY = -ty / scale * minimapScale
+      
+      viewport
+        .attr('x', viewportX)
+        .attr('y', viewportY)
+        .attr('width', viewportWidth)
+        .attr('height', viewportHeight)
+    }
+  }, [showMinimap, width, height])
+
   // Handle search
   useEffect(() => {
     if (!searchQuery) {
@@ -316,33 +343,6 @@ export const TreeOfLife: React.FC<TreeOfLifeProps> = ({
 
   }, [currentTurn, width, height, collapsedNodes, matchingNodes, treeData, updateMinimap])
 
-  // Update minimap viewport indicator
-  const updateMinimap = useCallback(() => {
-    if (!minimapRef.current || !showMinimap) return
-    
-    const minimapSvg = d3.select(minimapRef.current)
-    const viewport = minimapSvg.select('.minimap-viewport')
-    
-    if (!viewport.empty()) {
-      const scale = currentTransform.current.k
-      const tx = currentTransform.current.x
-      const ty = currentTransform.current.y
-      
-      // Calculate viewport dimensions in minimap scale
-      const minimapScale = 0.1
-      const viewportWidth = width / scale * minimapScale
-      const viewportHeight = height / scale * minimapScale
-      const viewportX = -tx / scale * minimapScale
-      const viewportY = -ty / scale * minimapScale
-      
-      viewport
-        .attr('x', viewportX)
-        .attr('y', viewportY)
-        .attr('width', viewportWidth)
-        .attr('height', viewportHeight)
-    }
-  }, [showMinimap, width, height])
-
   // Zoom to fit matching nodes
   const zoomToMatches = () => {
     if (!svgRef.current || !zoomRef.current || matchingNodes.size === 0) return
@@ -354,8 +354,8 @@ export const TreeOfLife: React.FC<TreeOfLifeProps> = ({
     let minX = Infinity, minY = Infinity
     let maxX = -Infinity, maxY = -Infinity
     
-    g.selectAll('.node').each(function(d) {
-      const node = d.data as TreeNode
+    g.selectAll<SVGGElement, D3TreeNode>('.node').each(function(d) {
+      const node = d.data
       if (matchingNodes.has(node.id)) {
         minX = Math.min(minX, d.x)
         maxX = Math.max(maxX, d.x)
