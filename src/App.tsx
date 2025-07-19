@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useEventStore, useGameStore, useUIStore } from './stores'
 import { TestEventSystem } from './pages/TestEventSystem'
+import { ChoiceList } from './components/game'
+import { mockChoices } from './data/mockChoices'
+import { ChoiceWithUI } from './types'
 
 function App() {
   const gameStore = useGameStore()
   const eventStore = useEventStore()
   const uiStore = useUIStore()
   const [showTest, setShowTest] = useState(false)
+  const [showChoices, setShowChoices] = useState(false)
 
   // Initialize stores on mount
   useEffect(() => {
@@ -72,8 +76,41 @@ function App() {
     console.log(`Turn ${gameStore.currentTurn} processed`)
   }
 
+  const handleChoiceSelect = (choice: ChoiceWithUI) => {
+    console.log('Choice selected:', choice)
+    // TODO: Integrate with game store/event system
+  }
+
   if (showTest) {
     return <TestEventSystem />
+  }
+
+  if (showChoices) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                Evolution Choices
+              </h1>
+              <p className="text-gray-400">Choose your path of development</p>
+            </div>
+            <button 
+              onClick={() => setShowChoices(false)}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              Back to Main
+            </button>
+          </div>
+          
+          <ChoiceList 
+            choices={mockChoices}
+            onSelectChoice={handleChoiceSelect}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -132,6 +169,12 @@ function App() {
                 className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm"
               >
                 Test Page
+              </button>
+              <button 
+                onClick={() => setShowChoices(true)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-sm"
+              >
+                Choice Cards
               </button>
             </div>
           )}
