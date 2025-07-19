@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useEventStore, useGameStore, useUIStore } from './stores'
 import { TestEventSystem } from './pages/TestEventSystem'
+import { GameView } from './pages/GameView'
 
 function App() {
   const gameStore = useGameStore()
   const eventStore = useEventStore()
   const uiStore = useUIStore()
-  const [showTest, setShowTest] = useState(false)
+  const [showTest] = useState(false)
 
   // Initialize stores on mount
   useEffect(() => {
@@ -49,31 +50,13 @@ function App() {
     console.log('New game initialized!')
   }
 
-  const handleTestEvent = () => {
-    const event = {
-      type: 'CREATE_FEATURE' as const,
-      name: `Test Feature ${Date.now()}`,
-      description: 'A test feature created for development',
-      category: 'ecology' as const,
-      regionName: 'Primordial Ocean',
-      time: gameStore.currentTurn,
-      timestamp: Date.now()
-    }
-    
-    const success = eventStore.recordEvent(event)
-    if (success) {
-      gameStore.updateFromEvent(event)
-      console.log('Test event recorded:', event)
-    }
-  }
-
-  const handleProcessTurn = () => {
-    gameStore.processTurn()
-    console.log(`Turn ${gameStore.currentTurn} processed`)
-  }
 
   if (showTest) {
     return <TestEventSystem />
+  }
+
+  if (gameStore.isInitialized) {
+    return <GameView />
   }
 
   return (
@@ -99,44 +82,6 @@ function App() {
           Load Game
         </button>
       </div>
-
-      {gameStore.isInitialized && (
-        <div className="text-center space-y-4">
-          <p className="text-lg">Turn: {gameStore.currentTurn}</p>
-          <p className="text-sm text-gray-400">
-            Species: {gameStore.species.size} | 
-            Regions: {gameStore.regions.size} | 
-            Features: {gameStore.features.size}
-          </p>
-          <p className="text-sm text-gray-400">
-            Events: {eventStore.events.length}
-          </p>
-          
-          {/* Development test buttons */}
-          {import.meta.env.DEV && (
-            <div className="flex gap-2 mt-4">
-              <button 
-                onClick={handleTestEvent}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-sm"
-              >
-                Test Event
-              </button>
-              <button 
-                onClick={handleProcessTurn}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm"
-              >
-                Process Turn
-              </button>
-              <button 
-                onClick={() => setShowTest(true)}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm"
-              >
-                Test Page
-              </button>
-            </div>
-          )}
-        </div>
-      )}
       
       <p className="mt-8 text-sm text-gray-500">
         v0.0.1 - Core Event System ✓
