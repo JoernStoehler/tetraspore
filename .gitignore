@@ -47,7 +47,19 @@ session.log
 coverage/
 *.lcov
 
-# Agent communication files (keep these in git for history)
-# TASK.md
-# HANDOFF.md
-# REVIEW_REPORT.md
+# Agent communication files (branch-specific, will cause conflicts!)
+TASK.md
+HANDOFF.md
+REVIEW_REPORT.md
+AGENT_BRANCH_TASK.md
+AGENT_REVIEW_TASK.md
+TASK_WAVE*.md
+TASK_REVIEW*.md
+DEPENDENCY_ANALYSIS.md
+EXECUTION_PLAN.md
+WAVE*_COMPLETE.md
+
+# Exception: Keep specification and architecture docs
+!specification.md
+!ARCHITECTURE_DECISIONS.md
+!HOW_TO_ADD_FEATURES.md
