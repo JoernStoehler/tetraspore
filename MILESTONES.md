@@ -14,6 +14,30 @@ This document tracks project milestones with a focus on maintainable, test-drive
 
 ### For Orchestrators Adding Milestones/Tasks
 
+#### Orchestrator Responsibilities
+1. **Before spawning agents**:
+   - Create clear task specifications
+   - Ensure dependencies are satisfied (previous tasks merged)
+   - Prepare agent branches with workagent
+
+2. **During agent execution**:
+   - Monitor agent progress
+   - Check for completion mail
+   - Assist with blocked agents if needed
+
+3. **After agent completion**:
+   - Review HANDOFF.md
+   - Merge completed work into main
+   - Clean up: `git worktree remove` and `git branch -d`
+   - Update tracking documents if needed
+
+Example cleanup sequence:
+```bash
+git merge task/X.Y-description
+git worktree remove ../tetraspore-task-X.Y-description  
+git branch -d task/X.Y-description
+```
+
 #### Milestone Structure
 ```markdown
 ## Milestone N: [Clear Feature Name]
