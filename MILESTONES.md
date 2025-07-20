@@ -481,6 +481,41 @@ export interface TreeOfLifeProps {
 - Creates reasonable evolution patterns
 - No orphaned species
 
+#### Task 2.7: Fix Post-Integration Issues ✅
+**Owner**: Integration Agent  
+**Module**: `src/llm/mock.test.ts`, `src/components/TreeOfLife/` test files
+**Dependencies**: Tasks 2.1-2.6
+**Purpose**: Fix failing tests and resolve remaining integration issues
+
+**Specific Issues to Fix**:
+1. **Mock LLM Tests** (`src/llm/mock.test.ts`):
+   - Tests still expect old GameState structure with species as string array
+   - Need to update to use new Species objects structure
+   - Fix method signatures that now require GameState parameter
+
+2. **Component Tests** (`src/components/TreeOfLife/*.test.tsx`):
+   - React component tests failing with "document is not defined"
+   - Need proper test environment setup for DOM rendering
+   - May need to configure test environment or use different testing approach
+
+3. **Integration Verification**:
+   - Ensure all tests pass after fixes
+   - Verify mock LLM generates proper Species objects
+   - Confirm Tree visualization still works after test fixes
+
+**Success Criteria**:
+- [ ] All unit tests pass (`npm test -- --run`)
+- [ ] Mock LLM tests work with new Species structure
+- [ ] Component tests render without errors
+- [ ] No regression in functionality
+
+**Test Commands**:
+```bash
+npm test -- --run           # Run all tests
+npm test mock.test         # Run just mock LLM tests
+npm test TreeOfLife        # Run tree component tests
+```
+
 ### Design Decisions & Open Questions
 
 #### Decided Design Choices
