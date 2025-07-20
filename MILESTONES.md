@@ -131,6 +131,39 @@ This document tracks project milestones with a focus on maintainable, test-drive
    - ❌ Only testing the happy path
    - ✅ Test empty arrays, null values, errors
 
+## General Development Pattern: UI-First Pipeline
+
+When adding new features, follow this pattern to gradually expand the system:
+
+### The Full Pipeline
+```
+mock => events => reducer => state => store => props => component => webapp
+```
+
+### Development Order (Right to Left)
+1. **Start with UI** - Design component props and interfaces
+2. **Add to webapp** - Insert component with hardcoded props
+3. **Style and polish** - Make it look good with hardcoded data
+4. **Connect to store** - Transform state to props, hardcode state
+5. **Add to DSL** - Create events/actions, update reducer
+6. **Extend mock** - Generate events from mock LLM
+7. **Feature complete** - Full pipeline working end-to-end
+
+### Why This Works
+- **Immediate visual feedback** - See the UI from day one
+- **Clear interfaces** - Props define what data is needed
+- **Incremental integration** - Move hardcoded data upstream gradually
+- **Testable at each stage** - Each layer can be tested independently
+
+### Example: Tree of Life Feature
+1. Define `TreeProps` interface
+2. Create `<Tree props={hardcodedData} />` in webapp
+3. Style the tree visualization
+4. Create `useTreeData()` hook with hardcoded state
+5. Add `parent_species` to DSL events
+6. Update mock to generate lineage events
+7. Tree updates dynamically from game events
+
 ## Development Principles
 1. **Test-First Development**: Write tests, validate they fail, implement to pass
 2. **Single Responsibility**: Each task changes only one module/component
@@ -176,93 +209,131 @@ This document tracks project milestones with a focus on maintainable, test-drive
 **Status**: Planning  
 **Module**: `src/components/TreeOfLife/`
 **Focus**: D3.js-based evolutionary tree visualization
+**Approach**: UI-first development, gradual pipeline integration
 
 ### Task Breakdown
 
-#### Task 2.1: Tree Data Model & Tests
-**Owner**: Data Agent  
+#### Task 2.1: Tree Component Props & Types
+**Owner**: UI Agent  
 **Module**: `src/components/TreeOfLife/types.ts`
 ```typescript
 // Define interfaces for:
-- TreeNode (species with parent/children references)
-- TreeLayout (positioning data)
-- TreeInteraction (zoom/pan state)
+export interface TreeNode {
+  id: string;
+  name: string;
+  parentId: string | null;
+  children: TreeNode[];
+  depth: number;
+  // Visual properties
+  x?: number;
+  y?: number;
+}
+
+export interface TreeOfLifeProps {
+  nodes: TreeNode[];
+  width: number;
+  height: number;
+  onNodeClick?: (node: TreeNode) => void;
+}
 ```
 **Tests First**:
-- Test tree construction from species array
-- Test parent-child relationship validation
-- Test layout calculations
+- Type validation tests
+- Tree structure validation (no cycles, valid parent refs)
 
-#### Task 2.2: Tree Component Shell
+#### Task 2.2: Tree Component Scaffold with Hardcoded Data
 **Owner**: UI Agent  
 **Module**: `src/components/TreeOfLife/TreeOfLife.tsx`
 **Dependencies**: Task 2.1
 ```typescript
-// Component that:
-- Renders SVG container
-- Sets up D3 zoom/pan
-- Provides lifecycle hooks
-- TODO: Actual tree rendering (Task 2.3)
+// Barebone component with:
+- SVG container
+- Hardcoded sample tree data
+- Basic render of nodes as circles
+- TODO: D3 tree layout (Task 2.3)
+- TODO: Styling (Task 2.3)
 ```
+**Integration**: Add to GameUI.tsx with hardcoded props
 **Tests First**:
 - Component renders without crashing
-- SVG dimensions respond to container
-- Zoom/pan handlers attach correctly
+- Displays all nodes from props
+- SVG has correct dimensions
 
-#### Task 2.3: D3 Tree Layout Implementation
+#### Task 2.3: Tree Layout & Styling
 **Owner**: Visualization Agent  
-**Module**: `src/components/TreeOfLife/layout.ts`
-**Dependencies**: Task 2.1, 2.2
+**Module**: `src/components/TreeOfLife/` (multiple files)
+**Dependencies**: Tasks 2.1, 2.2
 ```typescript
-// Pure functions for:
-- Converting species to D3 hierarchy
-- Calculating node positions
-- Generating SVG paths for connections
+// Implement:
+- D3 tree layout algorithm
+- Node positioning
+- Edge/path rendering
+- Zoom/pan behavior
+- Visual styling (colors, sizes)
 ```
 **Tests First**:
-- Layout algorithm with mock data
-- Edge cases (single node, deep tree)
-- Performance with 100+ nodes
+- Layout positions nodes correctly
+- Edges connect parent-child nodes
+- Zoom/pan transforms work
+- Style application tests
 
-#### Task 2.4: Tree-Store Integration
-**Owner**: Integration Agent  
+#### Task 2.4: State-to-Props Transformation
+**Owner**: Data Agent  
 **Module**: `src/components/TreeOfLife/hooks.ts`
 **Dependencies**: Tasks 2.1-2.3
 ```typescript
-// Custom hooks:
-- useTreeData() - transforms store species to tree
-- useTreeInteractions() - zoom/pan state
+// Create useTreeData hook that:
+- Returns hardcoded tree structure (for now)
+- TODO: Transform actual game state (Task 2.5)
+```
+**Update**: GameUI to use hook instead of hardcoded props
+**Tests First**:
+- Hook returns valid tree structure
+- Tree has expected nodes
+
+#### Task 2.5: DSL Extension for Species Lineage
+**Owner**: DSL Agent  
+**Module**: `src/dsl/types.ts` and related files
+**Dependencies**: Task 2.4
+```typescript
+// Extend DSL with:
+- parent_species field in species_added event
+- Species state to track lineage
+- Reducer logic for tree building
 ```
 **Tests First**:
-- Hook returns correct tree structure
-- Updates when species change
-- Preserves zoom/pan on re-render
+- Event validation includes parent_species
+- Reducer builds correct parent-child relationships
+- State maintains species tree
 
-#### Task 2.5: Tree Integration into GameUI
-**Owner**: Integration Agent  
-**Module**: `src/components/GameUI.tsx`
-**Dependencies**: Tasks 2.1-2.4
-**Constraints**: Minimal changes only
+#### Task 2.6: Mock LLM Species Generation
+**Owner**: LLM Agent  
+**Module**: `src/llm/mock.ts`
+**Dependencies**: Task 2.5
 ```typescript
-// Add TreeOfLife component to existing UI
-// Position it appropriately
-// TODO: Layout system (future milestone)
+// Update mock to:
+- Generate species with parent relationships
+- Create branching evolution patterns
+- Remove hardcoded data from Task 2.4
 ```
+**Tests First**:
+- Mock generates valid parent references
+- Creates reasonable evolution patterns
+- No orphaned species
 
 ### Success Criteria
-- [ ] All tests pass
-- [ ] No ESLint errors
-- [ ] Tree renders with mock data
-- [ ] Zoom/pan works smoothly
-- [ ] Updates when species change
-- [ ] No performance issues <100 species
+- [ ] Tree component renders with hardcoded data (Task 2.2)
+- [ ] Tree has proper D3 layout and styling (Task 2.3)
+- [ ] Component uses store hook for data (Task 2.4)
+- [ ] DSL supports species lineage (Task 2.5)
+- [ ] Mock LLM generates tree structure (Task 2.6)
+- [ ] Full pipeline works: mock → events → state → UI
 
 ### Out of Scope (Future Milestones)
-- Styling and visual polish
-- Node interactions (click, hover)
+- Node interactions beyond basic click
 - Animation on updates
 - Species details panel
-- Layout alternatives
+- Alternative tree layouts
+- Performance optimization
 
 ## Milestone 3: Enhanced Species Model
 **Status**: Future  
