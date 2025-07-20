@@ -57,4 +57,29 @@ None - working directly in main branch
 
 ---
 
+## 2025-07-20 - Project Progress Tracking System (Orchestrator: Claude)
+
+### Agents Spawned
+None - working directly in main branch
+
+### Work Completed
+- Created project progress tracking system to maintain continuity across sessions
+- Renamed specification.md → project-status.md (better reflects agile/living document)
+- Created coordination-log.md (this file) to track agent coordination history
+- Created docs/project-guide-progress-tracking.md explaining the tracking system
+- Updated orchestrator and workagent prompts in .claude/commands/
+- Restructured docs/agent-orchestration-guide.md (50% shorter, clearer)
+
+### Decisions
+- Chose "project-status" over "specification" to avoid waterfall connotations
+- Chose "coordination-log" over "orchestration-log" to focus on who/what/where
+- Used thin wrapper approach for agent prompts to avoid documentation duplication
+- De-emphasized mail system as agents often forget to use it reliably
+
+### Integration
+- Direct commits to main (documentation and tooling changes only)
+- No feature branches required
+
+---
+
 <!-- Orchestrators: Add new entries above this line -->
