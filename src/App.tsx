@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { useEventStore, useGameStore, useUIStore } from './stores'
 import { TestEventSystem } from './pages/TestEventSystem'
 import { GameView } from './pages/GameView'
+import { TreeOfLife } from './components/tree/TreeOfLife'
 
 function App() {
   const gameStore = useGameStore()
   const eventStore = useEventStore()
   const uiStore = useUIStore()
   const [showTest] = useState(false)
+  const [showTreeDemo] = useState(true)
 
   // Initialize stores on mount
   useEffect(() => {
@@ -50,6 +52,10 @@ function App() {
     console.log('New game initialized!')
   }
 
+
+  if (showTreeDemo) {
+    return <TreeOfLife />
+  }
 
   if (showTest) {
     return <TestEventSystem />
