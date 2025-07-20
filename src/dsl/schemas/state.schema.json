@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DSLState",
+  "type": "object",
+  "required": ["turn", "species", "previewCreate", "previewExtinct"],
+  "properties": {
+    "turn": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Current turn number"
+    },
+    "species": {
+      "type": "array",
+      "description": "All species ever created",
+      "items": {
+        "$ref": "#/definitions/Species"
+      }
+    },
+    "previewCreate": {
+      "type": "array",
+      "description": "Species creation previews for player choice",
+      "items": {
+        "$ref": "#/definitions/CreatePreview"
+      }
+    },
+    "previewExtinct": {
+      "type": "array",
+      "description": "Species extinction previews for player choice",
+      "items": {
+        "$ref": "#/definitions/ExtinctPreview"
+      }
+    }
+  },
+  "definitions": {
+    "Species": {
+      "type": "object",
+      "required": ["id", "name", "description", "creation_turn"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique species identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Species name"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Species description"
+        },
+        "parent": {
+          "type": "string",
+          "description": "Parent species ID"
+        },
+        "creation_turn": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Turn when species was created"
+        },
+        "extinction_turn": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Turn when species went extinct"
+        }
+      }
+    },
+    "CreatePreview": {
+      "type": "object",
+      "required": ["id", "name", "description", "parent_id", "creation_turn"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Temporary preview identifier"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Species name"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Species description"
+        },
+        "parent_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parent species ID"
+        },
+        "creation_turn": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Turn for creation"
+        }
+      }
+    },
+    "ExtinctPreview": {
+      "type": "object",
+      "required": ["species_id", "extinction_turn"],
+      "properties": {
+        "species_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Species to mark extinct"
+        },
+        "extinction_turn": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Turn for extinction"
+        }
+      }
+    }
+  }
+}
