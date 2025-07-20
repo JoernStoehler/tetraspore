@@ -40,6 +40,7 @@ This document tracks project milestones with a focus on maintainable, test-drive
 5. **Integration points** - How this connects to other modules (if at all)
 6. **Design decisions** - Document what has been decided and why
 7. **Open questions** - List unresolved design questions with options
+8. **Completion steps** - Remind agent to commit, create HANDOFF.md, and send mail
 
 #### Writing Design Decisions and Open Questions
 
@@ -81,6 +82,23 @@ Example format:
    - Tests must fail initially (proves they're testing something)
    - Implementation is complete when all tests pass
    - If tests need adjustment, document WHY in comments
+
+2. **Task Completion Requirements**
+   Every task MUST complete these steps before finishing:
+   - [ ] All code changes committed with descriptive message
+   - [ ] Branch is ready to merge (no uncommitted files)
+   - [ ] HANDOFF.md created documenting the work
+   - [ ] Mail sent to orchestrator or next agent
+   - [ ] Agent session ends after sending mail
+   
+   Example completion sequence:
+   ```bash
+   git add -A
+   git commit -m "feat: implement TreeOfLife types and tests"
+   # Create HANDOFF.md
+   mail send main "Task X.Y Complete" "Description. See HANDOFF.md"
+   # Session ends
+   ```
 
 2. **Single Module Responsibility**
    - Each task modifies files in ONE module only
