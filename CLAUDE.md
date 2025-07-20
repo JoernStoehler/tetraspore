@@ -55,6 +55,7 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 - 2025-07-20: Reusing existing branch names - violates 1:1:1 principle, always run `git branch -a | grep pattern` before naming branches
 - 2025-07-20: Not instructing agents to send mail - agents only do what's explicitly requested, always include communication requirements in AGENT_BRANCH_TASK.md
 - 2025-07-20: Passive monitoring without checking deliverables - don't just wait for mail, actively check for HANDOFF.md and git status
+- 2025-07-20: Using `while true` loops - infinite loops are an anti-pattern, use bounded `for` loops with exit conditions instead
 
 ## DevOps Setup
 

@@ -259,21 +259,42 @@ workagent run --branch feat/api --message "Read AGENT_BRANCH_TASK.md which conta
 **Mistake**: Setting up monitoring loops without checking deliverables
 ```bash
 # WRONG: Just waiting for mail that may never come
-while true; do
+while true; do  # NO! Runs forever!
   mail inbox --for main | tail
   sleep 600
 done
 
-# RIGHT: Check specific deliverables
+# ALSO WRONG: Still infinite loop
 while true; do
-  # Check if agent stopped
   if workagent status | grep "feat/api.*STOPPED"; then
-    # Check deliverables
-    ls ../tetraspore-feat-api/HANDOFF.md || echo "WARNING: No HANDOFF.md"
-    git -C ../tetraspore-feat-api status --porcelain | wc -l
+    ls ../tetraspore-feat-api/HANDOFF.md
   fi
   sleep 600
 done
+
+# RIGHT: Bounded loop with exit conditions
+for i in {1..30}; do  # Max 30 checks (5 hours)
+  echo "Check $i at $(date +%H:%M)"
+  
+  # Check if agent stopped
+  if workagent status | grep "feat/api.*STOPPED"; then
+    # Verify deliverables
+    if [ -f ../tetraspore-feat-api/HANDOFF.md ]; then
+      echo "SUCCESS: Agent completed with HANDOFF"
+      break
+    else
+      echo "ERROR: Agent stopped but no HANDOFF.md"
+      exit 1
+    fi
+  fi
+  
+  # Don't wait forever - 30 * 10min = 5 hours max
+  sleep 600
+done
+
+# If we get here, agent took too long
+echo "ERROR: Agent still running after 5 hours"
+exit 1
 ```
 
 ### 4. Incomplete Task Files
