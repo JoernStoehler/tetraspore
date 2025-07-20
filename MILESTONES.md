@@ -24,6 +24,10 @@ This document tracks project milestones with a focus on maintainable, test-drive
    - Monitor agent progress
    - Check for completion mail
    - Assist with blocked agents if needed
+   - Tip: Use @file references in agent messages to preload context:
+     ```bash
+     workagent run --branch task/X.Y --message "Implement X. See @AGENT_BRANCH_TASK.md and @src/relevant/file.ts"
+     ```
 
 3. **After agent completion**:
    - Review HANDOFF.md
