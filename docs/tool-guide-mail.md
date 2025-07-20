@@ -13,7 +13,7 @@ The `mail` tool provides asynchronous communication between agents and the orche
 - **Self-contained lines** - no headers, grep-friendly
 - **Automatic read tracking** - messages marked READ when viewed
 - **Required branch filtering** - `--for` flag is mandatory for inbox and expects a git branch name
-- **Trash functionality** - messages can be trashed and restored
+- **Archive functionality** - messages can be archived and restored
 
 ## Commands
 
@@ -48,27 +48,27 @@ mail inbox --for main | tail -20
 # Show unread messages for branch
 mail inbox --for main | grep UNREAD
 
-# Show trashed messages
-mail inbox --for main --trash
+# Show archived messages
+mail inbox --for main --archive
 ```
 
 Output format:
 ```
 001 [READ   ] 2025-07-17T19:37:21 main->test/doc-agent: Task: Analyze the project structure
 039 [UNREAD ] 2025-07-18T09:46:23 test/manual->main: Status Update
-042 [TRASHED] 2025-07-19T10:15:00 test->main: Old test message
+042 [ARCHIVED] 2025-07-19T10:15:00 test->main: Old test message
 ```
 
 Each line contains:
 - Message ID (e.g., `001`)
-- Status (`[READ   ]`, `[UNREAD ]`, or `[TRASHED]`)
+- Status (`[READ   ]`, `[UNREAD ]`, or `[ARCHIVED]`)
 - Timestamp
 - Sender->Recipient
 - Subject (truncated to 50 chars)
 
 ### mail read
 
-Read a specific message and mark it as read. Cannot read trashed messages.
+Read a specific message and mark it as read. Cannot read archived messages.
 
 ```bash
 mail read MESSAGE_ID
@@ -89,27 +89,27 @@ date: 2025-07-18T09:46:23Z
 Hello from test/manual agent. Task is complete.
 ```
 
-### mail trash
+### mail archive
 
-Move a message to trash. Trashed messages are hidden from normal inbox view.
+Archive a message. Archived messages are hidden from normal inbox view.
 
 ```bash
-mail trash MESSAGE_ID
+mail archive MESSAGE_ID
 
-# Example - clean up old messages
-mail trash 001
-mail trash 002
+# Example - archive old messages
+mail archive 001
+mail archive 002
 ```
 
-### mail restore
+### mail unarchive
 
-Restore a message from trash. Message will be marked as READ.
+Restore a message from archive. Message will be marked as READ.
 
 ```bash
-mail restore MESSAGE_ID
+mail unarchive MESSAGE_ID
 
 # Example
-mail restore 001
+mail unarchive 001
 ```
 
 ## Message States
@@ -117,13 +117,13 @@ mail restore 001
 Messages can have three states:
 - **UNREAD** - New message, not yet read
 - **READ** - Message has been read at least once
-- **TRASHED** - Message moved to trash (hidden from normal view)
+- **ARCHIVED** - Message moved to archive (hidden from normal view)
 
 State transitions:
 - UNREAD → READ (when read)
-- READ → TRASHED (when trashed)
-- UNREAD → TRASHED (when trashed without reading)
-- TRASHED → READ (when restored)
+- READ → ARCHIVED (when archived)
+- UNREAD → ARCHIVED (when archived without reading)
+- ARCHIVED → READ (when restored)
 
 ## Architecture
 
@@ -178,8 +178,8 @@ mail inbox --for main | tail -20
 # Check specific branch's progress (must use --for with branch name)
 mail inbox --for main | grep "feat/api->" | tail -5
 
-# Clean up old messages
-mail inbox --for main | head -20 | awk '{print $1}' | xargs -I {} mail trash {}
+# Archive old messages
+mail inbox --for main | head -20 | awk '{print $1}' | xargs -I {} mail archive {}
 ```
 
 ### Task Assignment Flow
@@ -215,14 +215,14 @@ mail send --from feat/api --to feat/ui \
 ### Mailbox Maintenance
 
 ```bash
-# View trashed messages
-mail inbox --for main --trash
+# View archived messages
+mail inbox --for main --archive
 
-# Trash old read messages (example: first 10)
-mail inbox --for main | grep READ | head -10 | awk '{print $1}' | xargs -I {} mail trash {}
+# Archive old read messages (example: first 10)
+mail inbox --for main | grep READ | head -10 | awk '{print $1}' | xargs -I {} mail archive {}
 
-# Restore accidentally trashed message
-mail restore 042
+# Restore accidentally archived message
+mail unarchive 042
 ```
 
 ## Tips
@@ -284,7 +284,8 @@ This creates a natural workflow for task distribution and progress tracking.
 ## Changes from Previous Version
 
 1. **Breaking Change**: `mail inbox` now requires `--for BRANCH_NAME` flag
-2. **New Feature**: Messages can be trashed and restored
-3. **New Feature**: Trashed messages viewable with `--trash` flag
+2. **New Feature**: Messages can be archived and restored
+3. **New Feature**: Archived messages viewable with `--archive` flag
+4. **Terminology Update**: "trash" renamed to "archive" for clarity - old commands still work
 
-These changes improve mailbox management and prevent accidental viewing of all system messages.
+These changes improve mailbox management and prevent accidental viewing of all system messages. The terminology change from "trash" to "archive" better reflects the intended use - these messages are saved for later reference, not deleted.

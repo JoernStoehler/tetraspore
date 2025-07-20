@@ -94,11 +94,11 @@ EOF
     inbox)
         # Parse options
         filter_for=""
-        show_trash=false
+        show_archive=false
         
         if [ $# -eq 1 ]; then
             echo "Error: inbox requires --for BRANCH_NAME"
-            echo "Usage: mail inbox --for BRANCH_NAME [--trash]"
+            echo "Usage: mail inbox --for BRANCH_NAME [--archive]"
             echo "Example: mail inbox --for main"
             echo "Example: mail inbox --for feat/ui"
             exit 1
@@ -110,8 +110,8 @@ EOF
                     filter_for="$2"
                     shift 2
                     ;;
-                --trash)
-                    show_trash=true
+                --archive|--trash)
+                    show_archive=true
                     shift
                     ;;
                 *)
@@ -122,7 +122,7 @@ EOF
         
         if [ -z "$filter_for" ]; then
             echo "Error: --for BRANCH_NAME is required"
-            echo "Usage: mail inbox --for BRANCH_NAME [--trash]"
+            echo "Usage: mail inbox --for BRANCH_NAME [--archive]"
             echo "Example: mail inbox --for main"
             echo "Example: mail inbox --for feat/api"
             exit 1
@@ -140,12 +140,12 @@ EOF
                 date=$(grep "^date:" "$msg_file" | cut -d' ' -f2)
                 
                 # Skip trashed messages unless --trash flag
-                if [ "$status" = "TRASHED" ] && [ "$show_trash" = false ]; then
+                if [ "$status" = "ARCHIVED" ] && [ "$show_archive" = false ]; then
                     continue
                 fi
                 
                 # Skip non-trashed messages if --trash flag
-                if [ "$status" != "TRASHED" ] && [ "$show_trash" = true ]; then
+                if [ "$status" != "ARCHIVED" ] && [ "$show_archive" = true ]; then
                     continue
                 fi
                 
@@ -167,8 +167,8 @@ EOF
         if [ -f "$msg_file" ]; then
             # Check if trashed
             status=$(grep "^status:" "$msg_file" | cut -d' ' -f2)
-            if [ "$status" = "TRASHED" ]; then
-                echo "Message $msg_id is in trash. Use 'mail restore $msg_id' to restore it."
+            if [ "$status" = "ARCHIVED" ]; then
+                echo "Message $msg_id is archived. Use 'mail unarchive $msg_id' to restore it."
                 exit 1
             fi
             
@@ -191,31 +191,31 @@ EOF
         fi
         ;;
         
-    trash)
+    archive|trash)
         msg_id="$2"
         msg_file="$MESSAGES_DIR/$msg_id.md"
         
         if [ -f "$msg_file" ]; then
-            sed -i 's/^status: .*/status: TRASHED/' "$msg_file"
-            echo "Message $msg_id moved to trash"
+            sed -i 's/^status: .*/status: ARCHIVED/' "$msg_file"
+            echo "Message $msg_id archived"
         else
             echo "Message $msg_id not found"
             exit 1
         fi
         ;;
         
-    restore)
+    unarchive|restore)
         msg_id="$2"
         msg_file="$MESSAGES_DIR/$msg_id.md"
         
         if [ -f "$msg_file" ]; then
             # Check if it was previously read
-            if grep -q "status: TRASHED" "$msg_file"; then
-                # Restore to READ (assume it was read before trashing)
-                sed -i 's/^status: TRASHED$/status: READ/' "$msg_file"
-                echo "Message $msg_id restored from trash"
+            if grep -q "status: ARCHIVED" "$msg_file"; then
+                # Restore to READ (assume it was read before archiving)
+                sed -i 's/^status: ARCHIVED$/status: READ/' "$msg_file"
+                echo "Message $msg_id restored from archive"
             else
-                echo "Message $msg_id is not in trash"
+                echo "Message $msg_id is not archived"
                 exit 1
             fi
         else
@@ -229,10 +229,10 @@ EOF
         echo ""
         echo "Usage:"
         echo "  mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
-        echo "  mail inbox --for BRANCH_NAME [--trash]  # List messages for branch (--for is required)"
+        echo "  mail inbox --for BRANCH_NAME [--archive]  # List messages for branch (--for is required)"
         echo "  mail read MESSAGE_ID               # Read and mark message as read"
-        echo "  mail trash MESSAGE_ID              # Move message to trash"
-        echo "  mail restore MESSAGE_ID            # Restore message from trash"
+        echo "  mail archive MESSAGE_ID            # Archive message"
+        echo "  mail unarchive MESSAGE_ID          # Restore message from archive"
         echo "  mail help                          # Show this help"
         echo ""
         echo "Examples:"
@@ -245,18 +245,18 @@ EOF
         echo "  # Check messages for feature branch"
         echo "  mail inbox --for feat/ui"
         echo ""
-        echo "  # Check trashed messages"
-        echo "  mail inbox --for main --trash"
+        echo "  # Check archived messages"
+        echo "  mail inbox --for main --archive"
         echo ""
         echo "  # Read a specific message"
         echo "  mail read 017"
         echo ""
-        echo "  # Clean up old messages"
-        echo "  mail trash 001"
-        echo "  mail trash 002"
+        echo "  # Archive old messages"
+        echo "  mail archive 001"
+        echo "  mail archive 002"
         echo ""
         echo "Storage: Messages are stored in .agent-shared/mail/messages/"
-        echo "Status: UNREAD, READ, TRASHED"
+        echo "Status: UNREAD, READ, ARCHIVED"
         ;;
     *)
         echo "Error: Unknown command '$1'"
