@@ -57,15 +57,75 @@ case "${1:-}" in
         subject=""
         body=""
         shift
+        
+        # Check if old positional syntax is being used
+        if [[ $# -eq 2 ]] && [[ "$1" != --* ]]; then
+            echo "Error: Invalid syntax. Positional arguments are not supported."
+            echo "You used: mail send '$1' '$2'"
+            echo ""
+            echo "Correct syntax:"
+            echo "  mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
+            echo ""
+            echo "Example:"
+            echo "  mail send --from task/2.7 --to main --subject \"Task Complete\" --body \"All tests pass\""
+            exit 1
+        fi
+        
         while [[ $# -gt 0 ]]; do
             case $1 in
-                --from) from="$2"; shift 2 ;;
-                --to) to="$2"; shift 2 ;;
-                --subject) subject="$2"; shift 2 ;;
-                --body) body="$2"; shift 2 ;;
-                *) shift ;;
+                --from) 
+                    if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                        echo "Error: --from requires a value"
+                        exit 1
+                    fi
+                    from="$2"; shift 2 
+                    ;;
+                --to) 
+                    if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                        echo "Error: --to requires a value"
+                        exit 1
+                    fi
+                    to="$2"; shift 2 
+                    ;;
+                --subject) 
+                    if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                        echo "Error: --subject requires a value"
+                        exit 1
+                    fi
+                    subject="$2"; shift 2 
+                    ;;
+                --body) 
+                    if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                        echo "Error: --body requires a value"
+                        exit 1
+                    fi
+                    body="$2"; shift 2 
+                    ;;
+                *) 
+                    echo "Error: Unknown option '$1'"
+                    echo "Valid options: --from, --to, --subject, --body"
+                    echo "Run 'mail help' for usage"
+                    exit 1 
+                    ;;
             esac
         done
+        
+        # Validate required fields
+        missing_fields=()
+        [ -z "$from" ] && missing_fields+=("--from")
+        [ -z "$to" ] && missing_fields+=("--to")
+        [ -z "$subject" ] && missing_fields+=("--subject")
+        [ -z "$body" ] && missing_fields+=("--body")
+        
+        if [ ${#missing_fields[@]} -gt 0 ]; then
+            echo "Error: Missing required fields: ${missing_fields[*]}"
+            echo ""
+            echo "Usage: mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
+            echo ""
+            echo "Example:"
+            echo "  mail send --from main --to feat/ui --subject \"Task Assignment\" --body \"Please implement the Tree component\""
+            exit 1
+        fi
         
         # Get message ID
         id=$(cat "$SEQ_FILE")
