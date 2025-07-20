@@ -21,13 +21,25 @@ This document tracks project milestones with a focus on maintainable, test-drive
    - Prepare agent branches with workagent
 
 2. **During agent execution**:
-   - Monitor agent progress
+   - Monitor agent progress (use bounded loops, not input mode!)
    - Check for completion mail
    - Assist with blocked agents if needed
-   - Tip: Use @file references in agent messages to preload context:
-     ```bash
-     workagent run --branch task/X.Y --message "Implement X. See @AGENT_BRANCH_TASK.md and @src/relevant/file.ts"
-     ```
+   - Tips: 
+     - Use @file references in agent messages to preload context:
+       ```bash
+       workagent run --branch task/X.Y --message "Implement X. See @AGENT_BRANCH_TASK.md and @src/relevant/file.ts"
+       ```
+     - Monitor with bounded loops, NOT input mode:
+       ```bash
+       # Good: Bounded monitoring
+       for i in {1..10}; do
+         sleep 30
+         workagent status | grep task/X.Y
+         mail inbox --for main | grep "Task X.Y Complete" && break
+       done
+       
+       # Bad: while true loops or waiting in input mode
+       ```
 
 3. **After agent completion**:
    - Review HANDOFF.md
