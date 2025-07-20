@@ -38,6 +38,41 @@ This document tracks project milestones with a focus on maintainable, test-drive
 3. **Test requirements** - List specific test cases that must pass
 4. **TODO markers** - Explicitly state what should be marked as TODO
 5. **Integration points** - How this connects to other modules (if at all)
+6. **Design decisions** - Document what has been decided and why
+7. **Open questions** - List unresolved design questions with options
+
+#### Writing Design Decisions and Open Questions
+
+Each milestone should include a "Design Decisions & Open Questions" section that:
+
+1. **Documents Decided Choices**
+   - What was decided and the reasoning
+   - Trade-offs that were considered
+   - Constraints that influenced the decision
+
+2. **Lists Open Questions**
+   - Questions that need answers before/during implementation
+   - Multiple viable options with pros/cons
+   - Decisions that can be deferred until more context is available
+
+3. **Why This Matters**
+   - Prevents agents from making conflicting assumptions
+   - Allows experimentation within defined boundaries
+   - Creates a record of architectural evolution
+   - Helps future agents understand context
+
+Example format:
+```markdown
+### Design Decisions & Open Questions
+
+#### Decided:
+- **Flat data structures**: Easier to update than nested
+- **Component boundaries**: Tree computes layout, caller provides topology
+
+#### Open Questions:
+1. **Layout algorithm**: D3 tree vs custom vs force-directed?
+2. **State shape**: How to store for LLM read/write efficiency?
+```
 
 ### Writing Rules for Tasks
 
@@ -102,7 +137,24 @@ This document tracks project milestones with a focus on maintainable, test-drive
    - Use custom hooks that return only needed data
    - Keep component logic pure and testable
 
-10. **Testing Requirements**
+10. **React Component Abstraction Boundaries**
+    - **Props should contain only logical/game data**, not visual details
+    - Components decide their own internal rendering
+    - Parent passes what child needs to know, not how to display it
+    - Examples:
+      - ✅ Pass: `nodes` array with topology
+      - ❌ Don't pass: `x`, `y` coordinates (unless parent must coordinate multiple children)
+      - ✅ Pass: `speciesId`, `turn`
+      - ❌ Don't pass: `color`, `radius` (unless part of game state)
+    - **Exception**: Nested components that must coordinate visually
+      - Parent may need to pass some visual constraints
+      - Document WHY the exception is necessary
+    - **Benefits**:
+      - Components are reusable with different visual styles
+      - Testing focuses on logic, not visual details
+      - Easier to modify visualization without changing callers
+
+11. **Testing Requirements**
     - Unit tests for all pure functions
     - Component tests for all React components
     - Integration tests for store interactions
