@@ -1,4 +1,5 @@
 import { useGameStore, useTurn, useSpecies, useIsProcessing } from '../store/store';
+import { TreeOfLife } from './TreeOfLife/TreeOfLife';
 
 export function GameUI() {
   const endTurn = useGameStore(state => state.endTurn);
@@ -91,6 +92,18 @@ export function GameUI() {
           </p>
         </div>
       )}
+      
+      {/* Tree of Life Visualization */}
+      <div style={{ marginTop: '2rem' }}>
+        <TreeOfLife 
+          nodes={[]} 
+          width={800} 
+          height={400}
+          onNodeClick={(node) => {
+            console.log('Node clicked:', node);
+          }}
+        />
+      </div>
     </div>
   );
 }
