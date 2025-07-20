@@ -264,7 +264,7 @@ run_agent() {
     fi
     
     # Build agent command
-    local agent_args="--print"  # Always use print mode
+    local agent_args="--print --output-format stream-json"  # Stream all actions
     if [ "$continue_flag" = true ]; then
         agent_args="$agent_args --continue"
     fi
@@ -341,7 +341,7 @@ show_status() {
     echo ""
     
     # Header
-    printf "%-25s %-12s %-20s %s\n" "BRANCH" "STATUS" "SESSION" "LAST ACTIVITY"
+    printf "%-25s %-12s %-20s %s\n" "BRANCH" "STATUS" "LOG ACTIVITY" "LAST ACTION"
     echo "--------------------------------------------------------------------------------"
     
     # Check all worktrees
@@ -352,7 +352,8 @@ show_status() {
             local slug=$(slugify "$branch")
             local session_name="agent-$slug"
             local status="STOPPED"
-            local last_activity=""
+            local log_activity=""
+            local last_action=""
             
             # Check if running
             if tmux has-session -t "$session_name" 2>/dev/null; then
@@ -361,14 +362,38 @@ show_status() {
                 status=$(cat "$worktree/.agent/status")
             fi
             
-            # Get last activity
-            if [ -f "$worktree/.agent/last_run" ]; then
-                last_activity=$(cat "$worktree/.agent/last_run")
-            elif [ -f "$worktree/.agent/prepared" ]; then
-                last_activity=$(cat "$worktree/.agent/prepared")
+            # Get log activity for running agents
+            if [ -f "$worktree/.agent/session.log" ]; then
+                # Get log file modification time
+                local log_mod_time=$(stat -c %Y "$worktree/.agent/session.log" 2>/dev/null || stat -f %m "$worktree/.agent/session.log" 2>/dev/null || echo 0)
+                local current_time=$(date +%s)
+                local minutes_ago=$(( (current_time - log_mod_time) / 60 ))
+                
+                if [ $minutes_ago -lt 1 ]; then
+                    log_activity="Active now"
+                elif [ $minutes_ago -lt 5 ]; then
+                    log_activity="${minutes_ago}min ago"
+                elif [ $minutes_ago -lt 15 ]; then
+                    log_activity="${minutes_ago}min ago"
+                elif [ $minutes_ago -lt 60 ]; then
+                    log_activity="${minutes_ago}min ago ⚠️"
+                else
+                    log_activity="$(( minutes_ago / 60 ))h ago ⚠️"
+                fi
+                
+                # Get last meaningful action from log
+                if [ "$status" = "RUNNING" ]; then
+                    # Look for tool calls in stream-json output
+                    last_action=$(tail -100 "$worktree/.agent/session.log" 2>/dev/null | grep -E '"tool_name":|"type":"tool_use"' | tail -1 | sed 's/.*"tool_name":"\([^"]*\)".*/\1/' | cut -c1-30)
+                    if [ -z "$last_action" ]; then
+                        last_action="Thinking..."
+                    fi
+                fi
+            else
+                log_activity="No log"
             fi
             
-            printf "%-25s %-12s %-20s %s\n" "$branch" "$status" "$session_name" "$last_activity"
+            printf "%-25s %-12s %-20s %s\n" "$branch" "$status" "$log_activity" "$last_action"
             ((found++)) || true  # Prevent exit on arithmetic that evaluates to 0
         fi
     done

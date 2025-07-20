@@ -272,29 +272,41 @@ while true; do
   sleep 600
 done
 
-# RIGHT: Bounded loop with exit conditions
-for i in {1..30}; do  # Max 30 checks (5 hours)
-  echo "Check $i at $(date +%H:%M)"
+# RIGHT: Smart monitoring with workagent status
+for i in {1..12}; do  # Max 2 hours (12 * 10min)
+  echo "=== Check $i at $(date +%H:%M) ==="
   
-  # Check if agent stopped
-  if workagent status | grep "feat/api.*STOPPED"; then
-    # Verify deliverables
-    if [ -f ../tetraspore-feat-api/HANDOFF.md ]; then
-      echo "SUCCESS: Agent completed with HANDOFF"
-      break
-    else
-      echo "ERROR: Agent stopped but no HANDOFF.md"
-      exit 1
+  # Get detailed status
+  workagent status
+  
+  # Check each agent
+  for branch in feat/api feat/ui; do
+    status_line=$(workagent status | grep "$branch")
+    
+    # Parse status
+    if echo "$status_line" | grep -q "STOPPED"; then
+      # Agent stopped - check deliverables
+      if [ -f "../tetraspore-${branch}/HANDOFF.md" ]; then
+        echo "✓ $branch completed with HANDOFF"
+      else
+        echo "✗ $branch stopped but no HANDOFF.md!"
+        mail inbox --for main | grep "$branch" | tail -5
+      fi
+    elif echo "$status_line" | grep -q "⚠️"; then
+      # Agent might be stuck (>15min no activity)
+      echo "⚠️  $branch may be stuck - last activity: $(echo "$status_line" | awk '{print $3, $4}')"
+      # Could check last few log lines or send mail asking for status
     fi
+  done
+  
+  # Exit if all done
+  if workagent status | grep -v "RUNNING" | grep -q "feat/"; then
+    echo "All agents stopped"
+    break
   fi
   
-  # Don't wait forever - 30 * 10min = 5 hours max
-  sleep 600
+  sleep 600  # 10 minutes
 done
-
-# If we get here, agent took too long
-echo "ERROR: Agent still running after 5 hours"
-exit 1
 ```
 
 ### 4. Incomplete Task Files
