@@ -97,6 +97,7 @@ claude-*.log
 !coordination-log.md
 !ARCHITECTURE_DECISIONS.md
 !HOW_TO_ADD_FEATURES.md
+!MILESTONES.md
 
 # Temporary directories and files
 tmp/
