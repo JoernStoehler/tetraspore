@@ -74,6 +74,33 @@ Use for:
 
 **Cost Reality**: Opus 4 is ~3x more expensive than Sonnet 4. Reserve it for tasks where intelligence truly matters.
 
+## Before Spawning Any Agent
+
+### Orchestrator Checklist
+1. **Check branch name availability**:
+   ```bash
+   git branch -a | grep YOUR_PATTERN
+   # If exists, use versioned name: feat/X-v2 or feat/X-2025-01-20
+   ```
+
+2. **Create AGENT_BRANCH_TASK.md from template**:
+   ```bash
+   cp docs/templates/AGENT_BRANCH_TASK_TEMPLATE.md ../tetraspore-BRANCH/AGENT_BRANCH_TASK.md
+   # Fill in ALL sections, especially Communication Requirements
+   ```
+
+3. **Verify task file includes**:
+   - [ ] Clear specifications and success criteria
+   - [ ] Mail communication requirements (start/blocked/complete)
+   - [ ] HANDOFF.md creation requirement
+   - [ ] Expected files to create/modify
+   - [ ] Testing instructions
+
+4. **Use explicit spawn message**:
+   ```bash
+   workagent run --branch BRANCH --model MODEL --message "Read AGENT_BRANCH_TASK.md which contains your specifications and communication requirements. Start by sending mail to main confirming you've begun."
+   ```
+
 ## Orchestrator Workflow
 
 ### 1. Analyze & Plan
@@ -202,6 +229,59 @@ workagent run --branch BRANCH --continue --message "Continue work"
 - [ ] Each branch has HANDOFF.md if needed
 - [ ] Tests pass on each branch
 - [ ] No anticipated merge conflicts
+
+## Common Orchestrator Mistakes
+
+### 1. Branch Name Reuse
+**Mistake**: Using an existing branch name without checking
+```bash
+# WRONG: Just picking a name
+workagent prepare --branch feat/tree-viz
+
+# RIGHT: Check first
+git branch -a | grep tree
+# If feat/tree-viz exists, use feat/tree-viz-v2
+```
+**Impact**: Violates 1:1:1 principle, causes context contamination
+
+### 2. Forgetting Communication Requirements
+**Mistake**: Spawn message only mentions what to build
+```bash
+# WRONG: No communication instructions
+workagent run --branch feat/api --message "Implement the API endpoints"
+
+# RIGHT: Explicit communication
+workagent run --branch feat/api --message "Read AGENT_BRANCH_TASK.md which contains specifications and communication requirements"
+```
+**Impact**: Agents complete work but never inform orchestrator
+
+### 3. Passive Waiting
+**Mistake**: Setting up monitoring loops without checking deliverables
+```bash
+# WRONG: Just waiting for mail that may never come
+while true; do
+  mail inbox --for main | tail
+  sleep 600
+done
+
+# RIGHT: Check specific deliverables
+while true; do
+  # Check if agent stopped
+  if workagent status | grep "feat/api.*STOPPED"; then
+    # Check deliverables
+    ls ../tetraspore-feat-api/HANDOFF.md || echo "WARNING: No HANDOFF.md"
+    git -C ../tetraspore-feat-api status --porcelain | wc -l
+  fi
+  sleep 600
+done
+```
+
+### 4. Incomplete Task Files
+**Mistake**: Creating minimal AGENT_BRANCH_TASK.md
+**Right**: Use the template and fill ALL sections, especially:
+- Communication requirements
+- Success criteria  
+- Expected deliverables
 
 ## Key Success Factors
 

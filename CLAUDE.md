@@ -52,6 +52,9 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 - 2025-07-19: Claiming to monitor without actually monitoring - when waiting for agents to complete, use a bash loop with sleep, not just claim you're monitoring while sitting in input mode
 - 2025-07-19: Trying to have one agent review multiple worktrees - agents are confined to their worktree, spawn separate review agents per branch
 - 2025-07-19: Using unknown parameters with tools - always verify command syntax before use (e.g., workagent spawn had no --task parameter)
+- 2025-07-20: Reusing existing branch names - violates 1:1:1 principle, always run `git branch -a | grep pattern` before naming branches
+- 2025-07-20: Not instructing agents to send mail - agents only do what's explicitly requested, always include communication requirements in AGENT_BRANCH_TASK.md
+- 2025-07-20: Passive monitoring without checking deliverables - don't just wait for mail, actively check for HANDOFF.md and git status
 
 ## DevOps Setup
 
