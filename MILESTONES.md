@@ -324,7 +324,7 @@ mock => events => reducer => state => store => props => component => webapp
 
 ### Completed Features
 1. **Tree Visualization Component**
-   - D3.js-based evolutionary tree with zoom/pan capabilities
+   - D3.js-based evolutionary tree with basic zoom/pan functionality
    - Visual representation of species evolution over turns
    - Color-coded nodes: Green (birth), Blue (alive), Red (extinction)
    - Turn numbers displayed on each node
@@ -337,8 +337,8 @@ mock => events => reducer => state => store => props => component => webapp
 3. **Component Architecture**
    - TreeOfLife.tsx main component with D3 integration
    - layout.ts for tree layout calculations
-   - hooks.ts for data transformation (currently hardcoded)
-   - Comprehensive test coverage
+   - hooks.ts for data transformation (connected to game state)
+   - Test coverage (with some tests needing environment fixes)
 
 4. **DSL Extensions**
    - Extended GameState to use Species objects instead of strings
@@ -348,13 +348,11 @@ mock => events => reducer => state => store => props => component => webapp
 
 5. **Mock LLM Updates**
    - Enhanced mock LLM to generate species with parent relationships
-   - Realistic evolution patterns over 6 turns
+   - Realistic evolution patterns over 6 turns (then only turn advances)
    - Proper extinction handling
 
 ### Known Issues / Future Work
-- Tree visualization currently uses hardcoded data in hooks.ts
-- TODO: Connect useTreeData hook to actual game state (deferred to Milestone 3)
-- Some unit tests failing due to mock LLM refactoring (tests need updating)
+- See "Current Known Issues" section below for detailed list of visualization and build issues
 
 ### Task Breakdown
 
@@ -481,7 +479,7 @@ export interface TreeOfLifeProps {
 - Creates reasonable evolution patterns
 - No orphaned species
 
-#### Task 2.7: Fix Post-Integration Issues ✅
+#### Task 2.7: Fix Post-Integration Issues
 **Owner**: Integration Agent  
 **Module**: `src/llm/mock.test.ts`, `src/components/TreeOfLife/` test files
 **Dependencies**: Tasks 2.1-2.6
@@ -606,13 +604,15 @@ npm test TreeOfLife        # Run tree component tests
 ## Current Known Issues
 
 ### Critical Tree Visualization Issues
-- **Visual Quality**: The tree is "ugly af" - no aesthetic consideration given
-- **Node Hover Bug**: Nodes shake majorly on hover (CSS transition issue)
-- **Text Overlap**: Species names become unreadable after few turns due to spacing
-- **Vertical Compression**: As turns increase, nodes get closer together until unreadable
+- **Visual Quality**: The styling and colors aren't production ready - lots of unrefined graphical elements not fit for an aesthetic art-focused game like Tetraspore
+- **Node Hover Bug**: Nodes flicker/oscillate between two positions on hover
+  - Likely caused by CSS transform scale being applied to parent group, causing coordinate calculation issues
+  - Creates a rapid on/off hover state cycle resulting in visible position flickering
+- **Text Overlap**: Species names become unreadable after few turns due to spacing (confirmed)
+- **Vertical Compression**: As turns increase, nodes get closer together until unreadable (confirmed)
   - Tree tries to fit all content in fixed height instead of maintaining consistent spacing
   - Should have fixed per-turn spacing and scrollable/zoomable view
-- **Zoom/Pan Controls**: No sensible limits on navigation
+- **Zoom/Pan Controls**: Basic functionality works but lacks refinement
   - Can scroll to empty areas far from content
   - Can zoom to unusable levels (too close or too far)
   - Hard to return to sensible view once lost
@@ -621,18 +621,20 @@ npm test TreeOfLife        # Run tree component tests
   - Nodes appear at (0,0) then jump to position
   - Lines appear from nothing
   - Not a refined visualization at all
-- **Turn Limit Bug**: ~~After turn 10, "End Turn" stops progressing~~ (Fixed)
-- **Node Interaction**: Clicking nodes does nothing - not even placeholder feedback
+- **MockLLM Data Limitation**: MockLLM only generates new species for turns 1-6, after that only turn numbers advance
+  - Not a bug, but by design - needs documentation or extension
+- **Node Interaction**: Clicking nodes triggers console logging but has timeout issues
+  - Click handler exists but interaction fails with Playwright timeout errors
+  - No visible user feedback on click
 - **Species Visualization**: Cannot visually trace a species' evolution path:
   - No color coding by species
   - No highlight on hover
   - Each edge/node belongs to a species but this isn't shown
 - **Node Labels**: Currently showing generic labels - need requirements for what should be displayed
-- **No Visual Review**: Nobody actually looked at the page, hovered elements, or tested the UX
 
 ### Process Issues  
 - **Missing Design Review**: Aesthetic decisions made without stakeholder input
-- **No Screenshot Review**: Agents implementing UI without visual verification
+- **Visual Review Status**: Initial implementation done without visual review, but screenshots and live page have since been reviewed
 - **Requirements Gap**: Need to ask stakeholders about desired tree appearance
 
 ### E2E Test Configuration
@@ -645,7 +647,14 @@ npm test TreeOfLife        # Run tree component tests
 - **Solution**: Override in `.env.local` (see CLAUDE.md)
 - **Impact**: Low - only affects local development
 
-### Remaining Technical Debt
-- **MockLLM lint error**: Line 106 uses 'any' type (pre-existing)
-- **Missing E2E tests**: No Playwright tests implemented yet
-- **README references**: Points to non-existent docs (specification.md, ARCHITECTURE_DECISIONS.md, HOW_TO_ADD_FEATURES.md)
+### Build and Test Issues
+- **Build Completely Broken**: TypeScript errors prevent successful build
+  - `src/llm/mock.ts(147,50)`: error TS18048: 'current' is possibly 'undefined'
+  - `vite.config.ts(15,3)`: error TS2769: 'test' property issue in config
+  - Despite this, dev server runs fine with hot reload
+- **Lint Errors**: 
+  - Line 109 in mock.ts uses 'any' type: `(addAction as any).parentSpecies = spawn.parent;`
+- **Test Status**:
+  - 1 test failing in mock.test.ts (79/80 tests pass)
+  - Failing test: "should return empty array when no more turns available" - returns turn_changed and turn_ended events instead
+  - Missing E2E tests: No Playwright tests implemented yet
