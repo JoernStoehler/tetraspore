@@ -56,7 +56,6 @@ coverage/
 !specification.md
 !ARCHITECTURE_DECISIONS.md
 !HOW_TO_ADD_FEATURES.md
-!implementation-guide-*.md
 
 # Agent communication files in any directory
 TASK.md
