@@ -1,13 +1,21 @@
 // DSL Types - Game state and events
 
+export interface Species {
+  id: string;
+  name: string;
+  parentId: string | null;
+  birthTurn: number;
+  extinctionTurn?: number;
+}
+
 export interface GameState {
   turn: number;
-  species: string[];
+  species: Species[];
 }
 
 export type GameEvent = 
   | { type: "turn_changed"; turn: number }
-  | { type: "species_added"; name: string }
+  | { type: "species_added"; name: string; parentSpecies?: string }
   | { type: "species_removed"; name: string }
   | { type: "turn_ended" };
 

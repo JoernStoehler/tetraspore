@@ -1,6 +1,6 @@
 // DSL Reducer - Applies events to game state
 
-import type { GameState, GameEvent } from './types';
+import type { GameState, GameEvent, Species } from './types';
 
 // Initial state
 export const initialState: GameState = {
@@ -14,17 +14,46 @@ export function reduceEvent(state: GameState, event: GameEvent): GameState {
     case 'turn_changed':
       return { ...state, turn: event.turn };
     
-    case 'species_added':
-      if (!state.species.includes(event.name)) {
-        return { ...state, species: [...state.species, event.name] };
+    case 'species_added': {
+      // Check if species already exists
+      const exists = state.species.some(s => s.name === event.name);
+      if (exists) {
+        return state;
       }
-      return state;
-    
-    case 'species_removed':
+      
+      // Find parent species if specified
+      let parentId: string | null = null;
+      if (event.parentSpecies) {
+        const parent = state.species.find(s => s.name === event.parentSpecies);
+        if (parent) {
+          parentId = parent.id;
+        }
+      }
+      
+      // Create new species object
+      const newSpecies: Species = {
+        id: `species-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: event.name,
+        parentId,
+        birthTurn: state.turn,
+      };
+      
       return { 
         ...state, 
-        species: state.species.filter(s => s !== event.name) 
+        species: [...state.species, newSpecies] 
       };
+    }
+    
+    case 'species_removed': {
+      return { 
+        ...state, 
+        species: state.species.map(s => 
+          s.name === event.name 
+            ? { ...s, extinctionTurn: state.turn }
+            : s
+        )
+      };
+    }
     
     case 'turn_ended':
       // No state change, just marks end of turn

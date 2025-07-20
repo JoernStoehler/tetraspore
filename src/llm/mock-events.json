@@ -13,8 +13,8 @@
       "turn": 2,
       "events": [
         { "type": "turn_changed", "turn": 2 },
-        { "type": "species_added", "name": "Blue-green Algae" },
-        { "type": "species_added", "name": "Photosynthetic Bacteria" },
+        { "type": "species_added", "name": "Blue-green Algae", "parentSpecies": "Primordial Algae" },
+        { "type": "species_added", "name": "Photosynthetic Bacteria", "parentSpecies": "Simple Bacteria" },
         { "type": "turn_ended" }
       ]
     },
@@ -23,8 +23,8 @@
       "events": [
         { "type": "turn_changed", "turn": 3 },
         { "type": "species_removed", "name": "Simple Bacteria" },
-        { "type": "species_added", "name": "Early Moss" },
-        { "type": "species_added", "name": "Colonial Algae" },
+        { "type": "species_added", "name": "Early Moss", "parentSpecies": "Blue-green Algae" },
+        { "type": "species_added", "name": "Colonial Algae", "parentSpecies": "Blue-green Algae" },
         { "type": "turn_ended" }
       ]
     },
@@ -32,8 +32,8 @@
       "turn": 4,
       "events": [
         { "type": "turn_changed", "turn": 4 },
-        { "type": "species_added", "name": "Simple Fern" },
-        { "type": "species_added", "name": "Aquatic Moss" },
+        { "type": "species_added", "name": "Simple Fern", "parentSpecies": "Early Moss" },
+        { "type": "species_added", "name": "Aquatic Moss", "parentSpecies": "Early Moss" },
         { "type": "species_removed", "name": "Primordial Algae" },
         { "type": "turn_ended" }
       ]
@@ -44,8 +44,8 @@
         { "type": "turn_changed", "turn": 5 },
         { "type": "species_removed", "name": "Blue-green Algae" },
         { "type": "species_removed", "name": "Photosynthetic Bacteria" },
-        { "type": "species_added", "name": "Tree Fern" },
-        { "type": "species_added", "name": "Ground Moss" },
+        { "type": "species_added", "name": "Tree Fern", "parentSpecies": "Simple Fern" },
+        { "type": "species_added", "name": "Ground Moss", "parentSpecies": "Aquatic Moss" },
         { "type": "turn_ended" }
       ]
     },
@@ -53,8 +53,8 @@
       "turn": 6,
       "events": [
         { "type": "turn_changed", "turn": 6 },
-        { "type": "species_added", "name": "Early Conifer" },
-        { "type": "species_added", "name": "Climbing Vine" },
+        { "type": "species_added", "name": "Early Conifer", "parentSpecies": "Tree Fern" },
+        { "type": "species_added", "name": "Climbing Vine", "parentSpecies": "Colonial Algae" },
         { "type": "turn_ended" }
       ]
     },
@@ -63,8 +63,8 @@
       "events": [
         { "type": "turn_changed", "turn": 7 },
         { "type": "species_removed", "name": "Early Moss" },
-        { "type": "species_added", "name": "Flowering Plant" },
-        { "type": "species_added", "name": "Giant Fern" },
+        { "type": "species_added", "name": "Flowering Plant", "parentSpecies": "Climbing Vine" },
+        { "type": "species_added", "name": "Giant Fern", "parentSpecies": "Tree Fern" },
         { "type": "turn_ended" }
       ]
     },
@@ -72,9 +72,9 @@
       "turn": 8,
       "events": [
         { "type": "turn_changed", "turn": 8 },
-        { "type": "species_added", "name": "Deciduous Tree" },
+        { "type": "species_added", "name": "Deciduous Tree", "parentSpecies": "Early Conifer" },
         { "type": "species_removed", "name": "Colonial Algae" },
-        { "type": "species_added", "name": "Water Lily" },
+        { "type": "species_added", "name": "Water Lily", "parentSpecies": "Flowering Plant" },
         { "type": "turn_ended" }
       ]
     }

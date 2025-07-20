@@ -59,6 +59,46 @@ export function validateActions(actions: unknown): ValidationResult {
         break;
 
       case 'species_added':
+        if (!action.name || typeof action.name !== 'string') {
+          errors.push({
+            actionIndex: index,
+            field: 'name',
+            message: `${action.type} action must have a string "name" field`,
+            suggestion: 'Add "name": "<species name>" to the action'
+          });
+        } else if (action.name.trim().length === 0) {
+          errors.push({
+            actionIndex: index,
+            field: 'name',
+            message: 'Species name cannot be empty',
+            suggestion: 'Provide a non-empty name for the species'
+          });
+        } else {
+          // Validate parentSpecies if provided
+          if ('parentSpecies' in action && action.parentSpecies !== undefined) {
+            if (typeof action.parentSpecies !== 'string') {
+              errors.push({
+                actionIndex: index,
+                field: 'parentSpecies',
+                message: 'parentSpecies must be a string',
+                suggestion: 'Set parentSpecies to a string or remove it'
+              });
+            } else if (action.parentSpecies.trim().length === 0) {
+              errors.push({
+                actionIndex: index,
+                field: 'parentSpecies',
+                message: 'parentSpecies cannot be empty',
+                suggestion: 'Provide a non-empty parent species name or remove the field'
+              });
+            } else {
+              validActions.push(action as GameAction);
+            }
+          } else {
+            validActions.push(action as GameAction);
+          }
+        }
+        break;
+        
       case 'species_removed':
         if (!action.name || typeof action.name !== 'string') {
           errors.push({
@@ -121,6 +161,7 @@ function getExpectedFields(actionType: string): string[] {
     case 'turn_changed':
       return [...baseFields, 'turn'];
     case 'species_added':
+      return [...baseFields, 'name', 'parentSpecies'];
     case 'species_removed':
       return [...baseFields, 'name'];
     case 'turn_ended':
