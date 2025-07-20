@@ -1,11 +1,42 @@
-import { describe, test, expect, afterEach } from 'vitest';
+import { describe, test, expect, afterEach, beforeEach, vi } from 'vitest';
 import { renderHook, cleanup } from '@testing-library/react';
 import { useTreeData } from './hooks';
 import type { TreeNode } from './types';
+import type { GameState, Species } from '../../dsl/types';
+
+// Mock the store module
+vi.mock('../../store/store', () => ({
+  useGameState: vi.fn()
+}));
+
+// Import the mocked function
+import { useGameState } from '../../store/store';
 
 describe('useTreeData Hook', () => {
   afterEach(() => {
     cleanup();
+    vi.clearAllMocks();
+  });
+  
+  // Create test data that matches the original hardcoded expectations
+  const createMockGameState = (): GameState => {
+    const species: Species[] = [
+      { id: 'aquaticus', name: 'Aquaticus', parentId: null, birthTurn: 1, extinctionTurn: 5 },
+      { id: 'terrestris', name: 'Terrestris', parentId: null, birthTurn: 1, extinctionTurn: 6 },
+      { id: 'deepdiver', name: 'Deepdiver', parentId: 'aquaticus', birthTurn: 3 },
+      { id: 'climber', name: 'Climber', parentId: 'terrestris', birthTurn: 4 },
+      { id: 'abyssal', name: 'Abyssal', parentId: 'deepdiver', birthTurn: 6 }
+    ];
+    
+    return {
+      turn: 6,
+      species
+    };
+  };
+  
+  // Setup default mock before each test
+  beforeEach(() => {
+    vi.mocked(useGameState).mockReturnValue(createMockGameState());
   });
 
   test('should return a non-empty array of TreeNode objects', () => {
@@ -181,5 +212,36 @@ describe('useTreeData Hook', () => {
     // Should have at least one extinction node
     const hasExtinctions = nodes.some(node => node.nodeType === 'extinction');
     expect(hasExtinctions).toBe(true);
+  });
+  
+  test('should handle empty game state', () => {
+    // Mock empty state
+    vi.mocked(useGameState).mockReturnValue({ turn: 0, species: [] });
+    
+    const { result } = renderHook(() => useTreeData());
+    
+    expect(result.current).toEqual([]);
+  });
+  
+  test('should update when game state changes', () => {
+    const { result, rerender } = renderHook(() => useTreeData());
+    const firstResult = result.current;
+    
+    // Update mock to return different state
+    const newState: GameState = {
+      turn: 2,
+      species: [
+        { id: 'test', name: 'Test Species', parentId: null, birthTurn: 1 }
+      ]
+    };
+    vi.mocked(useGameState).mockReturnValue(newState);
+    
+    rerender();
+    const secondResult = result.current;
+    
+    // Results should be different (not same reference)
+    expect(firstResult).not.toBe(secondResult);
+    // Should have nodes for the new species
+    expect(secondResult.length).toBeGreaterThan(0);
   });
 });
