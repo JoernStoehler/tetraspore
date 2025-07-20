@@ -264,7 +264,7 @@ run_agent() {
     fi
     
     # Build agent command
-    local agent_args="--print --output-format stream-json"  # Stream all actions
+    local agent_args="--print --verbose --output-format stream-json"  # Stream all actions
     if [ "$continue_flag" = true ]; then
         agent_args="$agent_args --continue"
     fi

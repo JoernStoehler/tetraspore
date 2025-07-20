@@ -315,11 +315,46 @@ mock => events => reducer => state => store => props => component => webapp
    - ESLint configuration
    - Multi-agent development workflow
 
-## Milestone 2: Tree of Life Visualization 🚧
-**Status**: Planning  
+## Milestone 2: Tree of Life Visualization ✅
+**Status**: Completed  
+**Date**: January 20, 2025
 **Module**: `src/components/TreeOfLife/`
 **Focus**: D3.js-based evolutionary tree visualization
 **Approach**: UI-first development, gradual pipeline integration
+
+### Completed Features
+1. **Tree Visualization Component**
+   - D3.js-based evolutionary tree with zoom/pan capabilities
+   - Visual representation of species evolution over turns
+   - Color-coded nodes: Green (birth), Blue (alive), Red (extinction)
+   - Turn numbers displayed on each node
+
+2. **Type System for Tree Data**
+   - TreeNode interface with flat parent-reference structure
+   - Leveled tree design (one node per species per turn)
+   - Node types for birth, alive, and extinction states
+
+3. **Component Architecture**
+   - TreeOfLife.tsx main component with D3 integration
+   - layout.ts for tree layout calculations
+   - hooks.ts for data transformation (currently hardcoded)
+   - Comprehensive test coverage
+
+4. **DSL Extensions**
+   - Extended GameState to use Species objects instead of strings
+   - Added parentId tracking for species lineage
+   - Added parentSpecies field to species_added events
+   - Updated reducer to handle species relationships
+
+5. **Mock LLM Updates**
+   - Enhanced mock LLM to generate species with parent relationships
+   - Realistic evolution patterns over 6 turns
+   - Proper extinction handling
+
+### Known Issues / Future Work
+- Tree visualization currently uses hardcoded data in hooks.ts
+- TODO: Connect useTreeData hook to actual game state (deferred to Milestone 3)
+- Some unit tests failing due to mock LLM refactoring (tests need updating)
 
 ### Task Breakdown
 

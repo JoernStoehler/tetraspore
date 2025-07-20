@@ -12,11 +12,21 @@ export function useTreeData(): TreeNode[] {
     
     const nodes: TreeNode[] = [];
     
-    // Turn 1: Initial species emergence
+    // Turn 0: Common ancestor (root)
+    nodes.push({
+      id: 'primordial-0',
+      name: 'Primordial Life',
+      parentId: null,
+      turn: 0,
+      nodeType: 'birth',
+      speciesId: 'primordial'
+    });
+    
+    // Turn 1: Initial species emergence from common ancestor
     nodes.push({
       id: 'aquaticus-1',
       name: 'Aquaticus',
-      parentId: null,
+      parentId: 'primordial-0',
       turn: 1,
       nodeType: 'birth',
       speciesId: 'aquaticus'
@@ -25,7 +35,7 @@ export function useTreeData(): TreeNode[] {
     nodes.push({
       id: 'terrestris-1', 
       name: 'Terrestris',
-      parentId: null,
+      parentId: 'primordial-0',
       turn: 1,
       nodeType: 'birth',
       speciesId: 'terrestris'
