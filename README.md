@@ -39,7 +39,6 @@ If `.devcontainer/.env` is missing, contact DevOps for Honeycomb telemetry setup
   - `agent-orchestration-guide.md` - Multi-agent workflow patterns
   - `tool-guide-workagent.md` - workagent command reference
   - `tool-guide-mail.md` - mail command reference
-  - `project-guide-progress-tracking.md` - How to track project progress
 
 ## Development Tools
 
