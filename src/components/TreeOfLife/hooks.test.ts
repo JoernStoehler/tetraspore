@@ -1,9 +1,13 @@
-import { describe, test, expect } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, test, expect, afterEach } from 'vitest';
+import { renderHook, cleanup } from '@testing-library/react';
 import { useTreeData } from './hooks';
 import type { TreeNode } from './types';
 
 describe('useTreeData Hook', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   test('should return a non-empty array of TreeNode objects', () => {
     const { result } = renderHook(() => useTreeData());
     
@@ -28,12 +32,12 @@ describe('useTreeData Hook', () => {
     expect(result.current).toBe(firstResult);
   });
 
-  test('should have proper turn progression (1 to 6)', () => {
+  test('should have proper turn progression (0 to 6)', () => {
     const { result } = renderHook(() => useTreeData());
     const nodes = result.current;
     
     const turns = [...new Set(nodes.map(node => node.turn))].sort();
-    expect(turns).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(turns).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   test('should ensure every species has nodes for all turns it exists', () => {

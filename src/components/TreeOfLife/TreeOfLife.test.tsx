@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { TreeOfLife } from './TreeOfLife';
 import { TreeNode } from './types';
 
@@ -39,6 +39,10 @@ const sampleNodes: TreeNode[] = [
 ];
 
 describe('TreeOfLife', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('renders without crashing', () => {
     render(
       <TreeOfLife 
@@ -60,11 +64,11 @@ describe('TreeOfLife', () => {
       />
     );
     
-    // Check that all node names are rendered
-    expect(screen.getByText('Primordial Cell')).toBeInTheDocument();
-    expect(screen.getByText('Marine Algae')).toBeInTheDocument();
-    expect(screen.getByText('Land Fungi')).toBeInTheDocument();
-    expect(screen.getByText('Complex Multicellular')).toBeInTheDocument();
+    // Check that all node names are rendered - use getAllByText to handle duplicates
+    expect(screen.getAllByText('Primordial Cell')).toHaveLength(1);
+    expect(screen.getAllByText('Marine Algae')).toHaveLength(1);
+    expect(screen.getAllByText('Land Fungi')).toHaveLength(1);
+    expect(screen.getAllByText('Complex Multicellular')).toHaveLength(1);
   });
 
   it('SVG has correct dimensions', () => {
