@@ -221,24 +221,27 @@ mock => events => reducer => state => store => props => component => webapp
 export interface TreeNode {
   id: string;
   name: string;
-  parentId: string | null;
-  children: TreeNode[];
-  depth: number;
-  // Visual properties
-  x?: number;
-  y?: number;
+  parentId: string | null;  // Flat structure, no nested children
+  turn: number;              // Which turn this node represents
+  nodeType: 'birth' | 'alive' | 'extinction';
+  speciesId: string;         // Reference to the species
 }
 
 export interface TreeOfLifeProps {
-  nodes: TreeNode[];
+  nodes: TreeNode[];         // Flat array, topology only
   width: number;
   height: number;
   onNodeClick?: (node: TreeNode) => void;
 }
+
+// Note: Component computes x,y coordinates internally
+// Note: Leveled tree - one node per species per turn
 ```
 **Tests First**:
 - Type validation tests
 - Tree structure validation (no cycles, valid parent refs)
+- Verify all nodes have valid turn numbers
+- Ensure leveled structure (no skip-turn connections)
 
 #### Task 2.2: Tree Component Scaffold with Hardcoded Data
 **Owner**: UI Agent  
@@ -264,17 +267,19 @@ export interface TreeOfLifeProps {
 **Dependencies**: Tasks 2.1, 2.2
 ```typescript
 // Implement:
-- D3 tree layout algorithm
-- Node positioning
-- Edge/path rendering
+- Convert flat node array to D3 hierarchy
+- Compute x,y coordinates from topology
+- D3 tree layout algorithm (tidy tree)
+- Edge/path rendering between turns
 - Zoom/pan behavior
-- Visual styling (colors, sizes)
+- Visual styling (colors, sizes, node types)
 ```
 **Tests First**:
-- Layout positions nodes correctly
-- Edges connect parent-child nodes
+- Flat array converts to hierarchy correctly
+- Layout assigns x,y to all nodes
+- Edges connect parent-child across turns
 - Zoom/pan transforms work
-- Style application tests
+- Different node types styled differently
 
 #### Task 2.4: State-to-Props Transformation
 **Owner**: Data Agent  
@@ -282,13 +287,16 @@ export interface TreeOfLifeProps {
 **Dependencies**: Tasks 2.1-2.3
 ```typescript
 // Create useTreeData hook that:
-- Returns hardcoded tree structure (for now)
+- Returns hardcoded flat node array (for now)
+- Generates nodes for each species for each turn
+- Ensures leveled structure (no skip-turn edges)
 - TODO: Transform actual game state (Task 2.5)
 ```
 **Update**: GameUI to use hook instead of hardcoded props
 **Tests First**:
-- Hook returns valid tree structure
-- Tree has expected nodes
+- Hook returns valid flat node array
+- Every species has nodes for all turns it exists
+- Parent references point to previous turn
 
 #### Task 2.5: DSL Extension for Species Lineage
 **Owner**: DSL Agent  
@@ -296,14 +304,22 @@ export interface TreeOfLifeProps {
 **Dependencies**: Task 2.4
 ```typescript
 // Extend DSL with:
-- parent_species field in species_added event
-- Species state to track lineage
-- Reducer logic for tree building
+- parentSpecies field in species_added event
+- Update GameState to track species as objects not strings:
+  species: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    birthTurn: number;
+    extinctionTurn?: number;
+  }>
+- Reducer logic to maintain relationships
 ```
 **Tests First**:
-- Event validation includes parent_species
-- Reducer builds correct parent-child relationships
-- State maintains species tree
+- Event validation accepts parentSpecies
+- Reducer creates species objects with lineage
+- State maintains parent-child relationships
+- Can query descendants/ancestors
 
 #### Task 2.6: Mock LLM Species Generation
 **Owner**: LLM Agent  
@@ -319,6 +335,46 @@ export interface TreeOfLifeProps {
 - Mock generates valid parent references
 - Creates reasonable evolution patterns
 - No orphaned species
+
+### Design Decisions & Open Questions
+
+#### Decided Design Choices
+1. **Abstraction Boundary**: Tree component receives only topology (nodes with parent IDs), computes coordinates internally
+2. **Flat Data Structure**: Use array of nodes with parent pointers instead of recursive tree structure
+   - Easier updates and transformations
+   - Simpler for LLMs to generate
+3. **Leveled Tree**: Every species has a node for every turn it exists
+   - No skip-turn connections (T→T+2)
+   - Consistent visual spacing
+   - Shows continuous existence even without changes
+
+#### Open Questions
+1. **XY Layout Algorithm**
+   - Option A: D3's built-in tree layout (simple, well-tested)
+   - Option B: Custom algorithm for biological trees (more control)
+   - Option C: Force-directed for organic look (may be unstable)
+   
+2. **Topology Specification**
+   - Parent-only: Each node specifies only parentId (simple, no redundancy)
+   - Parent+Children: Include childIds array (redundant but explicit)
+   - Decision: Start with parent-only, add children if needed for performance
+
+3. **DSL Species Storage**
+   - How to store species relationships for easy LLM reading/writing?
+   - Options:
+     - Events carry parent info: `{ type: "species_added", name: "Bird", parentSpecies: "Dinosaur" }`
+     - State tracks lineage: `species: { id: "bird-1", parent: "dino-1", ... }`
+   - Challenge: LLM needs to read relationships but should only write one direction
+
+4. **Node Generation Strategy**
+   - When to create "alive" nodes vs just birth/extinction?
+   - How to handle species that persist unchanged for many turns?
+   - Consider: Generate nodes lazily vs eagerly creating full turn history
+
+5. **Visual Representation**
+   - How to distinguish node types visually (birth/alive/extinction)?
+   - Color coding for species traits?
+   - Line styles for different relationship types?
 
 ### Success Criteria
 - [ ] Tree component renders with hardcoded data (Task 2.2)
