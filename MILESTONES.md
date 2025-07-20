@@ -605,6 +605,28 @@ npm test TreeOfLife        # Run tree component tests
 
 ## Current Known Issues
 
+### Critical Tree Visualization Issues
+- **Visual Quality**: The tree is "ugly af" - no aesthetic consideration given
+- **Node Hover Bug**: Nodes shake majorly on hover (CSS transition issue)
+- **Text Overlap**: Species names become unreadable after few turns due to spacing
+- **Animation Issues**: Pressing "End Turn" causes laggy animation with broken intermediate frames:
+  - Nodes appear at (0,0) then jump to position
+  - Lines appear from nothing
+  - Not a refined visualization at all
+- **Turn Limit Bug**: After turn 10, "End Turn" stops progressing (MockLLM doesn't produce turn_changed event)
+- **Node Interaction**: Clicking nodes does nothing - not even placeholder feedback
+- **Species Visualization**: Cannot visually trace a species' evolution path:
+  - No color coding by species
+  - No highlight on hover
+  - Each edge/node belongs to a species but this isn't shown
+- **Node Labels**: Currently showing generic labels - need requirements for what should be displayed
+- **No Visual Review**: Nobody actually looked at the page, hovered elements, or tested the UX
+
+### Process Issues  
+- **Missing Design Review**: Aesthetic decisions made without stakeholder input
+- **No Screenshot Review**: Agents implementing UI without visual verification
+- **Requirements Gap**: Need to ask stakeholders about desired tree appearance
+
 ### E2E Test Configuration
 - **Issue**: Playwright tests may need configuration
 - **Solution**: Run `npx playwright install` if E2E tests fail

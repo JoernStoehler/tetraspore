@@ -73,8 +73,11 @@ export class MockLLM implements LLMService {
     const pattern = this.evolutionPatterns.find(p => p.turn === nextTurn);
     
     if (!pattern) {
-      // No more evolution patterns
-      return [];
+      // No more evolution patterns, just advance turn
+      return [
+        { type: "turn_changed", turn: nextTurn },
+        { type: "turn_ended" }
+      ];
     }
     
     const actions: GameAction[] = [
