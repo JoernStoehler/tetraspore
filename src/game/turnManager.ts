@@ -1,6 +1,35 @@
+/**
+ * @agent-note Turn Manager - LLM Integration and Validation Loop
+ * @integration-point Orchestrates the LLM → Validation → State update flow
+ * @architecture-context Implements the two-pass validation strategy from the RFC
+ * 
+ * Turn processing flow:
+ * 1. LLM generates DSL actions for the turn
+ * 2. Parser extracts and validates actions
+ * 3. If invalid: Send feedback to LLM for correction (up to maxAttempts)
+ * 4. If valid: Return actions to game store
+ * 
+ * Key features:
+ * - Retry loop with validation feedback
+ * - Game rule validation (species per turn, extinctions per era)
+ * - Formatted prompts for real LLM integration
+ * 
+ * Integration with MockLLM:
+ * - mockLLM.generateTurn() simulates LLM responses
+ * - mockLLM.regenerateWithFeedback() handles validation failures
+ * - Scenarios loaded from JSON for easy testing
+ * 
+ * Common issues:
+ * - Parent species not existing when creating children
+ * - Turn numbers not matching current game turn
+ * - Exceeding max species/extinctions per turn
+ * 
+ * Future: Replace MockLLM with real LLM service
+ */
+
 import type { DSLState, DSLActionTurn } from '../dsl';
 import { parser } from '../dsl';
-import type { GameSettings, LLMResponse } from './types';
+import type { GameSettings } from './types';
 import type { MockLLM } from './mockLLM';
 
 interface TurnResult {

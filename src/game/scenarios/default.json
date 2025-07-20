@@ -1,0 +1,171 @@
+{
+  "metadata": {
+    "id": "default",
+    "name": "Default Evolution Scenario",
+    "description": "The standard Tetraspore evolution progression from simple moss to complex ecosystems",
+    "author": "Tetraspore Team",
+    "version": "1.0.0"
+  },
+  
+  "fixedTurns": [
+    {
+      "turn": 1,
+      "reasoning": "Life begins with simple photosynthetic organisms in shallow pools",
+      "actions": [
+        {
+          "type": "SpeciesCreate",
+          "species": {
+            "id": "primordial-moss",
+            "name": "Primordial Moss",
+            "description": "The first photosynthetic organism, converting sunlight into energy",
+            "creation_turn": 1
+          }
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "reasoning": "The primordial moss radiates into different ecological niches",
+      "actions": [
+        {
+          "type": "SpeciesCreateChoice",
+          "preview": {
+            "id": "preview-shade-moss",
+            "name": "Shade Moss",
+            "description": "Thrives in dark environments, developed ability to photosynthesize using minimal light",
+            "parent_id": "primordial-moss",
+            "creation_turn": 2
+          }
+        },
+        {
+          "type": "SpeciesCreateChoice",
+          "preview": {
+            "id": "preview-water-moss",
+            "name": "Water Moss",
+            "description": "Aquatic variant that filters nutrients from water, forms dense underwater carpets",
+            "parent_id": "primordial-moss",
+            "creation_turn": 2
+          }
+        },
+        {
+          "type": "SpeciesCreateChoice",
+          "preview": {
+            "id": "preview-rock-moss",
+            "name": "Rock Moss",
+            "description": "Hardy species that breaks down rock into soil, pioneer of barren landscapes",
+            "parent_id": "primordial-moss",
+            "creation_turn": 2
+          }
+        }
+      ]
+    },
+    {
+      "turn": 3,
+      "reasoning": "Environmental pressure causes first extinction while new adaptations emerge",
+      "actions": []
+    },
+    {
+      "turn": 4,
+      "reasoning": "Vascular tissue evolution enables plants to grow taller and colonize land",
+      "actions": []
+    },
+    {
+      "turn": 5,
+      "reasoning": "Catastrophic event causes mass extinction, but creates opportunities for new life forms",
+      "actions": [
+        {
+          "type": "SpeciesCreate",
+          "species": {
+            "id": "early-fungus",
+            "name": "Early Fungus",
+            "description": "First decomposer organisms, recycling nutrients from extinct species",
+            "creation_turn": 5
+          }
+        }
+      ]
+    }
+  ],
+  
+  "evolutionScenarios": [
+    {
+      "condition": {
+        "minSpecies": 1
+      },
+      "reasoning": "Continuing evolution and adaptation of existing species",
+      "actions": []
+    }
+  ],
+  
+  "extinctionScenarios": [
+    {
+      "condition": {
+        "turnModulo": 5,
+        "minSpecies": 3
+      },
+      "reasoning": "Periodic extinction events drive evolutionary change",
+      "actions": []
+    }
+  ],
+  
+  "evolutionPaths": [
+    {
+      "from": "moss",
+      "to": ["Shade Moss", "Water Moss", "Rock Moss", "Glow Moss"],
+      "descriptions": {
+        "Shade Moss": "Thrives in dark environments, developed ability to photosynthesize using minimal light",
+        "Water Moss": "Aquatic variant that filters nutrients from water, forms dense underwater carpets",
+        "Rock Moss": "Hardy species that breaks down rock into soil, pioneer of barren landscapes",
+        "Glow Moss": "Bioluminescent moss that attracts nocturnal pollinators with soft blue light"
+      }
+    },
+    {
+      "from": "fern",
+      "to": ["Tree Fern", "Climbing Fern", "Aquatic Fern", "Desert Fern"],
+      "descriptions": {
+        "Tree Fern": "Tall fern with woody trunk, reaches for canopy light in dense forests",
+        "Climbing Fern": "Vine-like fern that uses other plants for support, highly adaptable",
+        "Aquatic Fern": "Free-floating fern that forms vast mats on water surfaces",
+        "Desert Fern": "Drought-resistant fern with waxy coating and deep root system"
+      }
+    },
+    {
+      "from": "flower",
+      "to": ["Night Bloom", "Sun Seeker", "Frost Flower", "Fire Lily"],
+      "descriptions": {
+        "Night Bloom": "Flower that opens only at night, pollinated by moths and bats",
+        "Sun Seeker": "Heliotropic flower that tracks the sun throughout the day",
+        "Frost Flower": "Cold-adapted flower that blooms in winter, antifreeze in petals",
+        "Fire Lily": "Fire-resistant flower that requires heat to germinate seeds"
+      }
+    },
+    {
+      "from": "tree",
+      "to": ["Giant Redwood", "Willow", "Palm", "Bonsai"],
+      "descriptions": {
+        "Giant Redwood": "Massive tree that can live thousands of years, creates own ecosystem",
+        "Willow": "Graceful tree with drooping branches, thrives near water",
+        "Palm": "Tropical tree with large fronds, adapted to coastal conditions",
+        "Bonsai": "Miniaturized tree that allocates resources for longevity over growth"
+      }
+    },
+    {
+      "from": "fungus",
+      "to": ["Mycelium Network", "Spore Cloud", "Symbiotic Fungus", "Luminescent Mushroom"],
+      "descriptions": {
+        "Mycelium Network": "Underground fungal network that connects and nourishes multiple plants",
+        "Spore Cloud": "Fungus that releases massive spore clouds for wind dispersal",
+        "Symbiotic Fungus": "Forms beneficial partnerships with plant roots, enhancing nutrient uptake",
+        "Luminescent Mushroom": "Glowing fungus that attracts insects for spore dispersal"
+      }
+    }
+  ],
+  
+  "extinctionReasons": [
+    "Climate change made habitat unsuitable",
+    "Outcompeted by more efficient species",
+    "Lost critical symbiotic partner",
+    "Volcanic eruption destroyed last populations",
+    "Disease swept through populations",
+    "Couldn't adapt to changing atmospheric conditions"
+  ]
+}

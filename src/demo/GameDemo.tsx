@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGameStore, useCurrentTurn, useIsProcessing, useSpecies, usePreviews } from '../game';
 import { registry, type TreeNode } from '../dsl';
 
@@ -21,10 +21,10 @@ export function GameDemo() {
       data: p
     })),
     ...extinctPreviews.map(p => {
-      const species = species.find(s => s.id === p.species_id);
-      return species ? {
+      const targetSpecies = species.find(s => s.id === p.species_id);
+      return targetSpecies ? {
         type: 'extinctPreview' as const,
-        data: { ...species, preview_extinction_turn: p.extinction_turn }
+        data: { ...targetSpecies, preview_extinction_turn: p.extinction_turn }
       } : null;
     }).filter(Boolean) as TreeNode[]
   ];

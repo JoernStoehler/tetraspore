@@ -1,3 +1,31 @@
+/**
+ * @agent-note Component Registry - Dynamic UI component management
+ * @integration-point Allows LLM to reference UI components by name in DSL
+ * @architecture-context Enables data-driven UI without hardcoding component references
+ * 
+ * How it works:
+ * 1. Components are registered at app startup (see main.tsx)
+ * 2. LLM can reference components by name in DSL output
+ * 3. React dynamically renders the requested component
+ * 
+ * Current registered components:
+ * - TreeView: Renders the species evolution tree
+ * - GameControls: Shows turn controls and game state
+ * 
+ * Adding new components:
+ * 1. Create component in src/components/
+ * 2. Define props interface extending DSL types
+ * 3. Register in main.tsx: registry.register('Name', Component)
+ * 4. LLM can now use it: { "component": "Name", "props": {...} }
+ * 
+ * Common mistakes:
+ * - Forgetting to register component before LLM references it
+ * - Component name mismatch between registration and LLM usage
+ * - Props type mismatch between component and DSL
+ * 
+ * Testing: Use registry.getNames() to see all available components
+ */
+
 import type { ComponentType } from 'react';
 import type { ComponentRegistry } from './interfaces';
 

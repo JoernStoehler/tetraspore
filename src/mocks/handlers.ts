@@ -57,8 +57,7 @@ export const handlers = [
     })
   }),
 
-  http.post('/api/game/save', async ({ request }) => {
-    const body = await request.json()
+  http.post('/api/game/save', async () => {
     return HttpResponse.json({
       success: true,
       saveId: `save-${Date.now()}`,
@@ -66,7 +65,7 @@ export const handlers = [
     })
   }),
 
-  http.get('/api/game/load/:saveId', ({ params }) => {
+  http.get('/api/game/load/:saveId', () => {
     return HttpResponse.json({
       success: true,
       gameState: {

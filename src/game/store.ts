@@ -1,6 +1,31 @@
+/**
+ * @agent-note Game Store - Central state management for Tetraspore
+ * @integration-point Bridges DSL system with React components via Zustand
+ * @architecture-context This store is the ONLY place game state should be modified
+ * 
+ * Data flow:
+ * 1. User clicks "Next Turn" → nextTurn() called
+ * 2. Turn manager gets LLM response (mock or real)
+ * 3. LLM response parsed and validated by DSL system
+ * 4. Valid actions applied via applyAction() or applyTurn()
+ * 5. React components re-render based on new state
+ * 
+ * Key integrations:
+ * - DSL Reducer: Applies actions to state (preserves GameState fields!)
+ * - Turn Manager: Handles LLM interaction and validation loop
+ * - Persistence: Auto-saves after each action if enabled
+ * 
+ * Common pitfalls:
+ * - reducer.reduce() returns DSLState, not GameState - must merge!
+ * - Player choices (accept/reject) create new DSL actions
+ * - All state modifications MUST go through actions for persistence
+ * 
+ * Testing: Check actionHistory to replay game sequences
+ */
+
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import type { DSLAction, DSLActionTurn, CreatePreview, Species } from '../dsl';
+import type { DSLAction, DSLActionTurn, Species } from '../dsl';
 import { reducer, clearPreviews, incrementTurn } from '../dsl';
 import type { GameState, GameSettings, SavedGame } from './types';
 import { defaultSettings } from './types';
@@ -47,7 +72,13 @@ export const useGameStore = create<GameStore>()(
       // Apply a single action
       applyAction: (action) => {
         const { state, actionHistory } = get();
-        const newState = reducer.reduce(state, action);
+        const newDSLState = reducer.reduce(state, action);
+        
+        // Merge DSL state with Game state
+        const newState: GameState = {
+          ...state, // Keep GameState-specific fields
+          ...newDSLState // Update DSL fields
+        };
         
         set({
           state: newState,
@@ -63,7 +94,13 @@ export const useGameStore = create<GameStore>()(
       // Apply a full turn
       applyTurn: (turn) => {
         const { state, actionHistory } = get();
-        const newState = reducer.reduceTurn(state, turn);
+        const newDSLState = reducer.reduceTurn(state, turn);
+        
+        // Merge DSL state with Game state
+        const newState: GameState = {
+          ...state, // Keep GameState-specific fields
+          ...newDSLState // Update DSL fields
+        };
         
         set({
           state: newState,
@@ -82,8 +119,13 @@ export const useGameStore = create<GameStore>()(
           setError(undefined);
           
           // Clear previous previews and increment turn
-          let newState = clearPreviews(state);
-          newState = incrementTurn(newState);
+          let newDSLState = clearPreviews(state);
+          newDSLState = incrementTurn(newDSLState);
+          
+          const newState: GameState = {
+            ...state,
+            ...newDSLState
+          };
           
           set({ state: newState });
           
@@ -200,8 +242,9 @@ export const useGameStore = create<GameStore>()(
       loadGame: (save) => {
         if (!save) {
           // Try to load from persistence
-          save = loadFromPersistence(get().settings.saveKey);
-          if (!save) return;
+          const loaded = loadFromPersistence(get().settings.saveKey);
+          if (!loaded) return;
+          save = loaded;
         }
         
         set({
