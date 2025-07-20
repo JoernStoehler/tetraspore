@@ -609,11 +609,14 @@ npm test TreeOfLife        # Run tree component tests
 - **Visual Quality**: The tree is "ugly af" - no aesthetic consideration given
 - **Node Hover Bug**: Nodes shake majorly on hover (CSS transition issue)
 - **Text Overlap**: Species names become unreadable after few turns due to spacing
+- **Vertical Compression**: As turns increase, nodes get closer together until unreadable
+  - Tree tries to fit all content in fixed height instead of maintaining consistent spacing
+  - Should have fixed per-turn spacing and scrollable/zoomable view
 - **Animation Issues**: Pressing "End Turn" causes laggy animation with broken intermediate frames:
   - Nodes appear at (0,0) then jump to position
   - Lines appear from nothing
   - Not a refined visualization at all
-- **Turn Limit Bug**: After turn 10, "End Turn" stops progressing (MockLLM doesn't produce turn_changed event)
+- **Turn Limit Bug**: ~~After turn 10, "End Turn" stops progressing~~ (Fixed)
 - **Node Interaction**: Clicking nodes does nothing - not even placeholder feedback
 - **Species Visualization**: Cannot visually trace a species' evolution path:
   - No color coding by species
