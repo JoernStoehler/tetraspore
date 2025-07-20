@@ -197,6 +197,10 @@ EOF
     echo "$branch" > "$worktree_dir/.agent/branch"
     date -u +"%Y-%m-%dT%H:%M:%SZ" > "$worktree_dir/.agent/prepared"
     
+    # Create persistent logs directory
+    local logs_dir="/workspaces/.agent-shared/logs/$branch"
+    mkdir -p "$logs_dir"
+    
     success "Worktree prepared successfully!"
     echo ""
     echo "Next steps:"
@@ -289,8 +293,8 @@ echo "Model: ${model:-default}"
 echo "=================================="
 echo ""
 
-# Run agent with message
-$AGENT_CMD $agent_args "$message" 2>&1 | tee -a .agent/session.log
+# Run agent with message (write to persistent log only)
+$AGENT_CMD $agent_args "$message" 2>&1 | tee -a /workspaces/.agent-shared/logs/$branch/session.log
 
 # Update status when done
 echo "STOPPED" > .agent/status
@@ -363,9 +367,10 @@ show_status() {
             fi
             
             # Get log activity for running agents
-            if [ -f "$worktree/.agent/session.log" ]; then
+            local shared_log="/workspaces/.agent-shared/logs/$branch/session.log"
+            if [ -f "$shared_log" ]; then
                 # Get log file modification time
-                local log_mod_time=$(stat -c %Y "$worktree/.agent/session.log" 2>/dev/null || stat -f %m "$worktree/.agent/session.log" 2>/dev/null || echo 0)
+                local log_mod_time=$(stat -c %Y "$shared_log" 2>/dev/null || stat -f %m "$shared_log" 2>/dev/null || echo 0)
                 local current_time=$(date +%s)
                 local minutes_ago=$(( (current_time - log_mod_time) / 60 ))
                 
@@ -384,7 +389,7 @@ show_status() {
                 # Get last meaningful action from log
                 if [ "$status" = "RUNNING" ]; then
                     # Look for tool calls in stream-json output
-                    last_action=$(tail -100 "$worktree/.agent/session.log" 2>/dev/null | grep -E '"tool_name":|"type":"tool_use"' | tail -1 | sed 's/.*"tool_name":"\([^"]*\)".*/\1/' | cut -c1-30)
+                    last_action=$(tail -100 "$shared_log" 2>/dev/null | grep -E '"tool_name":|"type":"tool_use"' | tail -1 | sed 's/.*"tool_name":"\([^"]*\)".*/\1/' | cut -c1-30)
                     if [ -z "$last_action" ]; then
                         last_action="Thinking..."
                     fi
