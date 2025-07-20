@@ -1,6 +1,6 @@
 /**
  * Public exports for the TreeOfLife component module.
- * Only exports types that other modules will use.
  */
 
+export { TreeOfLife } from './TreeOfLife';
 export type { TreeNode, TreeOfLifeProps } from './types';
