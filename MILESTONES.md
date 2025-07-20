@@ -3,6 +3,134 @@
 ## Overview
 This document tracks project milestones with a focus on maintainable, test-driven development. Each milestone is broken into delegatable tasks that can be completed independently by AI agents.
 
+## How to Use This Document
+
+### For AI Agents Reading This
+1. **Find your assigned task** by searching for your agent type (Data Agent, UI Agent, etc.)
+2. **Read ALL dependencies** before starting - you cannot begin until dependencies are complete
+3. **Follow the task specification EXACTLY** - do not add extra features or improvements
+4. **Create all files in the specified module path** - do not deviate from the structure
+5. **Mark your task as complete** by updating this document when ALL success criteria are met
+
+### For Orchestrators Adding Milestones/Tasks
+
+#### Milestone Structure
+```markdown
+## Milestone N: [Clear Feature Name]
+**Status**: Planning|In Progress|Completed  
+**Module**: `src/path/to/module/`  (if applicable)
+**Focus**: One-sentence description of the milestone's purpose
+**Dependencies**: List other milestones that must be complete first
+```
+
+#### Task Structure
+```markdown
+#### Task N.M: [Specific Component/Feature]
+**Owner**: [Agent Type] Agent  
+**Module**: `exact/file/path.ts`  
+**Dependencies**: Task N.X, N.Y (list all tasks that MUST be complete first)
+**Constraints**: Any limitations or rules for this task
+```
+
+#### Task Specification Must Include:
+1. **Exact file paths** - No ambiguity about where code goes
+2. **Clear interfaces** - If creating types/interfaces, show the structure
+3. **Test requirements** - List specific test cases that must pass
+4. **TODO markers** - Explicitly state what should be marked as TODO
+5. **Integration points** - How this connects to other modules (if at all)
+
+### Writing Rules for Tasks
+
+1. **Test-First Development**
+   - ALWAYS write tests before implementation
+   - Tests must fail initially (proves they're testing something)
+   - Implementation is complete when all tests pass
+   - If tests need adjustment, document WHY in comments
+
+2. **Single Module Responsibility**
+   - Each task modifies files in ONE module only
+   - Exception: Integration tasks can modify multiple modules
+   - If you need to touch another module, create a separate task
+
+3. **Dummy Implementations**
+   - When you need something from another module that doesn't exist yet:
+     ```typescript
+     // TODO: Replace with actual implementation from Task X.Y
+     const dummyFunction = () => { return []; }
+     ```
+   - ALWAYS mark with TODO and reference the task that will implement it
+
+4. **Cross-Module Communication**
+   - Use interfaces/types for contracts between modules
+   - Create the interface in the module that CONSUMES it
+   - The providing module must implement that exact interface
+
+5. **Code Quality Standards**
+   - Every function must have a clear single purpose
+   - Every interface must have JSDoc comments explaining its use
+   - Every file must have a header comment explaining its role
+   - No magic numbers - use named constants
+   - No any types - use unknown and narrow it down
+
+6. **Error Handling**
+   - Never use try/catch to hide errors during development
+   - Throw errors with descriptive messages for impossible states
+   - Use Result types or null returns for expected failures
+   - Document error cases in function comments
+
+7. **File Organization**
+   ```
+   src/
+   └── components/
+       └── TreeOfLife/
+           ├── index.ts          (public exports only)
+           ├── TreeOfLife.tsx    (main component)
+           ├── TreeOfLife.test.tsx
+           ├── types.ts          (interfaces and types)
+           ├── hooks.ts          (custom React hooks)
+           ├── utils.ts          (pure helper functions)
+           └── utils.test.ts
+   ```
+
+8. **Import Rules**
+   - Use absolute imports from `src/`
+   - Group imports: React, external libs, internal modules, types
+   - No circular dependencies - structure to avoid them
+
+9. **State Management**
+   - Components don't directly access Zustand store
+   - Use custom hooks that return only needed data
+   - Keep component logic pure and testable
+
+10. **Testing Requirements**
+    - Unit tests for all pure functions
+    - Component tests for all React components
+    - Integration tests for store interactions
+    - Mock external dependencies (including Zustand)
+    - Test error cases and edge conditions
+
+### Common Pitfalls to Avoid
+
+1. **Scope Creep**
+   - ❌ "While I'm here, I'll also improve..."
+   - ✅ Do ONLY what the task specifies
+
+2. **Premature Optimization**
+   - ❌ Complex performance optimizations
+   - ✅ Simple, readable code that works
+
+3. **Assuming Implementation**
+   - ❌ "The other module probably exports..."
+   - ✅ Check the exact interface or use TODO
+
+4. **Breaking Existing Tests**
+   - ❌ Modifying tests to make them pass
+   - ✅ Fix your implementation to satisfy tests
+
+5. **Forgetting Edge Cases**
+   - ❌ Only testing the happy path
+   - ✅ Test empty arrays, null values, errors
+
 ## Development Principles
 1. **Test-First Development**: Write tests, validate they fail, implement to pass
 2. **Single Responsibility**: Each task changes only one module/component
