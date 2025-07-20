@@ -12,7 +12,7 @@ The `mail` tool provides asynchronous communication between agents and the orche
 - **Log-like ordering** - newest messages at bottom (use `tail`)
 - **Self-contained lines** - no headers, grep-friendly
 - **Automatic read tracking** - messages marked READ when viewed
-- **Required agent filtering** - `--for` flag is mandatory for inbox
+- **Required branch filtering** - `--for` flag is mandatory for inbox and expects a git branch name
 - **Trash functionality** - messages can be trashed and restored
 
 ## Commands
@@ -34,16 +34,18 @@ mail send --to feat/api --subject "API needed" --body "Need endpoint for user pr
 
 ### mail inbox
 
-List messages for a specific agent. **The --for flag is required.**
+List messages for a specific git branch. **The --for flag is required and expects a branch name (not agent name).**
 
 ```bash
-# Show messages for specific agent (as sender OR recipient)
-mail inbox --for feat/ui
+# Show messages for specific branch (as sender OR recipient)
+# Note: Use git branch name, not agent name
+mail inbox --for feat/ui        # Feature branch
+mail inbox --for main            # Main branch
 
-# Show last 20 messages for agent
+# Show last 20 messages for branch
 mail inbox --for main | tail -20
 
-# Show unread messages for agent
+# Show unread messages for branch
 mail inbox --for main | grep UNREAD
 
 # Show trashed messages
@@ -156,8 +158,11 @@ Message body goes here...
 
 ### Agent Checking Its Mail
 
+**Important**: Agents use their git branch name for mail, not a separate agent name.
+
 ```bash
-# Agent feat/ui checking for new messages
+# Agent on branch 'feat/ui' checking for new messages
+# Use the git branch name, not agent name
 mail inbox --for feat/ui | grep UNREAD | tail -10
 
 # Read the latest unread message
@@ -170,7 +175,7 @@ mail inbox --for feat/ui | grep UNREAD | tail -1 | awk '{print $1}' | xargs mail
 # See recent updates from all agents
 mail inbox --for main | tail -20
 
-# Check specific agent's progress (must use --for)
+# Check specific branch's progress (must use --for with branch name)
 mail inbox --for main | grep "feat/api->" | tail -5
 
 # Clean up old messages
@@ -264,6 +269,8 @@ The `--for` flag requirement prevents:
 - Missing messages intended for you
 - Information overload from irrelevant messages
 
+**Note**: The `--for` parameter expects a git branch name (e.g., `main`, `feat/ui`, `feature/auth`), not an agent ID or username.
+
 ## Integration with workagent
 
 The `workagent prepare` command automatically sends a welcome mail to new agents with their task assignment. Agents are instructed to:
@@ -276,7 +283,7 @@ This creates a natural workflow for task distribution and progress tracking.
 
 ## Changes from Previous Version
 
-1. **Breaking Change**: `mail inbox` now requires `--for AGENT` flag
+1. **Breaking Change**: `mail inbox` now requires `--for BRANCH_NAME` flag
 2. **New Feature**: Messages can be trashed and restored
 3. **New Feature**: Trashed messages viewable with `--trash` flag
 

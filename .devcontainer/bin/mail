@@ -97,8 +97,10 @@ EOF
         show_trash=false
         
         if [ $# -eq 1 ]; then
-            echo "Error: inbox requires --for AGENT"
-            echo "Usage: mail inbox --for AGENT [--trash]"
+            echo "Error: inbox requires --for BRANCH_NAME"
+            echo "Usage: mail inbox --for BRANCH_NAME [--trash]"
+            echo "Example: mail inbox --for main"
+            echo "Example: mail inbox --for feat/ui"
             exit 1
         fi
         
@@ -119,8 +121,10 @@ EOF
         done
         
         if [ -z "$filter_for" ]; then
-            echo "Error: --for AGENT is required"
-            echo "Usage: mail inbox --for AGENT [--trash]"
+            echo "Error: --for BRANCH_NAME is required"
+            echo "Usage: mail inbox --for BRANCH_NAME [--trash]"
+            echo "Example: mail inbox --for main"
+            echo "Example: mail inbox --for feat/api"
             exit 1
         fi
         
@@ -225,7 +229,7 @@ EOF
         echo ""
         echo "Usage:"
         echo "  mail send --from SENDER --to RECIPIENT --subject \"SUBJECT\" --body \"BODY\""
-        echo "  mail inbox --for AGENT [--trash]  # List messages for agent (--for is required)"
+        echo "  mail inbox --for BRANCH_NAME [--trash]  # List messages for branch (--for is required)"
         echo "  mail read MESSAGE_ID               # Read and mark message as read"
         echo "  mail trash MESSAGE_ID              # Move message to trash"
         echo "  mail restore MESSAGE_ID            # Restore message from trash"
@@ -235,8 +239,11 @@ EOF
         echo "  # Send a task assignment"
         echo "  mail send --from main --to feat/ui --subject \"Task\" --body \"Build the Tree component\""
         echo ""
-        echo "  # Check messages for current branch"
+        echo "  # Check messages for main branch"
         echo "  mail inbox --for main"
+        echo ""
+        echo "  # Check messages for feature branch"
+        echo "  mail inbox --for feat/ui"
         echo ""
         echo "  # Check trashed messages"
         echo "  mail inbox --for main --trash"

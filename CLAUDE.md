@@ -40,6 +40,7 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 *(New requirements get added here with date and reasoning)*
 
 - 2025-07-16: DevContainer self-contained principle - all env files in `.devcontainer/` for consistent setup across developers
+- 2025-07-20: Testing infrastructure - implemented Option B comprehensive testing with Playwright + MSW + Vitest coverage
 
 ### Common Mistakes Log
 *(Mistakes and their prevention get added here)*
