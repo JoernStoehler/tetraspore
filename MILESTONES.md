@@ -612,6 +612,11 @@ npm test TreeOfLife        # Run tree component tests
 - **Vertical Compression**: As turns increase, nodes get closer together until unreadable
   - Tree tries to fit all content in fixed height instead of maintaining consistent spacing
   - Should have fixed per-turn spacing and scrollable/zoomable view
+- **Zoom/Pan Controls**: No sensible limits on navigation
+  - Can scroll to empty areas far from content
+  - Can zoom to unusable levels (too close or too far)
+  - Hard to return to sensible view once lost
+  - Missing "reset view" or "fit to content" button
 - **Animation Issues**: Pressing "End Turn" causes laggy animation with broken intermediate frames:
   - Nodes appear at (0,0) then jump to position
   - Lines appear from nothing
