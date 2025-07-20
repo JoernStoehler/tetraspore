@@ -16,6 +16,45 @@ Tetraspore is a single-player evolution and civilization game where players guid
 2. **Cultural Evolution** (Future): 4X-style gameplay with limited influence over civilization
 3. **Technological Singularity** (Future): Reach interstellar capabilities
 
+## Project State
+
+### Current State (2025-07-20)
+**Infrastructure**:
+- ✅ React 18 + TypeScript + Vite setup complete
+- ✅ Tailwind CSS configured
+- ✅ Basic landing page with "Tetraspore" title
+- ✅ DevOps: Environment variables, ports, build process
+- ✅ Testing: Vitest with 25 unit tests passing
+- ✅ E2E: Playwright configured with basic tests
+- ✅ Git worktree multi-agent workflow established
+- ✅ Agent orchestration system documented
+
+**Game Features**:
+- ⏳ Event sourcing system - NOT STARTED
+- ⏳ Tree of Life visualization - NOT STARTED
+- ⏳ Region Map visualization - NOT STARTED
+- ⏳ Choice card system - NOT STARTED
+- ⏳ LLM integration - NOT STARTED
+
+**Active Branches/Agents**:
+- None currently active
+
+### Target State (MVP)
+**Core Functionality**:
+- Event sourcing with localStorage persistence
+- Tree of Life showing species evolution
+- 2D Region Map with spherical Voronoi
+- Choice card system for player decisions
+- Turn processing with mock LLM mode
+- Basic game loop: events → choices → outcomes
+
+**Technical Requirements**:
+- All tests passing (unit + E2E)
+- Production build working
+- Performance: <3s turn processing
+- Storage: Handle 1000+ events in localStorage
+- UI: Responsive design for desktop
+
 ## Architecture
 
 ### Event Sourcing

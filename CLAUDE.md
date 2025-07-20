@@ -256,7 +256,7 @@ agent [your-command]
 - Use `workagent` to manage isolated agent workspaces
 - MCP servers provide enhanced search and documentation access
 - The `--dangerously-skip-permissions` flag is set by default for smoother workflows
-- Always document decisions in specification.md Development History
+- Always document decisions in project-status.md Development History
 
 ## Notes for Agents
 - Always use `agent` command for Claude with telemetry
@@ -272,6 +272,13 @@ agent [your-command]
 Tetraspore uses multiple AI agents working in parallel on different git worktrees. This enables rapid development while avoiding conflicts.
 
 **IMPORTANT**: All agents (orchestrator and workers) should read the [Agent Orchestration Guide](docs/agent-orchestration-guide.md) to understand the workflow and patterns for parallel development.
+
+### Project Tracking Documents
+Two key documents track project progress and coordination:
+- **[coordination-log.md](coordination-log.md)** - History of who coordinated what work and key decisions
+- **[project-status.md](project-status.md)** - Current project state and target features (see "Project State" section)
+
+Orchestrators must update these documents when spawning agents and completing features. See [Project Progress Tracking Guide](docs/project-guide-progress-tracking.md) for details.
 
 ### Quick Agent Commands
 

@@ -93,6 +93,8 @@ claude-*.log
 !README.md
 !CLAUDE.md
 !specification.md
+!project-status.md
+!coordination-log.md
 !ARCHITECTURE_DECISIONS.md
 !HOW_TO_ADD_FEATURES.md
 
