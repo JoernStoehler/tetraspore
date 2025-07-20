@@ -286,6 +286,6 @@ This creates a natural workflow for task distribution and progress tracking.
 1. **Breaking Change**: `mail inbox` now requires `--for BRANCH_NAME` flag
 2. **New Feature**: Messages can be archived and restored
 3. **New Feature**: Archived messages viewable with `--archive` flag
-4. **Terminology Update**: "trash" renamed to "archive" for clarity - old commands still work
+4. **Terminology Update**: "trash" renamed to "archive" for clarity
 
 These changes improve mailbox management and prevent accidental viewing of all system messages. The terminology change from "trash" to "archive" better reflects the intended use - these messages are saved for later reference, not deleted.

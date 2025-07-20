@@ -110,7 +110,7 @@ EOF
                     filter_for="$2"
                     shift 2
                     ;;
-                --archive|--trash)
+                --archive)
                     show_archive=true
                     shift
                     ;;
@@ -191,7 +191,7 @@ EOF
         fi
         ;;
         
-    archive|trash)
+    archive)
         msg_id="$2"
         msg_file="$MESSAGES_DIR/$msg_id.md"
         
@@ -204,7 +204,7 @@ EOF
         fi
         ;;
         
-    unarchive|restore)
+    unarchive)
         msg_id="$2"
         msg_file="$MESSAGES_DIR/$msg_id.md"
         
