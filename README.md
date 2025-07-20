@@ -2,6 +2,8 @@
 
 A React-based static web application built with modern development practices and AI-assisted multi-agent workflows.
 
+> **New to this project?** Start with [HANDOFF_CHECKLIST.md](HANDOFF_CHECKLIST.md) for setup instructions and known issues.
+
 ## Quick Start
 
 ```bash
