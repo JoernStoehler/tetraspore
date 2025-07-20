@@ -1,7 +1,7 @@
-import { GameDemo } from './demo/GameDemo'
+import { GameUI } from './components/GameUI'
 
 function App() {
-  return <GameDemo />
+  return <GameUI />
 }
 
 export default App

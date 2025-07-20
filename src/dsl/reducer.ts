@@ -1,91 +1,41 @@
-import type { DSLState, DSLAction, DSLActionTurn } from './types';
-import type { DSLReducer } from './interfaces';
+// DSL Reducer - Applies events to game state
 
-export class Reducer implements DSLReducer {
-  reduce(state: DSLState, action: DSLAction): DSLState {
-    switch (action.type) {
-      case 'SpeciesCreate':
-        return {
-          ...state,
-          species: [...state.species, action.species],
-        };
+import type { GameState, GameEvent } from './types';
 
-      case 'SpeciesCreateChoice':
-        return {
-          ...state,
-          previewCreate: [...state.previewCreate, action.preview],
-        };
+// Initial state
+export const initialState: GameState = {
+  turn: 0,
+  species: []
+};
 
-      case 'SpeciesExtinct':
-        return {
-          ...state,
-          species: state.species.map(species =>
-            species.id === action.species_id
-              ? { ...species, extinction_turn: action.extinction_turn }
-              : species
-          ),
-        };
-
-      case 'SpeciesExtinctChoice':
-        return {
-          ...state,
-          previewExtinct: [...state.previewExtinct, action.preview],
-        };
-
-      default:
-        return state;
-    }
-  }
-
-  reduceTurn(state: DSLState, turn: DSLActionTurn): DSLState {
-    return turn.actions.reduce((currentState, action) => 
-      this.reduce(currentState, action), 
-      state
-    );
+// Event reducer
+export function reduceEvent(state: GameState, event: GameEvent): GameState {
+  switch (event.type) {
+    case 'turn_changed':
+      return { ...state, turn: event.turn };
+    
+    case 'species_added':
+      if (!state.species.includes(event.name)) {
+        return { ...state, species: [...state.species, event.name] };
+      }
+      return state;
+    
+    case 'species_removed':
+      return { 
+        ...state, 
+        species: state.species.filter(s => s !== event.name) 
+      };
+    
+    case 'turn_ended':
+      // No state change, just marks end of turn
+      return state;
+    
+    default:
+      return state;
   }
 }
 
-// Helper functions for common state manipulations
-export function clearPreviews(state: DSLState): DSLState {
-  return {
-    ...state,
-    previewCreate: [],
-    previewExtinct: [],
-  };
+// Apply multiple events in sequence
+export function applyEvents(state: GameState, events: GameEvent[]): GameState {
+  return events.reduce(reduceEvent, state);
 }
-
-export function incrementTurn(state: DSLState): DSLState {
-  return {
-    ...state,
-    turn: state.turn + 1,
-  };
-}
-
-// Helper to check if species exists and is alive
-export function isSpeciesAlive(state: DSLState, speciesId: string): boolean {
-  const species = state.species.find(s => s.id === speciesId);
-  return species !== undefined && species.extinction_turn === undefined;
-}
-
-// Helper to get all alive species
-export function getAliveSpecies(state: DSLState): typeof state.species {
-  return state.species.filter(s => s.extinction_turn === undefined);
-}
-
-// Helper to get species lineage
-export function getLineage(state: DSLState, speciesId: string): typeof state.species {
-  const lineage: typeof state.species = [];
-  let currentId: string | undefined = speciesId;
-
-  while (currentId) {
-    const species = state.species.find(s => s.id === currentId);
-    if (!species) break;
-    lineage.unshift(species);
-    currentId = species.parent;
-  }
-
-  return lineage;
-}
-
-// Export singleton instance
-export const reducer = new Reducer();
