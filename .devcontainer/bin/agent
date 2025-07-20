@@ -6,7 +6,9 @@
 
 # Load environment variables from .devcontainer/.env if it exists
 if [ -f "/workspaces/tetraspore/.devcontainer/.env" ]; then
+    set -a  # Enable auto-export for all variables
     source "/workspaces/tetraspore/.devcontainer/.env"
+    set +a  # Disable auto-export
 fi
 
 # Validate Honeycomb API key

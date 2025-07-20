@@ -141,10 +141,17 @@ tail -f .logs/dev.log
 npm install
 
 # Run tests
-npm test                    # Run tests in watch mode
-npm test -- --run          # Run tests once
+npm test                    # Run unit tests in watch mode
+npm test -- --run          # Run unit tests once (25 tests)
 npm run test:ui            # Open Vitest UI
 npm run test:coverage      # Generate coverage report
+
+# E2E testing
+npm run test:e2e           # Run Playwright E2E tests (requires dev server)
+npm run test:e2e:ui        # Open Playwright UI
+npm run test:e2e:headed    # Run tests with browser UI visible
+npm run test:e2e:debug     # Debug E2E tests
+npm run test:all           # Run all tests (unit + E2E)
 
 # Build for production
 npm run build              # TypeScript check + Vite build
@@ -161,7 +168,8 @@ agent [your-command]
 After setting up a new worktree or major changes:
 - [ ] `npm install` - Dependencies installed
 - [ ] `npm run dev` - Dev server starts on correct port
-- [ ] `npm test -- --run` - All tests pass
+- [ ] `npm test -- --run` - All unit tests pass (25 tests)
+- [ ] `npm run test:e2e` - E2E tests pass (requires dev server running)
 - [ ] `npm run build` - Production build succeeds
 - [ ] Check `.env` exists (copy from main worktree)
 - [ ] Check `.env.local` for port overrides (if needed)
