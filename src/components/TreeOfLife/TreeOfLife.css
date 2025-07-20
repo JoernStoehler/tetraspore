@@ -1,0 +1,180 @@
+.tree-of-life-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.tree-of-life-container h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.tree-of-life-svg {
+  border: 1px solid #e0e0e0;
+  background-color: #fafafa;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+}
+
+.tree-of-life-svg:active {
+  cursor: grabbing;
+}
+
+/* Edge styling */
+.tree-edge {
+  stroke: #ccc;
+  stroke-width: 2;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.tree-edge:hover {
+  opacity: 1;
+  stroke-width: 3;
+}
+
+/* Node group transitions */
+.tree-node-group {
+  transition: transform 0.2s ease;
+}
+
+.tree-node-group:hover {
+  transform: scale(1.1);
+}
+
+/* Base node styling */
+.tree-node {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  stroke-width: 3;
+}
+
+.tree-node:hover {
+  stroke-width: 4;
+  filter: brightness(1.1);
+}
+
+.tree-node:focus {
+  outline: none;
+  stroke-width: 5;
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.3));
+}
+
+/* Node type specific styling */
+.tree-node-birth {
+  fill: #4CAF50;
+  stroke: #2E7D32;
+}
+
+.tree-node-birth:hover {
+  fill: #66BB6A;
+}
+
+.tree-node-alive {
+  fill: #2196F3;
+  stroke: #1565C0;
+}
+
+.tree-node-alive:hover {
+  fill: #42A5F5;
+}
+
+.tree-node-extinction {
+  fill: #F44336;
+  stroke: #C62828;
+}
+
+.tree-node-extinction:hover {
+  fill: #EF5350;
+}
+
+/* Text styling */
+.tree-node-label {
+  text-anchor: middle;
+  font-size: 12px;
+  fill: #333;
+  pointer-events: none;
+  font-weight: 500;
+}
+
+.tree-node-turn {
+  text-anchor: middle;
+  font-size: 10px;
+  fill: white;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+/* Controls */
+.tree-controls {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+  text-align: center;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tree-of-life-container h3 {
+    font-size: 1.25rem;
+  }
+  
+  .tree-node-label {
+    font-size: 10px;
+  }
+  
+  .tree-node-turn {
+    font-size: 8px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tree-node-group {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .tree-node-group,
+  .tree-node,
+  .tree-edge {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .tree-node-birth {
+    fill: #00E676;
+    stroke: #000;
+  }
+  
+  .tree-node-alive {
+    fill: #2979FF;
+    stroke: #000;
+  }
+  
+  .tree-node-extinction {
+    fill: #FF1744;
+    stroke: #000;
+  }
+  
+  .tree-edge {
+    stroke: #000;
+  }
+}

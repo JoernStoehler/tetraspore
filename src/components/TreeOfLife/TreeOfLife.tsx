@@ -1,5 +1,8 @@
-import React from 'react';
+import { useEffect, useRef } from 'react';
+import * as d3 from 'd3';
 import { TreeNode, TreeOfLifeProps } from './types';
+import { computeTreeLayout, createEdgePath, getNodeRadius, getNodeClass } from './layout';
+import './TreeOfLife.css';
 
 // Hardcoded sample tree data for scaffold
 const SAMPLE_TREE_DATA: TreeNode[] = [
@@ -37,25 +40,6 @@ const SAMPLE_TREE_DATA: TreeNode[] = [
   }
 ];
 
-// Simple hardcoded positioning for scaffold - TODO: Replace with D3 tree layout in Task 2.3
-const getNodePosition = (node: TreeNode, width: number, height: number) => {
-  const centerX = width / 2;
-  const levelHeight = height / 4;
-  
-  // Hardcoded x positions for our sample tree
-  switch (node.id) {
-    case 'root':
-      return { x: centerX, y: levelHeight };
-    case 'child1':
-      return { x: centerX - 150, y: levelHeight * 2 };
-    case 'child2':
-      return { x: centerX + 150, y: levelHeight * 2 };
-    case 'grandchild1':
-      return { x: centerX - 150, y: levelHeight * 3 };
-    default:
-      return { x: centerX, y: levelHeight * node.turn };
-  }
-};
 
 export function TreeOfLife({ 
   nodes = SAMPLE_TREE_DATA, 
@@ -63,82 +47,121 @@ export function TreeOfLife({
   height, 
   onNodeClick 
 }: TreeOfLifeProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const gRef = useRef<SVGGElement>(null);
+  
+  // Compute layout
+  const { layoutNodes, edges } = computeTreeLayout(nodes, width, height);
+  
+  // Setup zoom/pan behavior
+  useEffect(() => {
+    if (!svgRef.current || !gRef.current) return;
+    
+    const svg = d3.select(svgRef.current);
+    const g = d3.select(gRef.current);
+    
+    // Create zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform.toString());
+      });
+    
+    // Apply zoom behavior to svg
+    svg.call(zoom);
+    
+    // Cleanup
+    return () => {
+      svg.on('.zoom', null);
+    };
+  }, []);
+  
   const handleNodeClick = (node: TreeNode) => {
     if (onNodeClick) {
-      onNodeClick(node);
+      // Pass only the original TreeNode properties, not the layout extensions
+      const { id, name, parentId, turn, nodeType, speciesId } = node;
+      onNodeClick({ id, name, parentId, turn, nodeType, speciesId });
     }
   };
-
-  // TODO: Replace with D3.js tree layout in Task 2.3
-  // TODO: Add proper styling and animations in Task 2.3
   
   return (
-    <div>
+    <div className="tree-of-life-container">
       <h3>Tree of Life</h3>
       <svg 
+        ref={svgRef}
         width={width} 
         height={height} 
+        className="tree-of-life-svg"
         role="img"
-        style={{ 
-          border: '1px solid #ccc',
-          backgroundColor: '#fafafa'
-        }}
+        aria-label="Tree of Life visualization"
       >
-        {/* TODO: Add connecting lines between parent-child nodes in Task 2.3 */}
-        
-        {/* Render nodes as simple circles */}
-        {nodes.map((node) => {
-          const { x, y } = getNodePosition(node, width, height);
-          
-          return (
-            <g key={node.id}>
-              {/* Node circle */}
-              <circle
-                cx={x}
-                cy={y}
-                r={20}
-                fill="#4CAF50"
-                stroke="#2E7D32"
-                strokeWidth={2}
-                style={{ cursor: 'pointer' }}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleNodeClick(node)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleNodeClick(node);
-                  }
-                }}
+        <g ref={gRef}>
+          {/* Render edges first (behind nodes) */}
+          <g className="edges">
+            {edges.map((edge, index) => (
+              <path
+                key={`edge-${index}`}
+                d={createEdgePath(edge)}
+                className="tree-edge"
+                fill="none"
               />
+            ))}
+          </g>
+          
+          {/* Render nodes */}
+          <g className="nodes">
+            {layoutNodes.map((node) => {
+              const radius = getNodeRadius(node.nodeType);
+              const nodeClass = getNodeClass(node.nodeType);
               
-              {/* Node label */}
-              <text
-                x={x}
-                y={y + 35}
-                textAnchor="middle"
-                fontSize="12"
-                fill="#333"
-                style={{ pointerEvents: 'none' }}
-              >
-                {node.name}
-              </text>
-              
-              {/* Turn indicator */}
-              <text
-                x={x}
-                y={y + 6}
-                textAnchor="middle"
-                fontSize="10"
-                fill="white"
-                fontWeight="bold"
-                style={{ pointerEvents: 'none' }}
-              >
-                T{node.turn}
-              </text>
-            </g>
-          );
-        })}
+              return (
+                <g 
+                  key={node.id} 
+                  className="tree-node-group"
+                  transform={`translate(${node.x}, ${node.y})`}
+                >
+                  {/* Node circle */}
+                  <circle
+                    r={radius}
+                    className={nodeClass}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleNodeClick(node)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleNodeClick(node);
+                      }
+                    }}
+                  >
+                    <title>{node.name} - Turn {node.turn}</title>
+                  </circle>
+                  
+                  {/* Node label */}
+                  <text
+                    y={radius + 20}
+                    className="tree-node-label"
+                  >
+                    {node.name}
+                  </text>
+                  
+                  {/* Turn indicator */}
+                  <text
+                    y={5}
+                    className="tree-node-turn"
+                  >
+                    T{node.turn}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        </g>
       </svg>
+      <div className="tree-controls">
+        <p>Use mouse wheel to zoom, drag to pan</p>
+      </div>
     </div>
   );
 }
+
+export default TreeOfLife;
