@@ -101,13 +101,9 @@ export class MockLLM implements LLMService {
       // Generate species_added event with parent relationship
       const addAction: GameAction = {
         type: "species_added",
-        name: spawn.name
+        name: spawn.name,
+        ...(spawn.parent && { parentSpecies: spawn.parent })
       };
-      
-      // Add parentSpecies field if parent exists
-      if (spawn.parent) {
-        (addAction as any).parentSpecies = spawn.parent;
-      }
       
       actions.push(addAction);
     }
@@ -143,8 +139,9 @@ export class MockLLM implements LLMService {
     
     while (current) {
       lineage.unshift(current.name);
-      if (!current.parentId) break;
-      current = state.species.find(s => s.id === current.parentId);
+      const parentId = current.parentId;
+      if (!parentId) break;
+      current = state.species.find(s => s.id === parentId);
     }
     
     return lineage;

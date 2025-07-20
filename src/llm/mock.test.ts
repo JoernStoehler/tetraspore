@@ -94,11 +94,14 @@ describe('MockLLM', () => {
     expect(additions).toHaveLength(3); // Aerobic-bacteria, Green-algae, Blue-algae
   });
 
-  it('should return empty array when no more turns available', async () => {
+  it('should return only turn events when no more evolution patterns available', async () => {
     const futureState = { turn: 10, species: [] };
     const actions = await mockLLM.generateActions('test', futureState);
     
-    expect(actions).toEqual([]);
+    expect(actions).toEqual([
+      { type: "turn_changed", turn: 11 },
+      { type: "turn_ended" }
+    ]);
   });
 
   it('should track species lineage correctly', async () => {

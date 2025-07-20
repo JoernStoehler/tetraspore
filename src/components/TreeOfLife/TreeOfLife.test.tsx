@@ -68,7 +68,8 @@ describe('TreeOfLife', () => {
     expect(screen.getAllByText('Primordial Cell')).toHaveLength(1);
     expect(screen.getAllByText('Marine Algae')).toHaveLength(1);
     expect(screen.getAllByText('Land Fungi')).toHaveLength(1);
-    expect(screen.getAllByText('Complex Multicellular')).toHaveLength(1);
+    // Complex Multicellular is truncated, so check for the truncated version
+    expect(screen.getAllByText(/Complex Multi\.\.\./)).toHaveLength(1);
   });
 
   it('SVG has correct dimensions', () => {

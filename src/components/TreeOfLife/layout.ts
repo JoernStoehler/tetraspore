@@ -101,12 +101,54 @@ function alignNodesByTurn(nodes: LayoutNode[], height: number): void {
   
   if (maxTurn === 0) return;
   
-  // Calculate y position for each turn level
-  const levelHeight = (height - 100) / (maxTurn + 1);
+  // Fixed spacing between turns to prevent compression
+  const TURN_SPACING = 120; // Fixed pixel spacing between turns
+  const MIN_HEIGHT = 80; // Minimum spacing even with many turns
   
-  // Align nodes by turn
+  // Calculate actual spacing based on available height
+  const availableHeight = height - 100;
+  const idealHeight = maxTurn * TURN_SPACING;
+  
+  // Use fixed spacing unless it would exceed available height
+  const levelHeight = idealHeight > availableHeight 
+    ? Math.max(availableHeight / maxTurn, MIN_HEIGHT)
+    : TURN_SPACING;
+  
+  // Group nodes by turn to handle horizontal spacing
+  const nodesByTurn = new Map<number, LayoutNode[]>();
   nodes.forEach(node => {
-    node.y = 50 + (node.turn * levelHeight);
+    if (!nodesByTurn.has(node.turn)) {
+      nodesByTurn.set(node.turn, []);
+    }
+    nodesByTurn.get(node.turn)!.push(node);
+  });
+  
+  // Align nodes by turn and spread horizontally within each turn
+  nodesByTurn.forEach((turnNodes, turn) => {
+    const y = 50 + (turn * levelHeight);
+    
+    // Sort nodes by x position to maintain relative positions
+    turnNodes.sort((a, b) => a.x - b.x);
+    
+    // Calculate minimum spacing to prevent text overlap
+    const MIN_NODE_SPACING = 120; // Minimum pixels between nodes
+    
+    // Spread nodes if they're too close
+    for (let i = 1; i < turnNodes.length; i++) {
+      const prevNode = turnNodes[i - 1];
+      const currNode = turnNodes[i];
+      const distance = currNode.x - prevNode.x;
+      
+      if (distance < MIN_NODE_SPACING) {
+        // Adjust current node position to maintain minimum spacing
+        currNode.x = prevNode.x + MIN_NODE_SPACING;
+      }
+    }
+    
+    // Set y position for all nodes in this turn
+    turnNodes.forEach(node => {
+      node.y = y;
+    });
   });
 }
 
