@@ -28,16 +28,25 @@ export function GameUI() {
         <h2>Turn {turn}</h2>
         
         <div style={{ marginBottom: '1rem' }}>
-          <strong>Living Species ({species.length}):</strong>
-          {species.length === 0 ? (
+          <strong>Living Species ({species.filter(s => !s.extinctionTurn).length}):</strong>
+          {species.filter(s => !s.extinctionTurn).length === 0 ? (
             <p style={{ color: '#666', fontStyle: 'italic' }}>
               No species yet. Click "End Turn" to begin evolution!
             </p>
           ) : (
             <ul style={{ marginTop: '0.5rem' }}>
-              {species.map((name, index) => (
-                <li key={index}>{name}</li>
-              ))}
+              {species
+                .filter(s => !s.extinctionTurn)
+                .map((speciesObj) => (
+                  <li key={speciesObj.id}>
+                    {speciesObj.name} 
+                    {speciesObj.parentId && (
+                      <span style={{ color: '#666', fontSize: '0.9em' }}>
+                        {' '}(evolved from {species.find(s => s.id === speciesObj.parentId)?.name || 'unknown'})
+                      </span>
+                    )}
+                  </li>
+                ))}
             </ul>
           )}
         </div>

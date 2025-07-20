@@ -29,9 +29,20 @@ export class MockLLM implements LLMService {
   
   // For debugging - shows what the LLM would see
   formatStateForLLM(state: GameState): string {
+    // Extract just the living species (those without extinctionTurn)
+    const livingSpecies = state.species
+      .filter(s => !s.extinctionTurn)
+      .map(s => ({
+        name: s.name,
+        parent: state.species.find(p => p.id === s.parentId)?.name || null,
+        birthTurn: s.birthTurn
+      }));
+    
     return JSON.stringify({
       current_turn: state.turn,
-      living_species: state.species
+      living_species: livingSpecies,
+      total_species_count: state.species.length,
+      extinct_count: state.species.filter(s => s.extinctionTurn !== undefined).length
     }, null, 2);
   }
 }
