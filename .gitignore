@@ -1,70 +1,76 @@
-# Environment files - contain secrets and local config!
+# =============================================================================
+# Tetraspore .gitignore
+# =============================================================================
+# This file defines what should NOT be tracked in git.
+# Organized by category with clear explanations.
+
+# -----------------------------------------------------------------------------
+# SECRETS & ENVIRONMENT
+# -----------------------------------------------------------------------------
+# Environment files contain API keys, database URLs, and other secrets
 .env
 .env.local
 .env.*.local
-# But .env.example files are meant to be committed
+.devcontainer/.env
+
+# Exception: Template files are safe to commit
 !.env.example
 !.env.local.example
 
-# Node.js
+# -----------------------------------------------------------------------------
+# DEPENDENCIES & BUILD ARTIFACTS
+# -----------------------------------------------------------------------------
+# Node.js dependencies and package manager files
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
+# Build outputs and caches
 dist/
 build/
 .cache/
+.vite/
 
-# IDE
+# Test coverage reports
+coverage/
+*.lcov
+
+# -----------------------------------------------------------------------------
+# DEVELOPMENT ENVIRONMENT
+# -----------------------------------------------------------------------------
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# Operating system files
 .DS_Store
 Thumbs.db
 
-# DevContainer local env
-.devcontainer/.env
-
-# Port assignments and logs (per worktree)
-.ports
+# Development server logs and port assignments (per git worktree)
 .logs/
+.ports
 
-# Agent-related files
+# -----------------------------------------------------------------------------
+# AI AGENT SYSTEM
+# -----------------------------------------------------------------------------
+# Agent runtime files and communication
 .agent/
 .agent-startup.sh
 .agent-session.log
 session.log
+.mail/
 
-# Vite cache
-.vite/
-
-# Test coverage
-coverage/
-*.lcov
-
-# Root-level markdown files (orchestration, planning, temporary)
-/*.md
-
-# Keep important documentation
-!README.md
-!CLAUDE.md
-!specification.md
-!ARCHITECTURE_DECISIONS.md
-!HOW_TO_ADD_FEATURES.md
-
-# Agent communication files in any directory
+# Agent communication files (any directory)
 TASK.md
 HANDOFF.md
 REVIEW_REPORT.md
 AGENT_BRANCH_TASK.md
 AGENT_REVIEW_TASK.md
 
-# Agent test files
+# Agent test and debug files
 TEST*.txt
 HELLO.txt
 SIMPLE.txt
@@ -72,15 +78,25 @@ STARTED.txt
 AGENT*.txt
 test-*.log
 
-# Mail system
-.mail/
-
-# AI conversation context
+# AI conversation logs and context
 2025-*-you-are-*.txt
 *-conversation-*.txt
 claude-*.log
 
-# Temporary experiment files
+# -----------------------------------------------------------------------------
+# TEMPORARY & WORKING FILES
+# -----------------------------------------------------------------------------
+# Root-level markdown files (agent orchestration, planning, analysis)
+/*.md
+
+# Exception: Core project documentation stays committed
+!README.md
+!CLAUDE.md
+!specification.md
+!ARCHITECTURE_DECISIONS.md
+!HOW_TO_ADD_FEATURES.md
+
+# Temporary directories and files
 tmp/
 temp/
 scratch/
