@@ -602,3 +602,20 @@ npm test TreeOfLife        # Run tree component tests
 ## Milestone 10: Production Ready
 **Status**: Future  
 **Focus**: Performance, deployment, monitoring
+
+## Current Known Issues
+
+### E2E Test Configuration
+- **Issue**: Playwright tests may need configuration
+- **Solution**: Run `npx playwright install` if E2E tests fail
+- **Impact**: Low - only affects E2E testing
+
+### Port Conflicts  
+- **Issue**: Default ports (3000-3002) may be in use
+- **Solution**: Override in `.env.local` (see CLAUDE.md)
+- **Impact**: Low - only affects local development
+
+### Remaining Technical Debt
+- **MockLLM lint error**: Line 106 uses 'any' type (pre-existing)
+- **Missing E2E tests**: No Playwright tests implemented yet
+- **README references**: Points to non-existent docs (specification.md, ARCHITECTURE_DECISIONS.md, HOW_TO_ADD_FEATURES.md)
