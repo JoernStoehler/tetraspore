@@ -1,5 +1,9 @@
-import type { DSLState, DSLActionTurn, getAliveSpecies } from '../dsl';
+import type { DSLState, DSLActionTurn, Species } from '../dsl';
 import type { LLMResponse } from './types';
+
+// Helper to get alive species
+const getAliveSpecies = (species: Species[]): Species[] => 
+  species.filter(s => !s.extinction_turn);
 
 // Mock LLM that generates deterministic but interesting game progression
 export class MockLLM {

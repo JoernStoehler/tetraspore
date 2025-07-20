@@ -29,12 +29,12 @@ export function saveToPersistence(save: SavedGame, key: string): boolean {
 export function loadFromPersistence(key: string): SavedGame | null {
   try {
     if (typeof localStorage === 'undefined') {
-      return null;
+      return undefined;
     }
     
     const serialized = localStorage.getItem(key);
     if (!serialized) {
-      return null;
+      return undefined;
     }
     
     const save = JSON.parse(serialized) as SavedGame;
@@ -42,13 +42,13 @@ export function loadFromPersistence(key: string): SavedGame | null {
     // Validate save format
     if (!isValidSave(save)) {
       console.warn('Invalid save format');
-      return null;
+      return undefined;
     }
     
     return save;
   } catch (error) {
     console.error('Failed to load game:', error);
-    return null;
+    return undefined;
   }
 }
 
