@@ -6,8 +6,7 @@
  */
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import * as d3 from 'd3';
-import { TapestrySpecies, TapestryThread, TapestryUIState } from './types';
+import { TapestrySpecies, TapestryUIState } from './types';
 import { generateThreadPaths } from './utils/threadGenerator';
 import { TapestryRenderer } from './components/TapestryRenderer';
 import { TimelineControl } from './components/TimelineControl';
@@ -40,7 +39,10 @@ const defaultUIState: TapestryUIState = {
     timelineMode: 'linear'
   },
   selection: {
-    comparisonSpeciesIds: []
+    selectedSpeciesId: undefined,
+    selectedLineage: undefined,
+    comparisonSpeciesIds: [],
+    hoveredSpeciesId: undefined
   },
   visuals: {
     threadStyle: 'watercolor',
@@ -59,7 +61,12 @@ const defaultUIState: TapestryUIState = {
     showLegend: false
   },
   interactionMode: 'explore',
-  analysis: {},
+  analysis: {
+    highlightPattern: undefined,
+    measureTool: false,
+    statisticsPanel: false,
+    treeMetrics: false
+  },
   animations: {
     pendingHighlights: [],
     cameraTransitions: [],

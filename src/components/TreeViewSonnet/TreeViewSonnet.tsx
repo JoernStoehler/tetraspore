@@ -358,4 +358,393 @@ export function TreeViewSonnet({
         ctx.fill();
         ctx.restore();
       }
-    });\n    ctx.restore();\n    \n    // Render particles (flowing organisms)\n    if (enableParticleEffects) {\n      particles.forEach((speciesParticles, speciesId) => {\n        const speciesData = species.find(s => s.id === speciesId);\n        if (!speciesData) return;\n        \n        speciesParticles.forEach(particle => {\n          ctx.save();\n          ctx.globalAlpha = particle.brightness * speciesData.opacity;\n          \n          // Species color with size-based variation\n          const particleColor = ColorUtils.adjustBrightness(\n            speciesData.primaryColor, \n            particle.brightness\n          );\n          \n          // Create particle glow effect\n          const glowGradient = ctx.createRadialGradient(\n            particle.x, particle.y, 0,\n            particle.x, particle.y, particle.size * 8\n          );\n          glowGradient.addColorStop(0, particleColor);\n          glowGradient.addColorStop(0.5, particleColor + '80'); // Semi-transparent\n          glowGradient.addColorStop(1, 'transparent');\n          \n          ctx.fillStyle = glowGradient;\n          ctx.beginPath();\n          ctx.arc(particle.x, particle.y, particle.size * 8, 0, Math.PI * 2);\n          ctx.fill();\n          \n          // Core particle\n          ctx.fillStyle = particleColor;\n          ctx.beginPath();\n          ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2);\n          ctx.fill();\n          \n          // Leader particles get special highlighting\n          if (particle.isLeader) {\n            ctx.strokeStyle = '#FFFFFF';\n            ctx.lineWidth = 1;\n            ctx.beginPath();\n            ctx.arc(particle.x, particle.y, particle.size * 5, 0, Math.PI * 2);\n            ctx.stroke();\n          }\n          \n          ctx.restore();\n        });\n      });\n    }\n    \n    // Render species positions (central hubs)\n    species.forEach(s => {\n      const position = layout.speciesPositions.get(s.id);\n      if (!position) return;\n      \n      ctx.save();\n      \n      // Highlight selected/hovered species\n      if (selectedSpeciesId === s.id || hoveredSpeciesId === s.id) {\n        ctx.globalAlpha = 0.8;\n        ctx.fillStyle = '#FFFFFF';\n        ctx.beginPath();\n        ctx.arc(position.x, position.y, s.size * 25 + 10, 0, Math.PI * 2);\n        ctx.fill();\n      }\n      \n      // Species hub circle\n      const hubGradient = ctx.createRadialGradient(\n        position.x, position.y, 0,\n        position.x, position.y, s.size * 20\n      );\n      hubGradient.addColorStop(0, s.primaryColor);\n      hubGradient.addColorStop(0.7, s.secondaryColor || s.primaryColor);\n      hubGradient.addColorStop(1, ColorUtils.adjustBrightness(s.primaryColor, 0.5));\n      \n      ctx.globalAlpha = s.opacity;\n      ctx.fillStyle = hubGradient;\n      ctx.beginPath();\n      ctx.arc(position.x, position.y, s.size * 20, 0, Math.PI * 2);\n      ctx.fill();\n      \n      // Species name label\n      ctx.globalAlpha = 1;\n      ctx.fillStyle = '#FFFFFF';\n      ctx.font = '12px Arial';\n      ctx.textAlign = 'center';\n      ctx.fillText(s.name, position.x, position.y - s.size * 25 - 15);\n      \n      // Turn indicator\n      ctx.font = '10px Arial';\n      ctx.fillText(`T${s.birthTurn}`, position.x, position.y - s.size * 25 - 2);\n      \n      // Population indicator (size-coded)\n      ctx.font = '9px Arial';\n      ctx.fillText(\n        `Pop: ${(s.population / 1000).toFixed(0)}K`, \n        position.x, \n        position.y + s.size * 25 + 15\n      );\n      \n      ctx.restore();\n    });\n  }, [layout, particles, species, selectedSpeciesId, hoveredSpeciesId, enableParticleEffects, width, height]);\n  \n  // Handle canvas interactions\n  const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {\n    if (!layout) return;\n    \n    const rect = canvasRef.current?.getBoundingClientRect();\n    if (!rect) return;\n    \n    const x = event.clientX - rect.left;\n    const y = event.clientY - rect.top;\n    \n    // Find clicked species\n    let clickedSpecies: Species | null = null;\n    let minDistance = Infinity;\n    \n    species.forEach(s => {\n      const position = layout.speciesPositions.get(s.id);\n      if (position) {\n        const distance = Math.sqrt((x - position.x) ** 2 + (y - position.y) ** 2);\n        if (distance < s.size * 25 && distance < minDistance) {\n          minDistance = distance;\n          clickedSpecies = s;\n        }\n      }\n    });\n    \n    if (clickedSpecies) {\n      setSelectedSpeciesId(clickedSpecies.id);\n      onSpeciesClick?.(clickedSpecies.id);\n    } else {\n      setSelectedSpeciesId(null);\n    }\n  }, [layout, species, onSpeciesClick]);\n  \n  const handleCanvasMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {\n    if (!layout) return;\n    \n    const rect = canvasRef.current?.getBoundingClientRect();\n    if (!rect) return;\n    \n    const x = event.clientX - rect.left;\n    const y = event.clientY - rect.top;\n    \n    // Find hovered species\n    let hoveredSpecies: Species | null = null;\n    let minDistance = Infinity;\n    \n    species.forEach(s => {\n      const position = layout.speciesPositions.get(s.id);\n      if (position) {\n        const distance = Math.sqrt((x - position.x) ** 2 + (y - position.y) ** 2);\n        if (distance < s.size * 25 && distance < minDistance) {\n          minDistance = distance;\n          hoveredSpecies = s;\n        }\n      }\n    });\n    \n    const newHoveredId = hoveredSpecies?.id || null;\n    if (newHoveredId !== hoveredSpeciesId) {\n      setHoveredSpeciesId(newHoveredId);\n      onSpeciesHover?.(newHoveredId);\n    }\n  }, [layout, species, hoveredSpeciesId, onSpeciesHover]);\n  \n  // Control handlers\n  const handlePlayPause = () => {\n    setIsPlaying(!isPlaying);\n  };\n  \n  const handleReset = () => {\n    // Reset particles\n    if (layout) {\n      const speciesMap = new Map(species.map(s => [s.id, s]));\n      const resetParticles = new Map<string, FlowParticle[]>();\n      \n      species.forEach(s => {\n        const position = layout.speciesPositions.get(s.id);\n        if (position && enableParticleEffects) {\n          const speciesParticles = createSpeciesParticles(s, position, layout);\n          resetParticles.set(s.id, speciesParticles);\n        }\n      });\n      \n      setParticles(resetParticles);\n    }\n  };\n  \n  return (\n    <div className=\"tree-view-sonnet-container\" style={{ width, height, position: 'relative' }}>\n      {/* Main Canvas */}\n      <canvas\n        ref={canvasRef}\n        width={width}\n        height={height}\n        onClick={handleCanvasClick}\n        onMouseMove={handleCanvasMouseMove}\n        style={{\n          border: '2px solid #2C3E50',\n          borderRadius: '8px',\n          background: 'linear-gradient(to bottom, #001122, #0088CC)',\n          cursor: 'pointer'\n        }}\n      />\n      \n      {/* UI Overlay */}\n      <div style={{\n        position: 'absolute',\n        top: 10,\n        left: 10,\n        background: 'rgba(0, 0, 0, 0.7)',\n        color: 'white',\n        padding: '12px',\n        borderRadius: '8px',\n        fontSize: '12px',\n        fontFamily: 'monospace'\n      }}>\n        <h4 style={{ margin: '0 0 8px 0', color: '#4ECDC4' }}>Living River Ecosystem</h4>\n        <div>Species: {species.length}</div>\n        <div>Turn: {currentTurn}</div>\n        <div>FPS: {performance.fps}</div>\n        <div>Particles: {performance.particleCount}</div>\n        {selectedSpeciesId && (\n          <div style={{ marginTop: '8px', borderTop: '1px solid #444', paddingTop: '8px' }}>\n            <strong>Selected: {species.find(s => s.id === selectedSpeciesId)?.name}</strong>\n          </div>\n        )}\n      </div>\n      \n      {/* Controls */}\n      <div style={{\n        position: 'absolute',\n        top: 10,\n        right: 10,\n        background: 'rgba(0, 0, 0, 0.7)',\n        padding: '12px',\n        borderRadius: '8px',\n        display: 'flex',\n        gap: '8px'\n      }}>\n        <button\n          onClick={handlePlayPause}\n          style={{\n            padding: '8px 16px',\n            background: isPlaying ? '#E74C3C' : '#27AE60',\n            color: 'white',\n            border: 'none',\n            borderRadius: '4px',\n            cursor: 'pointer'\n          }}\n        >\n          {isPlaying ? '⏸️ Pause' : '▶️ Play'}\n        </button>\n        \n        <button\n          onClick={handleReset}\n          style={{\n            padding: '8px 16px',\n            background: '#3498DB',\n            color: 'white',\n            border: 'none',\n            borderRadius: '4px',\n            cursor: 'pointer'\n          }}\n        >\n          🔄 Reset\n        </button>\n      </div>\n      \n      {/* Legend */}\n      <div style={{\n        position: 'absolute',\n        bottom: 10,\n        left: 10,\n        background: 'rgba(0, 0, 0, 0.7)',\n        color: 'white',\n        padding: '12px',\n        borderRadius: '8px',\n        fontSize: '11px',\n        maxWidth: '300px'\n      }}>\n        <h5 style={{ margin: '0 0 6px 0', color: '#4ECDC4' }}>🌊 Living River Legend</h5>\n        <div>• Large hubs = Species locations</div>\n        <div>• Flowing streams = Evolution paths</div>\n        <div>• Moving particles = Individual organisms</div>\n        <div>• Biome zones = Environmental areas</div>\n        <div>• Click species to select, hover for details</div>\n      </div>\n      \n      {/* Species Details Panel */}\n      {selectedSpeciesId && (\n        <SpeciesDetailsPanel \n          species={species.find(s => s.id === selectedSpeciesId)!}\n          onClose={() => setSelectedSpeciesId(null)}\n        />\n      )}\n    </div>\n  );\n}\n\n// Species details panel component\ninterface SpeciesDetailsPanelProps {\n  species: Species;\n  onClose: () => void;\n}\n\nfunction SpeciesDetailsPanel({ species, onClose }: SpeciesDetailsPanelProps) {\n  return (\n    <div style={{\n      position: 'absolute',\n      top: '50%',\n      right: 20,\n      transform: 'translateY(-50%)',\n      background: 'rgba(0, 30, 60, 0.95)',\n      color: 'white',\n      padding: '20px',\n      borderRadius: '12px',\n      border: `2px solid ${species.primaryColor}`,\n      minWidth: '280px',\n      maxWidth: '320px',\n      fontSize: '13px'\n    }}>\n      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>\n        <h3 style={{ margin: 0, color: species.primaryColor }}>{species.name}</h3>\n        <button \n          onClick={onClose}\n          style={{\n            background: 'transparent',\n            border: 'none',\n            color: 'white',\n            fontSize: '18px',\n            cursor: 'pointer',\n            padding: '4px'\n          }}\n        >\n          ×\n        </button>\n      </div>\n      \n      <div style={{ display: 'grid', gap: '8px' }}>\n        <div><strong>Born:</strong> Turn {species.birthTurn}</div>\n        <div><strong>Population:</strong> {species.population.toLocaleString()}</div>\n        <div><strong>Biome:</strong> {species.biome.replace('-', ' ')}</div>\n        <div><strong>Climate:</strong> {species.climate}</div>\n        <div><strong>Depth:</strong> {species.depth}m</div>\n        <div><strong>Mobility:</strong> {species.mobility.replace('-', ' ')}</div>\n        <div><strong>Behavior:</strong> {species.groupBehavior.replace('-', ' ')}</div>\n        \n        <div style={{ borderTop: '1px solid #444', paddingTop: '8px', marginTop: '8px' }}>\n          <strong>Traits:</strong>\n          <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>\n            {species.traits.map((trait, i) => (\n              <span key={i} style={{\n                background: species.primaryColor,\n                padding: '2px 6px',\n                borderRadius: '10px',\n                fontSize: '10px'\n              }}>\n                {trait}\n              </span>\n            ))}\n          </div>\n        </div>\n        \n        {species.soundSignature && (\n          <div style={{ borderTop: '1px solid #444', paddingTop: '8px', marginTop: '8px' }}>\n            <strong>Sound:</strong> {species.soundSignature.frequency}Hz {species.soundSignature.timbre}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n\nexport default TreeViewSonnet;\n\n// SOUND DESIGN IDEAS (for implementation later):\n// - Each species has a unique frequency signature\n// - Deeper species = lower frequencies (whale songs)\n// - Shallow species = higher frequencies (dolphin clicks) \n// - Population size affects volume\n// - Biome creates background soundscape\n// - Evolution events trigger harmonic transitions\n// - Particle movement creates subtle water sounds
+    });
+    ctx.restore();
+    
+    // Render particles (flowing organisms)
+    if (enableParticleEffects) {
+      particles.forEach((speciesParticles, speciesId) => {
+        const speciesData = species.find(s => s.id === speciesId);
+        if (!speciesData) return;
+        
+        speciesParticles.forEach(particle => {
+          ctx.save();
+          ctx.globalAlpha = particle.brightness * speciesData.opacity;
+          
+          // Species color with size-based variation
+          const particleColor = ColorUtils.adjustBrightness(
+            speciesData.primaryColor, 
+            particle.brightness
+          );
+          
+          // Create particle glow effect
+          const glowGradient = ctx.createRadialGradient(
+            particle.x, particle.y, 0,
+            particle.x, particle.y, particle.size * 8
+          );
+          glowGradient.addColorStop(0, particleColor);
+          glowGradient.addColorStop(0.5, particleColor + '80'); // Semi-transparent
+          glowGradient.addColorStop(1, 'transparent');
+          
+          ctx.fillStyle = glowGradient;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size * 8, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Core particle
+          ctx.fillStyle = particleColor;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Leader particles get special highlighting
+          if (particle.isLeader) {
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size * 5, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          
+          ctx.restore();
+        });
+      });
+    }
+    
+    // Render species positions (central hubs)
+    species.forEach(s => {
+      const position = layout.speciesPositions.get(s.id);
+      if (!position) return;
+      
+      ctx.save();
+      
+      // Highlight selected/hovered species
+      if (selectedSpeciesId === s.id || hoveredSpeciesId === s.id) {
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, s.size * 25 + 10, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Species hub circle
+      const hubGradient = ctx.createRadialGradient(
+        position.x, position.y, 0,
+        position.x, position.y, s.size * 20
+      );
+      hubGradient.addColorStop(0, s.primaryColor);
+      hubGradient.addColorStop(0.7, s.secondaryColor || s.primaryColor);
+      hubGradient.addColorStop(1, ColorUtils.adjustBrightness(s.primaryColor, 0.5));
+      
+      ctx.globalAlpha = s.opacity;
+      ctx.fillStyle = hubGradient;
+      ctx.beginPath();
+      ctx.arc(position.x, position.y, s.size * 20, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Species name label
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.name, position.x, position.y - s.size * 25 - 15);
+      
+      // Turn indicator
+      ctx.font = '10px Arial';
+      ctx.fillText(`T${s.birthTurn}`, position.x, position.y - s.size * 25 - 2);
+      
+      // Population indicator (size-coded)
+      ctx.font = '9px Arial';
+      ctx.fillText(
+        `Pop: ${(s.population / 1000).toFixed(0)}K`, 
+        position.x, 
+        position.y + s.size * 25 + 15
+      );
+      
+      ctx.restore();
+    });
+  }, [layout, particles, species, selectedSpeciesId, hoveredSpeciesId, enableParticleEffects, width, height]);
+  
+  // Handle canvas interactions
+  const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!layout) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Find clicked species
+    let clickedSpecies: Species | null = null;
+    let minDistance = Infinity;
+    
+    species.forEach(s => {
+      const position = layout.speciesPositions.get(s.id);
+      if (position) {
+        const distance = Math.sqrt((x - position.x) ** 2 + (y - position.y) ** 2);
+        if (distance < s.size * 25 && distance < minDistance) {
+          minDistance = distance;
+          clickedSpecies = s;
+        }
+      }
+    });
+    
+    if (clickedSpecies) {
+      setSelectedSpeciesId(clickedSpecies.id);
+      onSpeciesClick?.(clickedSpecies.id);
+    } else {
+      setSelectedSpeciesId(null);
+    }
+  }, [layout, species, onSpeciesClick]);
+  
+  const handleCanvasMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!layout) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Find hovered species
+    let hoveredSpecies: Species | null = null;
+    let minDistance = Infinity;
+    
+    species.forEach(s => {
+      const position = layout.speciesPositions.get(s.id);
+      if (position) {
+        const distance = Math.sqrt((x - position.x) ** 2 + (y - position.y) ** 2);
+        if (distance < s.size * 25 && distance < minDistance) {
+          minDistance = distance;
+          hoveredSpecies = s;
+        }
+      }
+    });
+    
+    const newHoveredId = hoveredSpecies?.id || null;
+    if (newHoveredId !== hoveredSpeciesId) {
+      setHoveredSpeciesId(newHoveredId);
+      onSpeciesHover?.(newHoveredId);
+    }
+  }, [layout, species, hoveredSpeciesId, onSpeciesHover]);
+  
+  // Control handlers
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+  
+  const handleReset = () => {
+    // Reset particles
+    if (layout) {
+      const speciesMap = new Map(species.map(s => [s.id, s]));
+      const resetParticles = new Map<string, FlowParticle[]>();
+      
+      species.forEach(s => {
+        const position = layout.speciesPositions.get(s.id);
+        if (position && enableParticleEffects) {
+          const speciesParticles = createSpeciesParticles(s, position, layout);
+          resetParticles.set(s.id, speciesParticles);
+        }
+      });
+      
+      setParticles(resetParticles);
+    }
+  };
+  
+  return (
+    <div className="tree-view-sonnet-container" style={{ width, height, position: 'relative' }}>
+      {/* Main Canvas */}
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        onClick={handleCanvasClick}
+        onMouseMove={handleCanvasMouseMove}
+        style={{
+          border: '2px solid #2C3E50',
+          borderRadius: '8px',
+          background: 'linear-gradient(to bottom, #001122, #0088CC)',
+          cursor: 'pointer'
+        }}
+      />
+      
+      {/* UI Overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        background: 'rgba(0, 0, 0, 0.7)',
+        color: 'white',
+        padding: '12px',
+        borderRadius: '8px',
+        fontSize: '12px',
+        fontFamily: 'monospace'
+      }}>
+        <h4 style={{ margin: '0 0 8px 0', color: '#4ECDC4' }}>Living River Ecosystem</h4>
+        <div>Species: {species.length}</div>
+        <div>Turn: {currentTurn}</div>
+        <div>FPS: {performance.fps}</div>
+        <div>Particles: {performance.particleCount}</div>
+        {selectedSpeciesId && (
+          <div style={{ marginTop: '8px', borderTop: '1px solid #444', paddingTop: '8px' }}>
+            <strong>Selected: {species.find(s => s.id === selectedSpeciesId)?.name}</strong>
+          </div>
+        )}
+      </div>
+      
+      {/* Controls */}
+      <div style={{
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        background: 'rgba(0, 0, 0, 0.7)',
+        padding: '12px',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '8px'
+      }}>
+        <button
+          onClick={handlePlayPause}
+          style={{
+            padding: '8px 16px',
+            background: isPlaying ? '#E74C3C' : '#27AE60',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          {isPlaying ? '⏸️ Pause' : '▶️ Play'}
+        </button>
+        
+        <button
+          onClick={handleReset}
+          style={{
+            padding: '8px 16px',
+            background: '#3498DB',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          🔄 Reset
+        </button>
+      </div>
+      
+      {/* Legend */}
+      <div style={{
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        background: 'rgba(0, 0, 0, 0.7)',
+        color: 'white',
+        padding: '12px',
+        borderRadius: '8px',
+        fontSize: '11px',
+        maxWidth: '300px'
+      }}>
+        <h5 style={{ margin: '0 0 6px 0', color: '#4ECDC4' }}>🌊 Living River Legend</h5>
+        <div>• Large hubs = Species locations</div>
+        <div>• Flowing streams = Evolution paths</div>
+        <div>• Moving particles = Individual organisms</div>
+        <div>• Biome zones = Environmental areas</div>
+        <div>• Click species to select, hover for details</div>
+      </div>
+      
+      {/* Species Details Panel */}
+      {selectedSpeciesId && (
+        <SpeciesDetailsPanel 
+          species={species.find(s => s.id === selectedSpeciesId)!}
+          onClose={() => setSelectedSpeciesId(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Species details panel component
+interface SpeciesDetailsPanelProps {
+  species: Species;
+  onClose: () => void;
+}
+
+function SpeciesDetailsPanel({ species, onClose }: SpeciesDetailsPanelProps) {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '50%',
+      right: 20,
+      transform: 'translateY(-50%)',
+      background: 'rgba(0, 30, 60, 0.95)',
+      color: 'white',
+      padding: '20px',
+      borderRadius: '12px',
+      border: `2px solid ${species.primaryColor}`,
+      minWidth: '280px',
+      maxWidth: '320px',
+      fontSize: '13px'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={{ margin: 0, color: species.primaryColor }}>{species.name}</h3>
+        <button 
+          onClick={onClose}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'white',
+            fontSize: '18px',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          ×
+        </button>
+      </div>
+      
+      <div style={{ display: 'grid', gap: '8px' }}>
+        <div><strong>Born:</strong> Turn {species.birthTurn}</div>
+        <div><strong>Population:</strong> {species.population.toLocaleString()}</div>
+        <div><strong>Biome:</strong> {species.biome.replace('-', ' ')}</div>
+        <div><strong>Climate:</strong> {species.climate}</div>
+        <div><strong>Depth:</strong> {species.depth}m</div>
+        <div><strong>Mobility:</strong> {species.mobility.replace('-', ' ')}</div>
+        <div><strong>Behavior:</strong> {species.groupBehavior.replace('-', ' ')}</div>
+        
+        <div style={{ borderTop: '1px solid #444', paddingTop: '8px', marginTop: '8px' }}>
+          <strong>Traits:</strong>
+          <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {species.traits.map((trait, i) => (
+              <span key={i} style={{
+                background: species.primaryColor,
+                padding: '2px 6px',
+                borderRadius: '10px',
+                fontSize: '10px'
+              }}>
+                {trait}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        {species.soundSignature && (
+          <div style={{ borderTop: '1px solid #444', paddingTop: '8px', marginTop: '8px' }}>
+            <strong>Sound:</strong> {species.soundSignature.frequency}Hz {species.soundSignature.timbre}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default TreeViewSonnet;
+
+// SOUND DESIGN IDEAS (for implementation later):
+// - Each species has a unique frequency signature
+// - Deeper species = lower frequencies (whale songs)
+// - Shallow species = higher frequencies (dolphin clicks) 
+// - Population size affects volume
+// - Biome creates background soundscape
+// - Evolution events trigger harmonic transitions
+// - Particle movement creates subtle water sounds
