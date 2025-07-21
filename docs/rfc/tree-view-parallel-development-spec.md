@@ -1,318 +1,286 @@
-# RFC: Tree of Life View - Parallel Development Specification
+# RFC: Tree of Life View - Parallel Development Specification v2
 
 ## Overview
 
-This document specifies requirements and constraints for parallel development of Tree of Life visualization prototypes. Multiple agents will work independently to create different approaches, which will later be synthesized into a final implementation.
+This document provides guidance for parallel development of Tree of Life visualization prototypes. Multiple agents will work independently to create different approaches. The key principle: **be creative and propose what data/features would make your visualization amazing**.
 
-## Core Constraints
+## Core Philosophy
 
-### 1. Interface Requirements
+### Flexibility Over Restriction
+- **Extend the Species type** with whatever fields would enhance your visualization
+- **Propose new data structures** if they would improve the experience
+- **Imagine rich interactions** that could make the game more engaging
+- **Think beyond basic trees** - this is a living world simulator
 
-The TreeView component MUST implement this exact interface:
+### GenAI as Content Generator
+Our GenAI will generate game events/actions that create rich species data. It can easily handle:
+- Colors and visual themes
+- Image URLs or generation prompts
+- Tags and categories
+- Personality traits
+- Animation preferences
+- Sound signatures
+- Anything else you can imagine!
+
+## Architectural Guidance
+
+### Three-Layer Data Model
 
 ```typescript
-interface TreeViewProps {
-  // Required: Game state data
-  species: Species[];           // Current species from game state
-  events: GameEvent[];          // Historical events for replay capability
-  currentTurn: number;          // Current game turn
-  
-  // Required: Dimensions
-  width: number;                // Container width
-  height: number;               // Container height
-  
-  // Optional: Interaction callbacks
-  onSpeciesClick?: (speciesId: string) => void;
-  onSpeciesHover?: (speciesId: string | null) => void;
-  
-  // Optional: Configuration
-  theme?: 'dark' | 'light';     // Default: 'dark'
-  animationSpeed?: number;      // 0-1, where 0 is instant, 1 is slow
+// Layer 1: UI State (not derived from game state)
+interface TreeViewUIState {
+  lastViewedTurn?: number;
+  selectedSpeciesId?: string;
+  zoomLevel?: number;
+  cameraPosition?: { x: number; y: number };
+  userPreferences?: {
+    animationSpeed: number;
+    colorScheme: 'vibrant' | 'pastel' | 'monochrome';
+    // ... whatever else makes sense
+  };
 }
 
+// Layer 2: Game-Derived Aggregates (pure function of game events)
+interface GameDerivedData {
+  species: Species[];      // Your extended Species type!
+  currentTurn: number;
+  // Add whatever aggregates help your visualization
+  speciesByTurn?: Map<number, Species[]>;
+  evolutionaryTree?: TreeStructure;
+  hotspots?: EvolutionaryHotspot[];
+}
+
+// Layer 3: Visual Events (function of game state + UI state)
+interface VisualEvent {
+  type: string;  // You define what types make sense
+  timing: {
+    startTime: number;
+    duration: number;
+    easing?: string;
+  };
+  // Examples:
+  // - SpeciesBirthAnimation
+  // - ExtinctionFadeOut  
+  // - LineageSplit
+  // - PopulationPulse
+  // - DramaticReveal
+}
+```
+
+### Example Extended Species Type
+
+```typescript
+// Feel free to extend this with whatever would make your viz amazing!
 interface Species {
+  // Basics (required)
   id: string;
   name: string;
   parentId: string | null;
   birthTurn: number;
   extinctionTurn?: number;
-  traits: string[];             // For future use
-  population: number;           // For visualization sizing
+  
+  // Visual Identity (add what you need!)
+  primaryColor?: string;           // #FF6B6B
+  secondaryColor?: string;         // #4ECDC4
+  iconUrl?: string;                // Generated species icon
+  animationStyle?: 'aggressive' | 'peaceful' | 'mysterious';
+  glowIntensity?: number;          // 0-1, for magical effects
+  
+  // Rich Data (go wild!)
+  traits?: string[];               // ['nocturnal', 'pack-hunter', 'telepathic']
+  population?: number;             // For sizing/importance
+  territory?: string[];            // ['deep-ocean', 'volcanic-vents']
+  soundSignature?: string;         // URL to generated sound
+  emotionalProfile?: {
+    aggression: number;
+    curiosity: number;
+    sociability: number;
+  };
+  
+  // Relationships (beyond parent/child)
+  rivals?: string[];               // Species IDs of competitors
+  symbioticPartners?: string[];    // Mutual benefit relationships
+  preySpecies?: string[];          // Food web connections
+  
+  // Anything else that would make the tree more interesting!
 }
+```
 
-interface GameEvent {
-  type: 'species_added' | 'species_removed' | 'trait_evolved';
-  turn: number;
+### Visual Event System
+
+Your TreeView receives visual events, not raw game events:
+
+```typescript
+// Good: Visual events that know about animations
+interface SpeciesBirthVisualEvent {
+  type: 'species-birth';
   speciesId: string;
-  parentSpeciesId?: string;     // For species_added
-  timestamp: number;            // For animation sequencing
+  parentId: string | null;
+  position: { x: number; y: number };  // Pre-calculated!
+  
+  animation: {
+    // Can look ahead! Know where species will settle
+    fromPosition: { x: number; y: number };
+    toPosition: { x: number; y: number };
+    
+    // Can be parallel! Multiple births at once
+    startDelay: number;
+    duration: number;
+    
+    // Rich visual effects
+    particleEffect?: 'explosion' | 'growth' | 'magic';
+    soundEffect?: string;
+  };
 }
+
+// These events are computed with full knowledge of:
+// - What happened before (history)
+// - What happens next (look-ahead)
+// - Current UI state (camera position, last viewed)
+// - User preferences (animation speed)
 ```
 
-### 2. React Integration Requirements
+## What You Should Build
 
-- **Pure Component**: No direct Zustand store access
-- **Controlled Component**: All state comes through props
-- **Memoization**: Use React.memo for performance
-- **Hooks**: Custom hooks should be in separate files
-- **Error Boundaries**: Handle missing/invalid data gracefully
+### Required Components
 
-### 3. File Structure Requirements
+1. **A Creative Tree Visualization** that:
+   - Shows species relationships in an engaging way
+   - Handles 50-500 species smoothly
+   - Provides intuitive navigation
+   - Feels alive and dynamic
 
-Each prototype MUST follow this structure:
+2. **Extended Data Proposals** including:
+   - What Species fields would enhance your design
+   - What visual events you need
+   - What UI state you track
+   - What aggregations would help
+
+3. **Storybook Stories** demonstrating:
+   - Basic scenarios (5-10 species)
+   - Complex scenarios (50+ species)
+   - Your unique features
+   - Edge cases
+
+### File Structure (Flexible)
+
 ```
-src/components/TreeView[PrototypeName]/
-├── index.ts                  // Public exports only
-├── TreeView[PrototypeName].tsx    // Main component
-├── TreeView[PrototypeName].stories.tsx  // Storybook stories
-├── TreeView[PrototypeName].test.tsx     // Tests
-├── types.ts                  // Local type definitions
-├── hooks/                    // Custom React hooks
-│   └── useTreeLayout.ts      // Example: layout calculations
-├── utils/                    // Pure utility functions
-│   └── treeCalculations.ts   // Example: tree algorithms
-└── styles.css                // Component-specific styles
+src/components/TreeView[YourApproach]/
+├── index.ts                        // Your exports
+├── TreeView[YourApproach].tsx     // Main component
+├── TreeView[YourApproach].stories.tsx
+├── types/                         // Your type extensions
+│   ├── Species.ts                 // Your vision of Species
+│   ├── VisualEvents.ts           // Your event types
+│   └── UIState.ts                // Your UI state
+├── hooks/                        // Your custom hooks
+├── components/                   // Sub-components
+├── utils/                       // Your algorithms
+└── assets/                      // Any static assets
 ```
-
-### 4. Development Constraints
-
-- **No External Dependencies**: Use only packages already in package.json
-- **No Global State**: Component must be completely self-contained
-- **TypeScript Strict**: All code must pass strict TypeScript checks
-- **Performance Target**: Smooth rendering up to 500 species
-
-## Context and Background
-
-### Game Mechanics
-- **Turn-based evolution**: Species evolve each turn
-- **Branching**: Species can split into multiple children
-- **Extinction**: Species can die out
-- **Traits**: Species gain/lose traits (future feature)
-- **Population dynamics**: Species grow/shrink over time
-
-### Player Mental Model
-- Players think of evolution as a branching tree
-- Time flows downward (or left-to-right)
-- Living species are "leaves" at the current turn
-- Extinct species are "dead ends" in the past
-- Parent-child relationships show evolutionary lineage
-
-## User Stories
-
-### Story 1: First Time Viewing
-**As a** new player  
-**I want to** understand the evolutionary tree at a glance  
-**So that** I can grasp the game's core mechanic
-
-**Acceptance Criteria:**
-- Root species clearly visible
-- Visual distinction between living/extinct species
-- Time progression obvious (turn numbers)
-- No more than 3 seconds to understand basic structure
-
-### Story 2: Returning After Turns
-**As a** player who missed several turns  
-**I want to** see what changed since I last looked  
-**So that** I can understand what happened
-
-**Acceptance Criteria:**
-- New species highlighted or animated
-- Extinctions clearly shown
-- Ability to replay events from last viewed turn
-- Species maintain rough spatial positions
-
-### Story 3: Tracking Specific Lineage
-**As a** player interested in one species  
-**I want to** follow its evolutionary history  
-**So that** I can understand its origins and descendants
-
-**Acceptance Criteria:**
-- Click species to highlight entire lineage
-- Ancestors and descendants visually connected
-- Other species fade but remain visible
-- Easy to return to full view
-
-### Story 4: Understanding Current State
-**As a** player making strategic decisions  
-**I want to** see all living species and their relationships  
-**So that** I can plan my next move
-
-**Acceptance Criteria:**
-- Living species prominently displayed
-- Population sizes visible (node size, number, or color)
-- Recent evolutionary activity indicated
-- Traits visible on hover/click (when implemented)
-
-### Story 5: Mobile/Small Screen Usage
-**As a** player on a phone or tablet  
-**I want to** navigate the tree on a small screen  
-**So that** I can play anywhere
-
-**Acceptance Criteria:**
-- Touch-friendly interactions (pinch zoom, drag pan)
-- Readable text at all zoom levels
-- Smart clustering of dense areas
-- Portrait and landscape orientation support
-
-## Design Principles & Desiderata
-
-### Visual Stability
-- **Spatial Consistency**: Species should maintain approximate positions between renders
-- **Smooth Transitions**: Changes animate rather than jump
-- **Predictable Layout**: Similar structures produce similar layouts
-- **No Jarring Reflows**: Adding one species shouldn't reorganize entire tree
-
-### Information Hierarchy
-1. **Primary**: Living species and their immediate parents
-2. **Secondary**: Recent extinctions and evolutionary events  
-3. **Tertiary**: Ancient history and distant relatives
-4. **On-Demand**: Detailed stats, traits, population numbers
-
-### Performance Characteristics
-- **Initial Render**: < 100ms for 50 species
-- **Animation Frame Rate**: 60fps during transitions
-- **Interaction Response**: < 16ms for hover/click feedback
-- **Memory Usage**: < 50MB for 500 species with full history
-
-### Accessibility
-- **Keyboard Navigation**: Tab through species, arrow keys for tree traversal
-- **Screen Reader Support**: Meaningful descriptions of relationships
-- **Color Blind Friendly**: Don't rely solely on color
-- **High Contrast Mode**: Respect system preferences
-
-## Technical Considerations
-
-### Rendering Strategy Options
-1. **SVG with D3.js**: Good for < 200 species
-2. **Canvas 2D**: Better for 200-1000 species  
-3. **WebGL**: Best for 1000+ species (future-proofing)
-4. **Hybrid**: SVG for interaction, Canvas for rendering
-
-### Layout Algorithm Options
-1. **Tidier Tree**: Compact, good for balanced trees
-2. **Force-Directed**: Organic look, handles any graph
-3. **Sugiyama**: Minimizes edge crossings
-4. **Custom Grid**: Predictable positions
-
-### State Management
-- Component receives immutable props
-- Internal state only for UI concerns (hover, selection)
-- Use reducers for complex state logic
-- Memoize expensive calculations
-
-### Animation Approaches
-1. **CSS Transitions**: Simple position/opacity changes
-2. **React Spring**: Physics-based animations
-3. **Custom RAF Loop**: Full control over timing
-4. **FLIP Technique**: Smooth layout transitions
 
 ## Evaluation Criteria
 
-Prototypes will be evaluated on:
+### Primary (What Matters Most)
 
-1. **Correctness** (30%)
-   - Accurate representation of species relationships
-   - Proper handling of edge cases
-   - No data inconsistencies
+1. **Innovation** (40%)
+   - Novel visualization approach
+   - Creative data extensions
+   - Unique interactions
+   - "Wow factor"
 
-2. **Performance** (25%)
-   - Smooth interactions up to 500 species
-   - Fast initial render
-   - Efficient memory usage
-
-3. **Usability** (25%)
+2. **User Experience** (30%)
    - Intuitive navigation
-   - Clear visual hierarchy
-   - Responsive to different screen sizes
+   - Clear information hierarchy
+   - Smooth animations
+   - Engaging aesthetics
 
-4. **Code Quality** (20%)
+3. **Technical Feasibility** (30%)
+   - Performance with many species
    - Clean, maintainable code
-   - Good TypeScript usage
-   - Comprehensive tests
-   - Clear documentation
+   - Realistic data requirements
+   - Smart architectural choices
 
-## Prototype Variations to Explore
+### Bonus Points For
 
-Each agent should focus on ONE primary approach:
+- **Mobile-first design**
+- **Accessibility features**
+- **Sound design ideas**
+- **Multiplayer considerations**
+- **AI-assistant integration ideas**
 
-1. **Classic Tree**: Traditional top-down or left-right tree
-2. **Radial/Circular**: Species radiate from center
-3. **Timeline-Based**: Strong emphasis on turn progression
-4. **Force-Directed**: Physics simulation for organic layout
-5. **Nested/Hierarchical**: Collapsible tree sections
-6. **Matrix View**: Grid showing species vs turns
+## Example Approaches (Not Exhaustive!)
+
+1. **Living Galaxy**: Species as star systems, evolution as cosmic expansion
+2. **Neural Network**: Species as neurons, evolution as growing connections
+3. **City Builder**: Species as buildings, evolution as urban development
+4. **Music Visualizer**: Species as instruments, evolution as symphony
+5. **Ecosystem Diorama**: 3D environment with species as creatures
+6. **Time River**: Species as streams flowing through time
+7. **Your Wild Idea**: Seriously, surprise us!
+
+## Key Principles
+
+### DO:
+- ✅ **Extend Species** with fields that enhance your visualization
+- ✅ **Create new event types** for rich animations
+- ✅ **Track UI state** that improves user experience
+- ✅ **Think cinematically** - this is entertainment!
+- ✅ **Consider sound** even if not implemented
+- ✅ **Optimize for delight** not just information
+
+### DON'T:
+- ❌ **Limit yourself** to basic tree layouts
+- ❌ **Ignore performance** - should handle 500 species
+- ❌ **Forget mobile** - many players use phones
+- ❌ **Make it static** - evolution is dynamic!
+- ❌ **Skip documentation** - explain your vision
+
+## Practical Notes
+
+### Hardcoding is Fine
+For the prototype, you can:
+- Hardcode example species with rich data
+- Fake visual events to show your vision
+- Mock UI state to demonstrate features
+- Use placeholder images/sounds
+
+Just make sure your architecture could work with real data.
+
+### Architecture Validation
+Ask yourself:
+- Can game events generate my Species fields? (Yes if GenAI can imagine it)
+- Can my visual events be computed from game + UI state? (Should be possible)
+- Does my UI state stay separate from game state? (Important for multiplayer)
+- Could my approach scale to 1000+ species? (Think about it)
 
 ## Getting Started
 
 ```bash
-# Create your prototype branch and folder
-git checkout -b tree-view-prototype-[approach-name]
-mkdir src/components/TreeView[ApproachName]
+# Pick your approach name
+APPROACH="galaxy"  # or "neural", "ecosystem", etc.
 
-# Install dependencies (already available)
-# React, D3, Three.js, Framer Motion all installed
+# Create your branch and folder
+git checkout -b tree-view-prototype-$APPROACH
+mkdir -p src/components/TreeView${APPROACH^}
 
-# Run Storybook to develop
+# Start with types that inspire you
+touch src/components/TreeView${APPROACH^}/types/Species.ts
+
+# Build your vision!
 npm run storybook
-
-# Run tests
-npm test
 ```
 
-## Example Storybook Story
+## Final Thoughts
 
-```typescript
-// TreeViewRadial.stories.tsx
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import { TreeViewRadial } from './TreeViewRadial';
-import { basicTree, complexTree } from '../../test-data';
+We're building a game that brings evolution to life. Your TreeView is the window into this living world. Make it:
 
-const meta = {
-  title: 'TreeView/Prototypes/Radial',
-  component: TreeViewRadial,
-  parameters: {
-    layout: 'fullscreen',
-  },
-} satisfies Meta<typeof TreeViewRadial>;
+- **Beautiful** - Players should want to watch
+- **Intuitive** - Information without overwhelm  
+- **Alive** - Evolution never stops
+- **Surprising** - Unexpected emergent patterns
+- **Memorable** - Unique visual language
 
-export default meta;
+Remember: The "tree" in Tree of Life is metaphorical. If your best idea is a spiral, web, constellation, or something we haven't imagined yet - go for it!
 
-export const Basic: Story = {
-  args: {
-    species: basicTree.species,
-    events: basicTree.events,
-    currentTurn: 5,
-    width: 800,
-    height: 600,
-  },
-};
-```
-
-## Questions to Consider
-
-1. How to handle 1000+ species efficiently?
-2. Should extinct species fade over time?
-3. How to show population changes?
-4. What happens when tree gets too wide?
-5. How to indicate "hot" areas of evolution?
-6. Should we preview future possibilities?
-
-## Success Criteria
-
-A successful prototype will:
-- ✅ Implement the required interface exactly
-- ✅ Handle all user stories adequately
-- ✅ Perform smoothly with test data sets
-- ✅ Provide at least one innovative feature
-- ✅ Include comprehensive Storybook stories
-- ✅ Document design decisions in code comments
-
-## Final Notes
-
-- **Be Creative**: Try unconventional approaches
-- **Focus on One Thing**: Better to excel at one approach than be mediocre at many
-- **Document Tradeoffs**: Explain what you optimized for and why
-- **Consider Mobile**: Many players will use phones
-- **Think Long Term**: Game might have millions of species eventually
-
-Good luck! May the best tree win! 🌳
+Good luck, and may your visualization evolve into something amazing! 🌟
