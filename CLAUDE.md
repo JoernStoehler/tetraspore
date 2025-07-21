@@ -107,13 +107,21 @@ tetraspore/
 
 ### Environment Setup
 ```bash
-# Copy main .env file (contains secrets)
-cp /path/to/main/worktree/.env .env
+# Copy .env.example and add your API keys
+cp .devcontainer/.env.example .devcontainer/.env
+# Edit .devcontainer/.env to add:
+# - HONEYCOMB_API_KEY (for telemetry)
+# - TAVILY_API_KEY (for web search)
 
 # For non-main branches, create port overrides
 cp .env.local.example .env.local
 # Edit .env.local to set unique ports
 ```
+
+### Telemetry Configuration
+- Telemetry settings are automatically configured on container start
+- Settings are stored in persistent volumes: `~/.claude/settings.json` and `~/.gemini/settings.json`
+- Service names are generic (`claude-code`, `gemini-cli`) since volumes are shared across projects
 
 ### Development Commands
 ```bash
@@ -159,9 +167,14 @@ workagent run --branch feature/xyz --continue --message "Continue with..."
 - **context7**: Library documentation
 - **playwright**: Browser automation
 
-### Model Selection
-- **opus**: Complex tasks, architecture, research
-- **sonnet**: Implementation from specs, routine tasks
+### Model Selection (Required)
+The `agent` command requires explicit model selection with `--model`:
+- **opus**: Complex tasks, architecture, research (Claude)
+- **sonnet**: Implementation from specs, routine tasks (Claude)
+- **gemini**: Advanced reasoning, alternative perspective (Gemini 2.5 Pro)
+- **flash**: Fast responses, quick tasks (Gemini 2.5 Flash)
+
+Example: `agent --model opus --print "Design the architecture"`
 
 ### Agent Best Practices
 1. Always check `@MILESTONES.md` for current project state

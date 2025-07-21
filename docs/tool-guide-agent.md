@@ -16,11 +16,10 @@ The wrapper automatically:
 
 ## Model Selection
 
-### Claude Models (Default)
+### Claude Models
 ```bash
 agent --model opus      # Claude Opus 4 - Deep intelligence, complex tasks
 agent --model sonnet    # Claude Sonnet 4 - Fast, efficient, routine tasks
-agent                   # Default: Uses Claude's default model
 ```
 
 ### Gemini Models
@@ -39,7 +38,7 @@ agent --model gemini-flash # Alias for gemini-2.5-flash
 
 ### Common Options (Both Backends)
 ```bash
-agent --model MODEL         # Select AI model
+agent --model MODEL         # Select AI model (REQUIRED)
 agent --verbose            # Enable verbose/debug output
 agent --print "MESSAGE"    # Non-interactive mode (Claude)
 agent -p "MESSAGE"         # Non-interactive mode (Gemini - translated)
@@ -62,9 +61,9 @@ When using Gemini models, the wrapper translates options:
 
 ### Basic Conversation
 ```bash
-# Claude (default)
-agent --print "Create a hello.py file"
-agent --print --continue "Now add error handling"
+# Claude
+agent --model sonnet --print "Create a hello.py file"
+agent --model sonnet --print --continue "Now add error handling"
 
 # Gemini
 agent --model gemini --print "Create a hello.py file"

@@ -672,3 +672,11 @@ npm test TreeOfLife        # Run tree component tests
   - ✅ Fixed failing test by updating expectations to match actual behavior
   - ✅ Fixed TreeOfLife component tests failing in jsdom environment
   - Missing E2E tests: No Playwright tests implemented yet (future work)
+
+### DevOps Issues (January 21, 2025)
+- **Gemini Telemetry**: Getting "Exporter 'otlp' requested through environment variable is unavailable" warning
+  - Gemini's OpenTelemetry setup may need different configuration than Claude
+  - Telemetry might not be working correctly for Gemini models
+- **MCP Server Compatibility**: Uncertain if MCP servers (Tavily, Context7, Playwright) work the same with Gemini as with Claude
+  - Needs testing to verify functionality
+  - May require different configuration or setup

@@ -43,7 +43,7 @@ fi
 # Function to detect which backend to use based on model argument
 detect_backend() {
     local model=""
-    local backend="claude"  # default
+    local backend=""
     
     # Parse arguments to find --model parameter
     while [[ $# -gt 0 ]]; do
@@ -58,18 +58,41 @@ detect_backend() {
         esac
     done
     
+    # Model is required
+    if [ -z "$model" ]; then
+        echo "❌ Error: --model parameter is required" >&2
+        echo "" >&2
+        echo "Available models:" >&2
+        echo "  Claude models:" >&2
+        echo "    --model opus      # Claude Opus 4 (deep intelligence)" >&2
+        echo "    --model sonnet    # Claude Sonnet 4 (fast, efficient)" >&2
+        echo "" >&2
+        echo "  Gemini models:" >&2
+        echo "    --model gemini    # Gemini 2.5 Pro (advanced reasoning)" >&2
+        echo "    --model flash     # Gemini 2.5 Flash (very fast)" >&2
+        echo "" >&2
+        echo "Examples:" >&2
+        echo "  agent --model opus --print \"Design the architecture\"" >&2
+        echo "  agent --model gemini --print \"Review this code\"" >&2
+        exit 1
+    fi
+    
     # Determine backend based on model
     case "$model" in
         gemini-2.5-pro|gemini-2.5-flash|gemini-pro|gemini-flash|gemini|flash)
             backend="gemini"
             ;;
-        opus|sonnet|claude-*|"")
+        opus|sonnet|claude-*)
             backend="claude"
             ;;
         *)
-            # Unknown model, default to claude but warn
-            echo "⚠️  Warning: Unknown model '$model', defaulting to Claude backend"
-            backend="claude"
+            # Unknown model
+            echo "❌ Error: Unknown model '$model'" >&2
+            echo "" >&2
+            echo "Available models:" >&2
+            echo "  Claude: opus, sonnet" >&2
+            echo "  Gemini: gemini, flash" >&2
+            exit 1
             ;;
     esac
     
@@ -152,46 +175,53 @@ build_gemini_args() {
         GEMINI_ARGS+=("--yolo")
     fi
     
-    # Add telemetry configuration if available
-    if [ -n "$HONEYCOMB_API_KEY" ] && [ "$HONEYCOMB_API_KEY" != "your_actual_api_key_here" ]; then
-        GEMINI_ARGS+=("--telemetry")
-        GEMINI_ARGS+=("--telemetry-otlp-endpoint" "$OTEL_EXPORTER_OTLP_ENDPOINT")
-        # Update service name for gemini
-        export OTEL_SERVICE_NAME="tetraspore-gemini"
-    fi
+    # Telemetry is configured via settings.json by postStartCommand.sh
+    # No need to pass telemetry args here
     
     # Add MCP servers
     GEMINI_ARGS+=("--allowed-mcp-server-names" "tavily" "context7" "playwright")
     
     # Handle continue mode (gemini doesn't have direct support)
     if [ "$continue_mode" = true ]; then
-        echo "⚠️  Warning: Gemini doesn't support --continue in non-interactive mode." >&2
-        echo "⚠️  Options:" >&2
-        echo "⚠️    1. Use interactive mode: gemini --model $model" >&2
-        echo "⚠️    2. Then use: /chat resume <tag>" >&2
-        echo "⚠️    3. For automation, consider using Claude models instead" >&2
+        echo "❌ Error: Gemini doesn't support --continue in non-interactive mode." >&2
         echo "" >&2
-        echo "⚠️  Proceeding without --continue support..." >&2
-        # Remove continue flag for gemini
+        echo "Options:" >&2
+        echo "  1. Use interactive mode: gemini --model $model" >&2
+        echo "  2. Then use: /chat resume <tag>" >&2
+        echo "  3. For automation requiring --continue, use Claude models instead" >&2
+        exit 1
     fi
 }
 
+# Check for --list-models flag
+for arg in "$@"; do
+    if [ "$arg" = "--list-models" ]; then
+        echo "Available AI models:"
+        echo ""
+        echo "Claude models:"
+        echo "  opus      - Claude Opus 4 (deep intelligence, complex tasks)"
+        echo "  sonnet    - Claude Sonnet 4 (fast, efficient, routine tasks)"
+        echo ""
+        echo "Gemini models:"
+        echo "  gemini    - Gemini 2.5 Pro (advanced reasoning, alternative perspective)"
+        echo "  flash     - Gemini 2.5 Flash (very fast responses)"
+        echo ""
+        echo "Usage: agent --model MODEL [options]"
+        exit 0
+    fi
+done
+
 # Main execution
 backend=$(detect_backend "$@")
+# Exit if detect_backend failed (it will have printed error message)
+if [ -z "$backend" ]; then
+    exit 1
+fi
 
 if [ "$backend" = "gemini" ]; then
-    # Source Gemini setup if available
-    if [ -f "/workspaces/tetraspore/.devcontainer/.config/gemini/setup.sh" ]; then
-        source "/workspaces/tetraspore/.devcontainer/.config/gemini/setup.sh"
-    fi
-    
     # Build gemini arguments array
     GEMINI_ARGS=()
     build_gemini_args "$@"
-    
-    # Update service name for telemetry
-    export OTEL_SERVICE_NAME="tetraspore-gemini"
-    export OTEL_RESOURCE_ATTRIBUTES="service.name=tetraspore-gemini,service.version=1.0.0,environment=dev"
     
     # Execute gemini with translated arguments
     exec gemini "${GEMINI_ARGS[@]}"

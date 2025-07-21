@@ -86,7 +86,7 @@ Use for:
 - Fast documentation updates
 - When speed matters most
 
-**Cost Reality**: Opus 4 is ~3x more expensive than Sonnet 4. Gemini models offer competitive pricing with different strengths. Note: Gemini doesn't support `--continue` in automation.
+**Cost Reality**: Opus 4 is ~3x more expensive than Sonnet 4. Gemini models offer competitive pricing with different strengths. Note: Gemini doesn't support `--continue` in automation - it will fail with an error to force proper handling.
 
 ## Before Spawning Any Agent
 
@@ -141,6 +141,10 @@ Create /auth/login endpoint with JWT
 - Return JWT token
 ')
 workagent run --branch feat/login-api --model sonnet --message "Read AGENT_BRANCH_TASK.md and implement"
+
+# Quick refactoring with Gemini Flash
+workagent prepare --branch refactor/cleanup
+workagent run --branch refactor/cleanup --model flash --message "Clean up unused imports and format code"
 ```
 
 ### 3. Monitor & Coordinate

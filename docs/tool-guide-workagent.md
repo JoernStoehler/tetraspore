@@ -82,7 +82,7 @@ Model options:
 - `sonnet` - Claude Sonnet 4: Fast and efficient for routine tasks
 - `gemini-2.5-pro` or `gemini` - Gemini 2.5 Pro: Advanced reasoning
 - `gemini-2.5-flash` or `flash` - Gemini 2.5 Flash: Fast responses
-- Default: Uses agent command default (Claude)
+- **Model parameter is required** - no default
 
 ### workagent status
 

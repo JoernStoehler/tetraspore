@@ -431,7 +431,7 @@ show_help() {
     echo "  --model sonnet         Claude Sonnet 4 (fast, efficient)"
     echo "  --model gemini         Gemini 2.5 Pro (advanced reasoning)"
     echo "  --model flash          Gemini 2.5 Flash (fast responses)"
-    echo "  (default: agent command default - Claude)"
+    echo "  (model parameter is required - no default)"
     echo ""
     echo "Workflow example:"
     echo "  ${BLUE}# Prepare new feature branch${NC}"
