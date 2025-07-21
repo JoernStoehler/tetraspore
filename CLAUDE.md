@@ -1,7 +1,36 @@
-# Tetraspore - Static Web App Development
+# Tetraspore - Project Overview & Agent Instructions
 
-## Project Overview
-Tetraspore is a React-based static web application for [purpose TBD]. Multiple agents work on different git worktrees simultaneously, each requiring isolated development environments.
+## Quick Start
+Tetraspore is a React-based static web application for evolutionary simulation. Multiple AI agents work on different git worktrees simultaneously, each requiring isolated development environments.
+
+## Repository Structure
+
+```
+tetraspore/
+├── .devcontainer/        # Development container configuration
+│   ├── .env             # Container-specific config (Honeycomb telemetry, API keys)
+│   ├── .config/         # Environment config files
+│   └── bin/             # Custom tools (workagent, mail, agent wrapper)
+├── docs/                # Detailed documentation
+│   ├── agent-orchestration-guide.md    # Multi-agent workflow patterns
+│   ├── tool-guide-workagent.md         # workagent command reference
+│   ├── tool-guide-mail.md              # mail command reference
+│   ├── tool-guide-agent.md             # agent (Claude CLI) details
+│   ├── tool-guide-playwright.md        # MCP Playwright browser automation
+│   └── templates/                      # Templates for agent tasks
+├── src/                 # React application source
+│   ├── components/      # React components (TreeOfLife, etc.)
+│   ├── dsl/            # Domain-specific language for game events
+│   ├── llm/            # LLM integration (mock and real)
+│   └── store/          # Zustand state management
+├── tests/              # E2E tests (Playwright)
+├── CLAUDE.md           # This file - high-level overview
+├── MILESTONES.md       # Project tracking - features, tasks, issues
+├── package.json        # Dependencies and scripts
+├── .env.example        # Template for environment variables
+├── .env                # Actual configuration (git-ignored)
+└── .env.local          # Worktree-specific overrides (git-ignored)
+```
 
 ## Critical Agent Guidelines
 
@@ -56,363 +85,105 @@ Tetraspore is a React-based static web application for [purpose TBD]. Multiple a
 - 2025-07-20: Not instructing agents to send mail - agents only do what's explicitly requested, always include communication requirements in AGENT_BRANCH_TASK.md
 - 2025-07-20: Passive monitoring without checking deliverables - don't just wait for mail, actively check for HANDOFF.md and git status
 - 2025-07-20: Using `while true` loops - infinite loops are an anti-pattern, use bounded `for` loops with exit conditions instead
+- 2025-07-21: Expecting HTML reports from E2E tests - Playwright is configured to use 'list' reporter by default (no browser windows), use `npx playwright test --reporter=html` if needed
 
-## DevOps Setup
+## Key Files to Know
 
-### Agent Management
+### For Project Status
+- **@MILESTONES.md** - Current project state, completed features, planned tasks, known issues
+- **@docs/agent-orchestration-guide.md** - Multi-agent workflow and patterns
 
-Use the `workagent` command to manage AI coding agents:
+### For Development
+- **@package.json** - See available npm scripts
+- **@src/** - Application source code
+- **@.env.example** - Required environment variables
 
+### For Agent Work
+- **@docs/tool-guide-workagent.md** - How to manage agent workspaces
+- **@docs/tool-guide-mail.md** - How to communicate between agents
+- **AGENT_BRANCH_TASK.md** - Task specifications (in each worktree)
+
+## DevOps Quick Reference
+
+### Environment Setup
 ```bash
-# Prepare workspace
-workagent prepare --branch feature/new-ui
+# Copy main .env file (contains secrets)
+cp /path/to/main/worktree/.env .env
 
-# Create task file (optional but recommended)
-Write('../tetraspore-feature-new-ui/AGENT_BRANCH_TASK.md', 'Build the UI component...')
-
-# Run agent with message
-workagent run --branch feature/new-ui --message "Read AGENT_BRANCH_TASK.md and implement"
-
-# Continue conversation after agent stops
-workagent run --branch feature/new-ui --continue --message "Add responsive design"
-
-# Monitor agents
-workagent status
-workagent attach --branch feature/new-ui
-```
-
-Key design principles:
-- **One branch = One agent = One lifecycle** (no reuse)
-- **Explicit --continue** required to resume vs start fresh  
-- **Print mode only** - agents terminate naturally
-- **Clear ownership** - worktree belongs to one agent forever
-- **Fail fast** - errors on unknown parameters
-
-The tool automatically:
-- Creates git worktree with branch
-- Copies `.env` from main worktree
-- Auto-allocates unique ports in `.env.local`
-- Runs `npm install`
-- Creates `.agent/` metadata directory
-- Manages agent lifecycle with tmux sessions
-
-### Manual Environment Setup (if needed)
-
-1. **Copy the main `.env` file** (contains secrets like API keys):
-   ```bash
-   cp /path/to/main/worktree/.env .env
-   ```
-
-2. **Create `.env.local` for port overrides** (only for non-main branches):
-   ```bash
-   cp .env.local.example .env.local
-   # Edit .env.local to set unique ports for this worktree
-   ```
-
-### Environment Files Overview
-- **`.env.example`** - Template showing required variables (committed)
-- **`.env`** - Actual configuration (git-ignored, copy from main)
-- **`.env.local`** - Worktree-specific overrides like ports (git-ignored)
-- **`.devcontainer/.env`** - Container-specific config: Honeycomb telemetry, API keys (git-ignored)
-- **`.logs/`** - Directory for development server logs (git-ignored)
-
-### Port Management
-Vite automatically loads environment files. Each worktree uses different ports:
-- Main branch: Default ports (3000, 3001, 3002, 8080)
-- Other branches: Override in `.env.local`
-
-Example `.env.local` for a feature branch:
-```bash
-# Override default ports to avoid conflicts
-VITE_DEV_PORT=3010
-VITE_PREVIEW_PORT=3011
-VITE_DEBUG_PORT=3012
+# For non-main branches, create port overrides
+cp .env.local.example .env.local
+# Edit .env.local to set unique ports
 ```
 
 ### Development Commands
-
-#### Starting Development Server
 ```bash
-# Start dev server (non-blocking, logs to file)
+# Start dev server (non-blocking)
 npm run dev > .logs/dev.log 2>&1 &
 
-# Check if server started successfully
-tail -f .logs/dev.log
-```
-
-#### Common Tasks
-```bash
-# Install dependencies
-npm install
-
 # Run tests
-npm test                    # Run unit tests in watch mode
-npm test -- --run          # Run unit tests once (25 tests)
-npm run test:ui            # Open Vitest UI
-npm run test:coverage      # Generate coverage report
+npm test                   # Unit tests in watch mode
+npm test -- --run          # Unit tests once (80 tests)
+npm run test:e2e           # E2E tests (headless, no browser windows)
+npm run test:all           # All tests once
+npm run lint               # ESLint
+npm run build              # Production build
 
-# E2E testing
-npm run test:e2e           # Run Playwright E2E tests (requires dev server)
-npm run test:e2e:ui        # Open Playwright UI
-npm run test:e2e:headed    # Run tests with browser UI visible
-npm run test:e2e:debug     # Debug E2E tests
-npm run test:all           # Run all tests (unit + E2E)
-
-# Build for production
-npm run build              # TypeScript check + Vite build
-npm run preview            # Preview production build
-
-# Linting
-npm run lint               # Run ESLint
+# E2E Testing Notes:
+# - Playwright runs headless by default (no browser windows)
+# - Uses 'list' reporter for clean terminal output
+# - To see browser: npx playwright test --headed
+# - For HTML report: npx playwright test --reporter=html
 
 # Use Claude with telemetry
 agent [your-command]
 ```
 
-#### DevOps Verification Checklist
-After setting up a new worktree or major changes:
-- [ ] `npm install` - Dependencies installed
-- [ ] `npm run dev` - Dev server starts on correct port
-- [ ] `npm test -- --run` - All unit tests pass (25 tests)
-- [ ] `npm run test:e2e` - E2E tests pass (requires dev server running)
-- [ ] `npm run build` - Production build succeeds
-- [ ] Check `.env` exists (copy from main worktree)
-- [ ] Check `.env.local` for port overrides (if needed)
-
-### Cloudflared Tunneling
-Use cloudflared to expose your dev server via `tetraspore.joernstoehler.com`:
-
+### Multi-Agent Commands
 ```bash
-# Tunnel your dev server (replace 3010 with your DEV_PORT)
-cloudflared tunnel --url http://localhost:3010
-```
+# Prepare workspace and spawn agent
+workagent prepare --branch feature/xyz --task "Your task"
+workagent spawn --branch feature/xyz --model opus
 
-### Development Workflow
-
-1. **Setup**: DevOps team configures `.devcontainer/.env`
-2. **Port Assignment**: Each worktree gets unique ports via `.ports` file
-3. **Start Development**: `npm run dev > .logs/dev.log 2>&1 &`
-4. **Tunnel (Optional)**: Use cloudflared to share with others
-5. **Use Agent**: Run `agent` command for Claude with telemetry
-
-### Git Worktree Isolation
-- Each worktree has its own `.ports` file (git-ignored)
-- Logs are stored in `.logs/` directory (git-ignored)
-- Development servers run on unique ports to avoid conflicts
-- Agents can work simultaneously without interference
-
-### Troubleshooting
-
-#### Port Conflicts
-If you get "port already in use" errors:
-1. Check `.ports` file for your assigned ports
-2. Ensure no other process uses those ports
-3. Update `.ports` if needed
-
-#### Missing Environment
-If you see telemetry warnings:
-1. Check `.devcontainer/.env` exists
-2. Verify `HONEYCOMB_API_KEY` is set
-3. Contact DevOps team if missing
-
-#### Development Server Issues
-```bash
-# Check server logs
-tail -f .logs/dev.log
-
-# Kill stuck processes
-pkill -f "npm run dev"
-
-# Restart server
-npm run dev > .logs/dev.log 2>&1 &
-```
-
-### File Structure
-```
-tetraspore/
-├── .devcontainer/
-│   ├── .env              # Honeycomb config (DevOps managed)
-│   ├── .config/          # Environment config files
-│   └── ...
-├── .ports                # Port assignments (git-ignored)
-├── .logs/                # Development logs (git-ignored)
-├── src/                  # React source code
-├── package.json          # Dependencies and scripts
-└── CLAUDE.md            # This file
-```
-
-## AI-Specific DevOps
-
-### MCP Servers Configuration
-The `.mcp.json` file configures additional capabilities for AI agents:
-- **tavily**: Fast web search (requires `TAVILY_API_KEY` in `.devcontainer/.env`)
-- **context7**: Library documentation access
-- **puppeteer**: Browser automation for testing live website
-
-### Agent Command
-The `agent` command is aliased to include telemetry and permissions:
-```bash
-# Runs claude with Honeycomb telemetry and --dangerously-skip-permissions
-agent [your-command]
-```
-
-### AI Development Tips
-- Use `workagent` to manage isolated agent workspaces
-- MCP servers provide enhanced search and documentation access
-- The `--dangerously-skip-permissions` flag is set by default for smoother workflows
-- Always document decisions in MILESTONES.md under appropriate sections
-
-## Notes for Agents
-- Always use `agent` command for Claude with telemetry
-- Use `workagent` for creating workspaces and spawning agents (installed as command in .devcontainer/bin/)
-- Use `mail` for inter-agent communication (installed as command in .devcontainer/bin/)
-- Start dev server non-blocking with log redirection
-- Use cloudflared for external sharing when needed
-- **REMEMBER**: Update this file when you learn new requirements or make mistakes that others should avoid
-
-## Multi-Agent Orchestration
-
-### Overview
-Tetraspore uses multiple AI agents working in parallel on different git worktrees. This enables rapid development while avoiding conflicts.
-
-**IMPORTANT**: All agents (orchestrator and workers) should read the [Agent Orchestration Guide](docs/agent-orchestration-guide.md) to understand the workflow and patterns for parallel development.
-
-### Project Tracking Documents
-The project uses a single source of truth for tracking progress:
-- **[MILESTONES.md](MILESTONES.md)** - Current project state, completed features, planned tasks, and known issues
-
-Orchestrators must update MILESTONES.md when tasks are completed or new issues are discovered. See the "How to Use This Document" section in MILESTONES.md for detailed guidelines.
-
-### Quick Agent Commands
-
-```bash
-# Create and spawn agent for specific component
-# Complex visualization needs deep intelligence
-workagent prepare --branch feature/tree-ui --task "Implement Tree of Life visualization"
-workagent spawn --branch feature/tree-ui --model opus
-
-# Simple data fetching can use sonnet
-workagent prepare --branch feature/api-client --task "Implement API client per spec"
-workagent spawn --branch feature/api-client --model sonnet
-
-# Monitor agent progress
+# Monitor agents
 workagent status
-mail inbox
+mail inbox --for main
 
-# Research agent (in main branch) - research needs opus
-agent --model opus "Research: Find all LLM integration points. Document in HANDOFF.md"
-
-# Integration (after features complete) - complex integration needs opus
-agent --model opus "@HANDOFF.md Integrate tree-ui and tree-data branches"
+# Continue work after agent stops
+workagent run --branch feature/xyz --continue --message "Continue with..."
 ```
 
-#### Model Selection:
-- **opus**: Claude Opus 4 - Slower, expensive, deep intelligence for complex tasks
-- **sonnet**: Claude Sonnet 4 - Faster, cheaper, effective for routine tasks
+## AI-Specific Notes
 
-### Agent Division Strategy
+### MCP Servers Available
+- **tavily**: Web search (needs `TAVILY_API_KEY`)
+- **context7**: Library documentation
+- **playwright**: Browser automation
 
-Divide work along architectural boundaries:
+### Model Selection
+- **opus**: Complex tasks, architecture, research
+- **sonnet**: Implementation from specs, routine tasks
 
-**UI Agent**: React components, visualizations, user interactions
-- Tree of Life, Region Map, Choice Cards
-- D3.js and Three.js visualizations
-- Event handlers and UI state
+### Agent Best Practices
+1. Always check `@MILESTONES.md` for current project state
+2. Use `@file` references to preload context
+3. Create HANDOFF.md when completing tasks
+4. Send mail updates to orchestrator
+5. Follow the UI-first development pipeline (see @MILESTONES.md)
 
-**Event Agent**: Event sourcing and state management
-- Event types and validation
-- Event store and persistence  
-- State projection from events
+## Where to Find More Information
 
-**LLM Agent**: AI integration
-- LLM service wrapper
-- Prompt formatting
-- Response parsing
-- Mock mode
+- **Multi-agent orchestration**: @docs/agent-orchestration-guide.md
+- **Tool documentation**: @docs/tool-guide-*.md
+  - Browser automation: @docs/tool-guide-playwright.md
+  - Agent management: @docs/tool-guide-workagent.md
+  - Inter-agent mail: @docs/tool-guide-mail.md
+- **Project milestones & tasks**: @MILESTONES.md
+- **Task templates**: @docs/templates/
+- **Development patterns**: See "Development Principles" in @MILESTONES.md
 
-**3D Agent**: Three.js and spatial calculations
-- Globe rendering
-- Spherical Voronoi
-- Camera controls
+## Important Reminders
 
-### Agent Handoffs
-
-Always create HANDOFF.md when transitioning work:
-
-```markdown
-# Feature Name Handoff
-## Completed by: [agent-name]
-## Date: [date]
-## Status: [what's done, what's not]
-
-### What was implemented:
-- List completed items
-- Key files created/modified
-
-### Integration points:
-- How it connects to other systems
-- Required interfaces
-
-### Next steps:
-- Remaining work
-- Known issues
-
-### How to test:
-- Commands to run
-- Expected behavior
-```
-
-### Common Multi-Agent Patterns
-
-**Fork-Join** (parallel then integrate):
-```bash
-workagent prepare --branch feat/ui --task "Build UI"
-workagent spawn --branch feat/ui
-workagent prepare --branch feat/backend --task "Build backend"
-workagent spawn --branch feat/backend
-# Later: integrate both branches
-```
-
-**Pipeline** (sequential):
-```
-design-agent → implement-agent → test-agent
-```
-
-**Research-Implementation**:
-```
-research-agent (read-only) → implementation-agents
-```
-
-### Best Practices
-
-1. **Clear Boundaries**: Each agent owns specific files/directories
-2. **Explicit Interfaces**: Document contracts between components
-3. **Frequent Integration**: Merge related work often
-4. **HANDOFF.md**: Required for all transitions
-5. **Clean Commits**: One feature per commit
-6. **Mail Communication**: Use `mail` for all agent coordination
-7. **Model Selection**: Choose models based on task complexity:
-   - **Opus 4** for: Architecture design, complex algorithms, research, integration
-   - **Sonnet 4** for: Implementation from specs, tests, CRUD, simple UI components
-   - Consider cost (~3x difference) and time requirements
-
-### Troubleshooting
-
-**Agent gets stuck**: 
-```bash
-workagent attach --branch feat/stuck  # Check what's happening
-workagent stop --branch feat/stuck    # Stop if needed
-```
-
-**Check agent logs**:
-```bash
-cd ../tetraspore-feat-branch
-tail -f .agent/session.log
-```
-
-**Integration issues**: Use integration agent to resolve
-
-See `docs/` for detailed guides:
-- [Agent Orchestration Guide](docs/agent-orchestration-guide.md) - Multi-agent workflow and patterns
-- [WorkAgent Tool Guide](docs/tool-guide-workagent.md) - workagent command reference
-- [Mail Tool Guide](docs/tool-guide-mail.md) - mail command reference
+- **NEVER** create files unless necessary
+- **ALWAYS** prefer editing existing files
+- **NEVER** proactively create documentation unless requested
+- **UPDATE** this file when you learn new requirements or make mistakes others should avoid
