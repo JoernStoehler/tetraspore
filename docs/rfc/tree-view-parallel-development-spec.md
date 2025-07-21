@@ -257,18 +257,120 @@ Ask yourself:
 ## Getting Started
 
 ```bash
-# Pick your approach name
-APPROACH="galaxy"  # or "neural", "ecosystem", etc.
+# The git worktree will be provided by workagent
+# You'll already be in your branch when you start
+# Just create your component folder:
 
-# Create your branch and folder
-git checkout -b tree-view-prototype-$APPROACH
-mkdir -p src/components/TreeView${APPROACH^}
+APPROACH="Galaxy"  # Your approach name (capitalized)
+mkdir -p src/components/TreeView${APPROACH}
 
-# Start with types that inspire you
-touch src/components/TreeView${APPROACH^}/types/Species.ts
-
-# Build your vision!
+# Start building!
 npm run storybook
+```
+
+## Deliverable: Final Presentation Document
+
+When you complete your prototype, create a presentation document:
+
+**File**: `AGENT_RESULT_tree-view-prototype-[approach].md`  
+(where [approach] matches your branch name suffix)
+
+This document should be a professional ~1 day design proposal presentation that includes:
+
+### 1. Executive Summary
+- Your approach in 2-3 sentences
+- Key innovation or unique selling point
+- Why this visualization enhances the game
+
+### 2. Live Demo Instructions
+```markdown
+## How to Experience the Prototype
+
+1. Run `npm run storybook`
+2. Navigate to TreeView > Prototypes > [Your Approach]
+3. Start with the "Basic" story to understand the concept
+4. Try the "Complex" story to see it handle 50+ species
+5. Pay special attention to:
+   - [Specific feature 1]
+   - [Specific feature 2]
+   - [Unique interaction pattern]
+```
+
+### 3. Key Features Walkthrough
+- Screenshot or description of each major feature
+- Why each feature matters for gameplay
+- How players would use it
+
+### 4. Technical Decisions
+- What Species fields you added and why
+- Your visual event architecture
+- Performance considerations
+- Mobile/accessibility approach
+
+### 5. Edge Cases & Limitations
+- Known issues or unfinished aspects
+- Edge cases to test (with specific steps)
+- Performance limits discovered
+- Future improvements needed
+
+### 6. Code Highlights
+Point to specific files/functions that demonstrate:
+- Your most innovative code
+- Elegant solutions to hard problems
+- Reusable patterns for the final version
+
+### 7. Vision for Integration
+- How your approach could enhance the full game
+- What game features it would enable
+- How it scales to endgame (1000+ species)
+
+### Example Structure:
+
+```markdown
+# Galaxy TreeView - Design Proposal
+
+## Executive Summary
+The Galaxy TreeView reimagines evolution as cosmic expansion, with species 
+as star systems connected by light streams. This creates an immediately 
+graspable metaphor where players feel like gods shaping the universe.
+
+## Live Demo
+1. Run `npm run storybook`
+2. Navigate to TreeView > Prototypes > Galaxy
+3. Start with "Birth of a Galaxy" story
+4. Notice how new species pulse into existence like supernovas
+5. Try dragging to rotate the 3D galaxy view
+6. Click any star to see its "constellation" (lineage)
+
+## Key Features
+
+### 1. Cosmic Metaphor
+- Species are stars with size = population
+- Evolution creates "light bridges" between stars
+- Extinction = star collapse with gravitational waves
+
+### 2. 3D Navigation
+- Natural rotation with mouse/touch
+- Zoom into sectors for detail
+- Auto-focus on active evolution
+
+## Technical Architecture
+[...]
+
+## Test These Edge Cases
+1. Create 200+ species and verify performance
+2. Rapid extinctions might cause overlapping animations
+3. Mobile pinch-zoom needs refinement
+
+## Code Highlights
+- See `src/components/TreeViewGalaxy/utils/cosmicLayout.ts` for the 
+  innovative force-directed 3D layout
+- The `StarShader.tsx` component shows WebGL integration
+
+## Future Vision
+In the full game, players would feel like they're playing "Spore meets 
+Stellaris" with this visualization. The cosmic theme could extend to the 
+whole game aesthetic.
 ```
 
 ## Final Thoughts
