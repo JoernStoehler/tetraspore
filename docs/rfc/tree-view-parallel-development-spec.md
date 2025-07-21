@@ -22,6 +22,13 @@ Our GenAI will generate game events/actions that create rich species data. It ca
 - Sound signatures
 - Anything else you can imagine!
 
+## Platform & Scope Notes
+
+- **Desktop-only**: Design for 1920x1080 minimum resolution
+- **No mobile support**: Screen space too limited for complex trees
+- **Accessibility**: Not a focus due to heavy visual nature
+- **Single-player**: No multiplayer considerations needed
+
 ## Architectural Guidance
 
 ### Three-Layer Data Model
@@ -190,7 +197,7 @@ src/components/TreeView[YourApproach]/
    - "Wow factor"
 
 2. **User Experience** (30%)
-   - Intuitive navigation
+   - Intuitive navigation on desktop
    - Clear information hierarchy
    - Smooth animations
    - Engaging aesthetics
@@ -203,11 +210,11 @@ src/components/TreeView[YourApproach]/
 
 ### Bonus Points For
 
-- **Mobile-first design**
-- **Accessibility features**
-- **Sound design ideas**
-- **Multiplayer considerations**
-- **AI-assistant integration ideas**
+- **Sound design ideas** - Audio feedback for evolution events
+- **AI-assistant integration** - How an AI helper could explain the tree
+- **Cinematic moments** - Dramatic reveals, epic transitions
+- **Performance optimizations** - Clever techniques for 1000+ species
+- **Data storytelling** - Making patterns and trends obvious
 
 ## Example Approaches (Not Exhaustive!)
 
@@ -232,7 +239,7 @@ src/components/TreeView[YourApproach]/
 ### DON'T:
 - ❌ **Limit yourself** to basic tree layouts
 - ❌ **Ignore performance** - should handle 500 species
-- ❌ **Forget mobile** - many players use phones
+- ❌ **Worry about mobile** - we're targeting desktop only
 - ❌ **Make it static** - evolution is dynamic!
 - ❌ **Skip documentation** - explain your vision
 
@@ -305,7 +312,7 @@ This document should be a professional ~1 day design proposal presentation that 
 - What Species fields you added and why
 - Your visual event architecture
 - Performance considerations
-- Mobile/accessibility approach
+- Desktop optimization approach
 
 ### 5. Edge Cases & Limitations
 - Known issues or unfinished aspects
@@ -350,7 +357,7 @@ graspable metaphor where players feel like gods shaping the universe.
 - Extinction = star collapse with gravitational waves
 
 ### 2. 3D Navigation
-- Natural rotation with mouse/touch
+- Natural rotation with mouse
 - Zoom into sectors for detail
 - Auto-focus on active evolution
 
@@ -360,7 +367,7 @@ graspable metaphor where players feel like gods shaping the universe.
 ## Test These Edge Cases
 1. Create 200+ species and verify performance
 2. Rapid extinctions might cause overlapping animations
-3. Mobile pinch-zoom needs refinement
+3. Window resize handling needs testing
 
 ## Code Highlights
 - See `src/components/TreeViewGalaxy/utils/cosmicLayout.ts` for the 
