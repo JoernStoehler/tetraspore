@@ -1,0 +1,50 @@
+[
+  {
+    "id": "primordial-1",
+    "name": "Primordial Soup",
+    "parentId": null,
+    "turn": 1,
+    "nodeType": "birth",
+    "speciesId": "primordial"
+  },
+  {
+    "id": "bacteria-2",
+    "name": "Bacteria",
+    "parentId": "primordial-1",
+    "turn": 2,
+    "nodeType": "birth",
+    "speciesId": "bacteria"
+  },
+  {
+    "id": "primordial-2",
+    "name": "Primordial Soup",
+    "parentId": "primordial-1",
+    "turn": 2,
+    "nodeType": "alive",
+    "speciesId": "primordial"
+  },
+  {
+    "id": "algae-3",
+    "name": "Algae",
+    "parentId": "bacteria-2",
+    "turn": 3,
+    "nodeType": "birth",
+    "speciesId": "algae"
+  },
+  {
+    "id": "bacteria-3",
+    "name": "Bacteria",
+    "parentId": "bacteria-2",
+    "turn": 3,
+    "nodeType": "alive",
+    "speciesId": "bacteria"
+  },
+  {
+    "id": "primordial-3",
+    "name": "Primordial Soup",
+    "parentId": "primordial-2",
+    "turn": 3,
+    "nodeType": "extinction",
+    "speciesId": "primordial"
+  }
+]

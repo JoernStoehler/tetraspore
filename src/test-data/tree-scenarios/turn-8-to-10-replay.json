@@ -1,0 +1,266 @@
+[
+  {
+    "id": "grasses-8",
+    "name": "Grasses",
+    "parentId": "flowering-plants-7",
+    "turn": 8,
+    "nodeType": "birth",
+    "speciesId": "grasses"
+  },
+  {
+    "id": "trees-8",
+    "name": "Trees",
+    "parentId": "conifers-7",
+    "turn": 8,
+    "nodeType": "birth",
+    "speciesId": "trees"
+  },
+  {
+    "id": "conifers-8",
+    "name": "Conifers",
+    "parentId": "conifers-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "conifers"
+  },
+  {
+    "id": "flowering-plants-8",
+    "name": "Flowering Plants",
+    "parentId": "flowering-plants-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "flowering-plants"
+  },
+  {
+    "id": "mosses-8",
+    "name": "Mosses",
+    "parentId": "mosses-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "mosses"
+  },
+  {
+    "id": "ferns-8",
+    "name": "Ferns",
+    "parentId": "ferns-7",
+    "turn": 8,
+    "nodeType": "extinction",
+    "speciesId": "ferns"
+  },
+  {
+    "id": "plants-8",
+    "name": "Plants",
+    "parentId": "plants-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "plants"
+  },
+  {
+    "id": "fungi-8",
+    "name": "Fungi",
+    "parentId": "fungi-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "fungi"
+  },
+  {
+    "id": "algae-8",
+    "name": "Algae",
+    "parentId": "algae-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "algae"
+  },
+  {
+    "id": "bacteria-8",
+    "name": "Bacteria",
+    "parentId": "bacteria-7",
+    "turn": 8,
+    "nodeType": "alive",
+    "speciesId": "bacteria"
+  },
+  {
+    "id": "animals-9",
+    "name": "Animals",
+    "parentId": "bacteria-8",
+    "turn": 9,
+    "nodeType": "birth",
+    "speciesId": "animals"
+  },
+  {
+    "id": "insects-9",
+    "name": "Insects",
+    "parentId": "animals-9",
+    "turn": 9,
+    "nodeType": "birth",
+    "speciesId": "insects"
+  },
+  {
+    "id": "grasses-9",
+    "name": "Grasses",
+    "parentId": "grasses-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "grasses"
+  },
+  {
+    "id": "trees-9",
+    "name": "Trees",
+    "parentId": "trees-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "trees"
+  },
+  {
+    "id": "conifers-9",
+    "name": "Conifers",
+    "parentId": "conifers-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "conifers"
+  },
+  {
+    "id": "flowering-plants-9",
+    "name": "Flowering Plants",
+    "parentId": "flowering-plants-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "flowering-plants"
+  },
+  {
+    "id": "mosses-9",
+    "name": "Mosses",
+    "parentId": "mosses-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "mosses"
+  },
+  {
+    "id": "plants-9",
+    "name": "Plants",
+    "parentId": "plants-8",
+    "turn": 9,
+    "nodeType": "extinction",
+    "speciesId": "plants"
+  },
+  {
+    "id": "fungi-9",
+    "name": "Fungi",
+    "parentId": "fungi-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "fungi"
+  },
+  {
+    "id": "algae-9",
+    "name": "Algae",
+    "parentId": "algae-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "algae"
+  },
+  {
+    "id": "bacteria-9",
+    "name": "Bacteria",
+    "parentId": "bacteria-8",
+    "turn": 9,
+    "nodeType": "alive",
+    "speciesId": "bacteria"
+  },
+  {
+    "id": "fish-10",
+    "name": "Fish",
+    "parentId": "animals-9",
+    "turn": 10,
+    "nodeType": "birth",
+    "speciesId": "fish"
+  },
+  {
+    "id": "amphibians-10",
+    "name": "Amphibians",
+    "parentId": "fish-10",
+    "turn": 10,
+    "nodeType": "birth",
+    "speciesId": "amphibians"
+  },
+  {
+    "id": "animals-10",
+    "name": "Animals",
+    "parentId": "animals-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "animals"
+  },
+  {
+    "id": "insects-10",
+    "name": "Insects",
+    "parentId": "insects-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "insects"
+  },
+  {
+    "id": "grasses-10",
+    "name": "Grasses",
+    "parentId": "grasses-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "grasses"
+  },
+  {
+    "id": "trees-10",
+    "name": "Trees",
+    "parentId": "trees-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "trees"
+  },
+  {
+    "id": "conifers-10",
+    "name": "Conifers",
+    "parentId": "conifers-9",
+    "turn": 10,
+    "nodeType": "extinction",
+    "speciesId": "conifers"
+  },
+  {
+    "id": "flowering-plants-10",
+    "name": "Flowering Plants",
+    "parentId": "flowering-plants-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "flowering-plants"
+  },
+  {
+    "id": "mosses-10",
+    "name": "Mosses",
+    "parentId": "mosses-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "mosses"
+  },
+  {
+    "id": "fungi-10",
+    "name": "Fungi",
+    "parentId": "fungi-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "fungi"
+  },
+  {
+    "id": "algae-10",
+    "name": "Algae",
+    "parentId": "algae-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "algae"
+  },
+  {
+    "id": "bacteria-10",
+    "name": "Bacteria",
+    "parentId": "bacteria-9",
+    "turn": 10,
+    "nodeType": "alive",
+    "speciesId": "bacteria"
+  }
+]

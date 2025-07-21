@@ -116,3 +116,6 @@ scratch/
 *.bak
 *.orig
 
+
+*storybook.log
+storybook-static
