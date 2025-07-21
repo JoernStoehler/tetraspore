@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Agent wrapper for claude command with Honeycomb telemetry support
-# This script sets up the environment variables needed for telemetry
-# and then executes the claude command with all passed arguments
+# Agent wrapper with support for both Claude and Gemini models
+# This script:
+# 1. Sets up telemetry for both claude and gemini commands
+# 2. Routes to appropriate command based on model selection
+# 3. Handles different CLI interfaces transparently
 
 # Load environment variables from .devcontainer/.env if it exists
 if [ -f "/workspaces/tetraspore/.devcontainer/.env" ]; then
@@ -28,7 +30,7 @@ else
     fi
 fi
 
-# Validate Tavily API key
+# Validate Tavily API key (for both claude and gemini)
 if [ -z "$TAVILY_API_KEY" ] || [ "$TAVILY_API_KEY" = "your_tavily_api_key_here" ]; then
     echo "⚠️  Warning: Tavily API key not configured (web search disabled)"
 else
@@ -38,6 +40,162 @@ else
     fi
 fi
 
-# Execute claude command with all arguments
-# Include --dangerously-skip-permissions by default for smoother AI workflows
-exec claude --dangerously-skip-permissions "$@"
+# Function to detect which backend to use based on model argument
+detect_backend() {
+    local model=""
+    local backend="claude"  # default
+    
+    # Parse arguments to find --model parameter
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --model|-m)
+                model="$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+    
+    # Determine backend based on model
+    case "$model" in
+        gemini-2.5-pro|gemini-2.5-flash|gemini-pro|gemini-flash|gemini|flash)
+            backend="gemini"
+            ;;
+        opus|sonnet|claude-*|"")
+            backend="claude"
+            ;;
+        *)
+            # Unknown model, default to claude but warn
+            echo "⚠️  Warning: Unknown model '$model', defaulting to Claude backend"
+            backend="claude"
+            ;;
+    esac
+    
+    echo "$backend"
+}
+
+# Function to build gemini arguments from claude format
+build_gemini_args() {
+    local model=""
+    local prompt=""
+    local continue_mode=false
+    local print_mode=false
+    local verbose=false
+    local yolo=false
+    
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --model|-m)
+                model="$2"
+                # Translate model names
+                case "$2" in
+                    gemini|gemini-pro)
+                        model="gemini-2.5-pro"
+                        ;;
+                    flash|gemini-flash)
+                        model="gemini-2.5-flash"
+                        ;;
+                esac
+                shift 2
+                ;;
+            --print)
+                print_mode=true
+                shift
+                ;;
+            --continue|-c)
+                continue_mode=true
+                shift
+                ;;
+            --verbose)
+                verbose=true
+                shift
+                ;;
+            --dangerously-skip-permissions)
+                yolo=true
+                shift
+                ;;
+            --output-format)
+                # Gemini doesn't support this, skip
+                shift 2
+                ;;
+            *)
+                # Assume this is the prompt
+                if [ -z "$prompt" ]; then
+                    prompt="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+    
+    # Build gemini arguments
+    if [ -n "$model" ]; then
+        GEMINI_ARGS+=("--model" "$model")
+    fi
+    
+    # In print mode, use -p for prompt
+    if [ "$print_mode" = true ] && [ -n "$prompt" ]; then
+        GEMINI_ARGS+=("-p" "$prompt")
+    elif [ -n "$prompt" ]; then
+        # Interactive mode with initial prompt
+        GEMINI_ARGS+=("-i" "$prompt")
+    fi
+    
+    # Add other flags
+    if [ "$verbose" = true ]; then
+        GEMINI_ARGS+=("--debug")
+    fi
+    
+    if [ "$yolo" = true ]; then
+        GEMINI_ARGS+=("--yolo")
+    fi
+    
+    # Add telemetry configuration if available
+    if [ -n "$HONEYCOMB_API_KEY" ] && [ "$HONEYCOMB_API_KEY" != "your_actual_api_key_here" ]; then
+        GEMINI_ARGS+=("--telemetry")
+        GEMINI_ARGS+=("--telemetry-otlp-endpoint" "$OTEL_EXPORTER_OTLP_ENDPOINT")
+        # Update service name for gemini
+        export OTEL_SERVICE_NAME="tetraspore-gemini"
+    fi
+    
+    # Add MCP servers
+    GEMINI_ARGS+=("--allowed-mcp-server-names" "tavily" "context7" "playwright")
+    
+    # Handle continue mode (gemini doesn't have direct support)
+    if [ "$continue_mode" = true ]; then
+        echo "⚠️  Warning: Gemini doesn't support --continue in non-interactive mode." >&2
+        echo "⚠️  Options:" >&2
+        echo "⚠️    1. Use interactive mode: gemini --model $model" >&2
+        echo "⚠️    2. Then use: /chat resume <tag>" >&2
+        echo "⚠️    3. For automation, consider using Claude models instead" >&2
+        echo "" >&2
+        echo "⚠️  Proceeding without --continue support..." >&2
+        # Remove continue flag for gemini
+    fi
+}
+
+# Main execution
+backend=$(detect_backend "$@")
+
+if [ "$backend" = "gemini" ]; then
+    # Source Gemini setup if available
+    if [ -f "/workspaces/tetraspore/.devcontainer/.config/gemini/setup.sh" ]; then
+        source "/workspaces/tetraspore/.devcontainer/.config/gemini/setup.sh"
+    fi
+    
+    # Build gemini arguments array
+    GEMINI_ARGS=()
+    build_gemini_args "$@"
+    
+    # Update service name for telemetry
+    export OTEL_SERVICE_NAME="tetraspore-gemini"
+    export OTEL_RESOURCE_ATTRIBUTES="service.name=tetraspore-gemini,service.version=1.0.0,environment=dev"
+    
+    # Execute gemini with translated arguments
+    exec gemini "${GEMINI_ARGS[@]}"
+else
+    # Execute claude with original arguments
+    exec claude --dangerously-skip-permissions "$@"
+fi

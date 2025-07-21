@@ -80,7 +80,9 @@ Key behaviors:
 Model options:
 - `opus` - Claude Opus 4: Deep intelligence for complex tasks
 - `sonnet` - Claude Sonnet 4: Fast and efficient for routine tasks
-- Default: Uses agent command default
+- `gemini-2.5-pro` or `gemini` - Gemini 2.5 Pro: Advanced reasoning
+- `gemini-2.5-flash` or `flash` - Gemini 2.5 Flash: Fast responses
+- Default: Uses agent command default (Claude)
 
 ### workagent status
 

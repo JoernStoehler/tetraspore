@@ -72,7 +72,21 @@ Use for:
 - Refactoring with clear goals
 - Routine maintenance tasks
 
-**Cost Reality**: Opus 4 is ~3x more expensive than Sonnet 4. Reserve it for tasks where intelligence truly matters.
+### Gemini 2.5 Pro ($$, Alternative Perspective)
+Use for:
+- Code reviews and security analysis
+- Alternative approach to complex problems
+- Multi-modal tasks (images/PDFs)
+- When you want different thinking than Claude
+
+### Gemini 2.5 Flash ($, Very Fast)
+Use for:
+- Quick code generation
+- Simple refactoring
+- Fast documentation updates
+- When speed matters most
+
+**Cost Reality**: Opus 4 is ~3x more expensive than Sonnet 4. Gemini models offer competitive pricing with different strengths. Note: Gemini doesn't support `--continue` in automation.
 
 ## Before Spawning Any Agent
 

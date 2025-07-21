@@ -36,6 +36,11 @@ build/
 coverage/
 *.lcov
 
+# Test artifacts
+playwright-report/
+test-results/
+.last-run.json
+
 # -----------------------------------------------------------------------------
 # DEVELOPMENT ENVIRONMENT
 # -----------------------------------------------------------------------------
@@ -52,6 +57,9 @@ Thumbs.db
 # Development server logs and port assignments (per git worktree)
 .logs/
 .ports
+
+# External tool logs (MCP Puppeteer, etc.)
+logs/
 
 # -----------------------------------------------------------------------------
 # AI AGENT SYSTEM
