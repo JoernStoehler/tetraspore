@@ -332,10 +332,8 @@ echo
 echo -e "${GREEN}✓ Worktree ready! Run this command to start the agent:${NC}"
 echo
 if [[ -n "$INITIAL_CMD" ]]; then
-    echo -e "${BLUE}$AGENT_CMD $MODEL_FLAG '$INITIAL_CMD'${NC}"
+    echo -e "${BLUE}cd $WORKTREE_DIR && $AGENT_CMD $MODEL_FLAG '$INITIAL_CMD'${NC}"
 else
-    echo -e "${BLUE}$AGENT_CMD $MODEL_FLAG${NC}"
+    echo -e "${BLUE}cd $WORKTREE_DIR && $AGENT_CMD $MODEL_FLAG${NC}"
 fi
 echo
-echo "Or cd to the worktree first:"
-echo -e "${BLUE}cd $WORKTREE_DIR${NC}"
