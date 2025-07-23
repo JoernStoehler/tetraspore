@@ -288,13 +288,10 @@ if [[ "$PREPARE_ONLY" == true ]]; then
     echo
     echo "Next steps:"
     echo "  cd $WORKTREE_DIR"
-    echo "  agent --model $MODEL"
+    echo "  claude --model $MODEL"
     echo "  /implement-issue $ISSUE_NUMBER"
     exit 0
 fi
-
-# Spawn agent
-echo -e "${BLUE}Spawning ${MODEL} agent...${NC}"
 
 # Prepare the initial command if not disabled
 INITIAL_CMD=""
@@ -318,19 +315,13 @@ case $MODEL in
         ;;
 esac
 
-echo
-echo -e "${GREEN}Starting agent in TUI mode...${NC}"
-echo -e "${YELLOW}Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}${NC}"
-echo
-if [[ -n "$INITIAL_CMD" ]]; then
-    echo -e "${BLUE}Initial command: ${INITIAL_CMD}${NC}"
-    echo
-fi
-
 # Display the command to run
 echo
-echo -e "${GREEN}✓ Worktree ready! Run this command to start the agent:${NC}"
+echo -e "${GREEN}✓ Worktree ready!${NC}"
 echo
+echo -e "${YELLOW}Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}${NC}"
+echo
+echo "Run this command to start the ${MODEL} agent:"
 if [[ -n "$INITIAL_CMD" ]]; then
     echo -e "${BLUE}cd $WORKTREE_DIR && $AGENT_CMD $MODEL_FLAG '$INITIAL_CMD'${NC}"
 else
