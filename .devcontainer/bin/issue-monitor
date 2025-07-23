@@ -68,7 +68,7 @@ get_issues() {
     if [[ -n "${ISSUE_CACHE[$cache_key]}" ]] && (( current_time - ${ISSUE_CACHE_TIME[$cache_key]:-0} < CACHE_TTL )); then
         echo "${ISSUE_CACHE[$cache_key]}"
     else
-        local issues=$(gh issue list --limit 100 --json number,title,state,updatedAt,comments 2>/dev/null || echo "[]")
+        local issues=$(gh issue list --limit 100 --state all --json number,title,state,updatedAt,comments 2>/dev/null || echo "[]")
         ISSUE_CACHE[$cache_key]="$issues"
         ISSUE_CACHE_TIME[$cache_key]=$current_time
         echo "$issues"
@@ -242,6 +242,58 @@ truncate_string() {
     fi
 }
 
+# Function to determine action needed
+get_action_needed() {
+    local issue_state=$1
+    local worktree_exists=$2
+    local branch_state=$3
+    local agent_running=$4
+    
+    # If agent is running, that's the priority
+    if [[ "$agent_running" != "none" ]]; then
+        echo "agent active"
+        return
+    fi
+    
+    # Closed issue with worktree needs cleanup
+    if [[ "$issue_state" == "CLOSED" && "$worktree_exists" == "YES" ]]; then
+        echo "cleanup worktree"
+        return
+    fi
+    
+    # Open issue without worktree might need setup
+    if [[ "$issue_state" == "OPEN" && "$worktree_exists" == "NO" ]]; then
+        echo "setup worktree"
+        return
+    fi
+    
+    # Check branch states for open issues
+    if [[ "$issue_state" == "OPEN" ]]; then
+        case "$branch_state" in
+            "UNCOMMITTED")
+                echo "commit changes"
+                ;;
+            "NEEDS_PUSH")
+                echo "push branch"
+                ;;
+            "NEEDS_PULL")
+                echo "pull changes"
+                ;;
+            "DIVERGED")
+                echo "resolve diverge"
+                ;;
+            "NO_REMOTE")
+                echo "push to remote"
+                ;;
+            *)
+                echo "-"
+                ;;
+        esac
+    else
+        echo "-"
+    fi
+}
+
 # Main monitoring loop
 main() {
     # Change to repo root
@@ -259,14 +311,30 @@ main() {
         # Build entire output in a variable
         local output=""
         
+        # Define column widths
+        local COL_ISSUE=8
+        local COL_STATUS=8
+        local COL_TITLE=48  # Increased since we removed Branch column
+        local COL_WORKTREE=9
+        local COL_AGENT=12
+        local COL_ACTION=16  # Increased to fit "cleanup worktree"
+        local COL_COMMENTS=8  # Renamed and increased for "Comments"
+        
+        # Calculate total width (including spaces between columns and quotes around title)
+        local TOTAL_WIDTH=$((COL_ISSUE + 1 + COL_STATUS + 1 + 2 + COL_TITLE + 1 + COL_WORKTREE + 1 + COL_AGENT + 1 + COL_ACTION + 1 + COL_COMMENTS))
+        
+        # Create separator lines
+        local HEADER_LINE=$(printf '═%.0s' $(seq 1 $TOTAL_WIDTH))
+        local DIVIDER_LINE=$(printf '─%.0s' $(seq 1 $TOTAL_WIDTH))
+        
         # Header
         output+="Tetraspore Issue Monitor - $(date '+%Y-%m-%d %H:%M:%S')\n"
-        output+="════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════\n"
+        output+="${HEADER_LINE}\n"
         
         # Table header
-        output+=$(printf "%-8s %-12s %-50s %-10s %-15s %-15s %-8s\n" \
-            "Issue#" "Status" "\"Title\"" "Worktree" "Agent" "Branch State" "Comments")
-        output+="\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+        output+=$(printf "%-${COL_ISSUE}s %-${COL_STATUS}s %-${COL_TITLE}s %-${COL_WORKTREE}s %-${COL_AGENT}s %-${COL_ACTION}s %-${COL_COMMENTS}s\n" \
+            "Issue#" "Status" "\"Title\"" "Worktree" "Agent" "Action Needed" "Comments")
+        output+="\n${DIVIDER_LINE}\n"
         
         # Get all issues
         local issues=$(get_issues)
@@ -291,16 +359,17 @@ main() {
             # Format values
             local formatted_state=$(format_issue_state "$issue_state" "$activity")
             local formatted_branch=$(format_branch_state "$branch_state")
-            local truncated_title=$(truncate_string "$issue_title" 48)
+            local truncated_title=$(truncate_string "$issue_title" $((COL_TITLE - 2)))  # -2 for quotes
+            local action_needed=$(get_action_needed "$issue_state" "$worktree_exists" "$branch_state" "$agent_process")
             
-            # Add row to output
-            issue_rows+=$(printf "%-8s %-12s \"%-48s\" %-10s %-15s %-15s %-8s\n" \
+            # Add row to output using same column widths
+            issue_rows+=$(printf "%-${COL_ISSUE}s %-${COL_STATUS}s \"%-$((COL_TITLE - 2))s\" %-${COL_WORKTREE}s %-${COL_AGENT}s %-${COL_ACTION}s %-${COL_COMMENTS}s\n" \
                 "#$issue_num" \
                 "$formatted_state" \
                 "$truncated_title" \
                 "$worktree_exists" \
                 "$agent_process" \
-                "$formatted_branch" \
+                "$action_needed" \
                 "$comment_count")
             issue_rows+="\n"
         done < <(echo "$issues" | jq -r '.[] | @base64')
@@ -310,9 +379,8 @@ main() {
         # Footer with improved legend
         output+="\nLegend:\n"
         output+="  Status:  OPEN = open issue, OPEN* = updated <5min ago, CLOSED = closed issue\n"
-        output+="  Branch:  Shows git branch state relative to remote (clean/uncommitted/needs push/etc)\n"
         output+="  Agent:   Shows AI agent if running in worktree (claude/gemini), otherwise 'none'\n"
-        output+="  Worktree: YES = local worktree exists at ../tetraspore-issue-NUMBER\n"
+        output+="  Action:  Suggested next action (cleanup worktree, commit changes, push branch, etc)\n"
         
         if [[ "$WATCH_MODE" == "true" ]]; then
             output+="\nRefreshing every ${REFRESH_INTERVAL} seconds... (Press Ctrl+C to exit)\n"
