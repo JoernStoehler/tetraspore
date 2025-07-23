@@ -4,7 +4,7 @@ Simplified issue-based agent spawner that implements the principle: One issue = 
 
 ## Overview
 
-The `workagent` tool creates an isolated git worktree for each GitHub issue and optionally spawns an AI agent to work on it. This replaces the previous complex orchestration system with a simple, human-driven workflow.
+The `workagent` tool creates an isolated git worktree for each GitHub issue and shows you the command to spawn an AI agent to work on it. This replaces the previous complex orchestration system with a simple, human-driven workflow.
 
 ## Usage
 
@@ -15,40 +15,40 @@ workagent ISSUE_NUMBER [OPTIONS]
 ### Options
 
 - `--model MODEL` - AI model to use (opus, sonnet, gemini, flash) [required unless --prepare-only]
-- `--prepare-only` - Only set up the worktree, don't spawn an agent
-- `--no-auto-cmd` - Spawn agent but don't run the initial /implement-issue command
+- `--prepare-only` - Only set up the worktree, don't show the agent command
 - `--help` - Show help message
 
 ### Examples
 
 ```bash
-# Prepare worktree and spawn agent with auto command
+# Prepare worktree and show agent command
 workagent 123 --model opus
 
 # Only prepare the worktree
 workagent 123 --prepare-only
-
-# Spawn agent without auto command
-workagent 123 --model sonnet --no-auto-cmd
 ```
 
 ## How It Works
 
 1. **Validates the issue**: Checks that the GitHub issue exists and is open
-2. **Creates a branch**: Named `issue-NUMBER`
+2. **Creates a branch**: Named `issue-NUMBER` (or reuses existing)
 3. **Sets up worktree**: At `../tetraspore-issue-NUMBER`
 4. **Allocates ports**: Unique ports for dev server, preview, and debug
 5. **Installs dependencies**: Runs `npm install` in the worktree
-6. **Spawns agent**: In TUI mode with optional `/implement-issue NUMBER` command
+6. **Shows agent command**: Displays the command to run with `/implement-issue NUMBER`
 
 ## Workflow
 
 ### 1. Human Creates Issue
 Create a GitHub issue following the template in `.github/ISSUE_TEMPLATE/task.md`
 
-### 2. Spawn Agent
+### 2. Prepare Worktree and Start Agent
 ```bash
+# Prepare the worktree
 workagent 123 --model opus
+
+# Copy and run the displayed command
+cd ../tetraspore-issue-123 && agent --model opus '/implement-issue 123'
 ```
 
 ### 3. Agent Works
@@ -98,8 +98,11 @@ tetraspore/                    # Main worktree
 The script validates:
 - Issue number is numeric
 - Issue exists and is accessible
-- Branch doesn't already exist
-- Worktree directory doesn't exist
+- Warns about uncommitted changes (won't be in new worktree)
+- Offers options if branch/worktree already exists:
+  - Use existing
+  - Remove and recreate
+  - Exit
 - Running from main worktree (with override option)
 
 ## Tips
@@ -107,7 +110,7 @@ The script validates:
 1. **Always run from main worktree** for consistency
 2. **Check issue state** - script warns if issue is closed
 3. **Use --prepare-only** if you want to set up manually
-4. **Use --no-auto-cmd** if you want to give custom instructions
+4. **Modify the command** if you want custom instructions instead of `/implement-issue`
 
 ## Comparison with Previous System
 
@@ -117,13 +120,15 @@ The script validates:
 | Inter-agent mail | GitHub issue comments |
 | Detached tmux sessions | Interactive TUI |
 | Print mode | TUI mode |
-| Manual prepare + spawn | Single command |
+| Manual prepare + spawn | Single setup command |
 
 ## Common Issues
 
-**"Branch already exists"**
-- Someone already started work on this issue
-- Check the worktree: `cd ../tetraspore-issue-NUMBER`
+**"Branch/worktree already exists"**
+- The script now offers options:
+  1. Use existing (continue work)
+  2. Remove and recreate (start fresh)
+  3. Exit
 
 **"Could not fetch issue"**
 - Check issue number is correct

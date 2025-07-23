@@ -24,18 +24,14 @@ Arguments:
 Options:
   --model MODEL   AI model to use (opus, sonnet, gemini, flash) [required unless --prepare-only]
   --prepare-only  Only set up the worktree, don't spawn an agent
-  --no-auto-cmd   Spawn agent but don't run the initial /implement-issue command
   --help          Show this help message
 
 Examples:
-  # Prepare worktree and spawn agent with auto command
+  # Prepare worktree and show agent command
   workagent 123 --model opus
 
   # Only prepare the worktree
   workagent 123 --prepare-only
-
-  # Spawn agent without auto command
-  workagent 123 --model sonnet --no-auto-cmd
 
 Cleanup:
   # When done, from the main worktree:
@@ -48,7 +44,6 @@ EOF
 ISSUE_NUMBER=""
 MODEL=""
 PREPARE_ONLY=false
-NO_AUTO_CMD=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -58,10 +53,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --prepare-only)
             PREPARE_ONLY=true
-            shift
-            ;;
-        --no-auto-cmd)
-            NO_AUTO_CMD=true
             shift
             ;;
         --help|-h)
@@ -293,11 +284,8 @@ if [[ "$PREPARE_ONLY" == true ]]; then
     exit 0
 fi
 
-# Prepare the initial command if not disabled
-INITIAL_CMD=""
-if [[ "$NO_AUTO_CMD" == false ]]; then
-    INITIAL_CMD="/implement-issue ${ISSUE_NUMBER}"
-fi
+# Prepare the initial command
+INITIAL_CMD="/implement-issue ${ISSUE_NUMBER}"
 
 # Use the agent wrapper command which handles all models
 AGENT_CMD="agent"
@@ -310,9 +298,5 @@ echo
 echo -e "${YELLOW}Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}${NC}"
 echo
 echo "Run this command to start the ${MODEL} agent:"
-if [[ -n "$INITIAL_CMD" ]]; then
-    echo -e "${BLUE}cd $WORKTREE_DIR && $AGENT_CMD $MODEL_FLAG '$INITIAL_CMD'${NC}"
-else
-    echo -e "${BLUE}cd $WORKTREE_DIR && $AGENT_CMD $MODEL_FLAG${NC}"
-fi
+echo -e "${BLUE}cd $WORKTREE_DIR && $AGENT_CMD $MODEL_FLAG '$INITIAL_CMD'${NC}"
 echo
