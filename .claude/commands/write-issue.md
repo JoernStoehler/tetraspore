@@ -28,4 +28,6 @@ Create a GitHub issue for the Tetraspore project based on these requirements:
      --label "task"
    ```
 
+5. **Provide direct link**: After creating the issue, always provide the direct GitHub URL to the user so they can access it with one click.
+
 The issue must be implementable by an AI agent without additional context.

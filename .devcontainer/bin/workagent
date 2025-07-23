@@ -2,7 +2,7 @@
 # workagent - Simplified agent spawner for issue-based workflow
 # One issue = One branch = One worktree = One agent
 
-set -e
+# Note: We don't use set -e to allow graceful error handling
 
 # Colors for output
 RED='\033[0;31m'
@@ -132,21 +132,81 @@ if [[ "$CURRENT_WORKTREE" != "$MAIN_WORKTREE" ]]; then
     fi
 fi
 
+# Check for uncommitted changes
+UNCOMMITTED_CHANGES=$(git status --porcelain)
+if [[ -n "$UNCOMMITTED_CHANGES" ]]; then
+    echo -e "${YELLOW}Warning: You have uncommitted changes in the current worktree:${NC}"
+    git status --short
+    echo
+    echo -e "${YELLOW}These changes will NOT be included in the new worktree.${NC}"
+    echo "Consider committing or stashing them first."
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
 # Define branch and worktree names
 BRANCH_NAME="issue-${ISSUE_NUMBER}"
 WORKTREE_DIR="${REPO_ROOT}/../tetraspore-issue-${ISSUE_NUMBER}"
 
 # Check if branch already exists
+BRANCH_EXISTS=false
+WORKTREE_EXISTS=false
+
 if git show-ref --verify --quiet "refs/heads/${BRANCH_NAME}"; then
-    echo -e "${RED}Error: Branch '${BRANCH_NAME}' already exists${NC}"
-    echo "If you want to continue work on this issue, just cd to the worktree and run the agent manually"
-    exit 1
+    BRANCH_EXISTS=true
 fi
 
-# Check if worktree already exists
 if [[ -d "$WORKTREE_DIR" ]]; then
-    echo -e "${RED}Error: Worktree directory already exists: $WORKTREE_DIR${NC}"
-    exit 1
+    WORKTREE_EXISTS=true
+fi
+
+# Handle existing branch/worktree
+if [[ "$BRANCH_EXISTS" == true ]] || [[ "$WORKTREE_EXISTS" == true ]]; then
+    echo -e "${YELLOW}Warning: Resources already exist for issue #${ISSUE_NUMBER}:${NC}"
+    [[ "$BRANCH_EXISTS" == true ]] && echo "  - Branch: ${BRANCH_NAME}"
+    [[ "$WORKTREE_EXISTS" == true ]] && echo "  - Worktree: ${WORKTREE_DIR}"
+    echo
+    echo "Options:"
+    echo "  1) Use existing worktree/branch and continue"
+    echo "  2) Remove and recreate (DESTRUCTIVE - will lose uncommitted changes)"
+    echo "  3) Exit"
+    echo
+    read -p "Choose option (1-3): " -n 1 -r
+    echo
+    
+    case $REPLY in
+        1)
+            echo -e "${BLUE}Using existing worktree/branch...${NC}"
+            if [[ "$WORKTREE_EXISTS" == true ]]; then
+                cd "$WORKTREE_DIR"
+            else
+                # Branch exists but worktree doesn't - create worktree
+                echo -e "${BLUE}Creating worktree for existing branch...${NC}"
+                git worktree add "$WORKTREE_DIR" "$BRANCH_NAME"
+                cd "$WORKTREE_DIR"
+            fi
+            ;;
+        2)
+            echo -e "${YELLOW}Removing existing resources...${NC}"
+            if [[ "$WORKTREE_EXISTS" == true ]]; then
+                git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true
+            fi
+            if [[ "$BRANCH_EXISTS" == true ]]; then
+                git branch -D "$BRANCH_NAME" 2>/dev/null || true
+            fi
+            echo -e "${GREEN}✓ Cleaned up existing resources${NC}"
+            # Reset flags since we cleaned up
+            BRANCH_EXISTS=false
+            WORKTREE_EXISTS=false
+            ;;
+        *)
+            echo -e "${BLUE}Exiting...${NC}"
+            exit 0
+            ;;
+    esac
 fi
 
 # Verify issue exists and is open
@@ -171,45 +231,57 @@ fi
 ISSUE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json title -q .title | head -1)
 echo -e "${GREEN}Issue: ${ISSUE_TITLE}${NC}"
 
-# Create branch and worktree
-echo -e "${BLUE}Creating branch and worktree...${NC}"
-git worktree add -b "$BRANCH_NAME" "$WORKTREE_DIR" main
+# Create branch and worktree only if we're not reusing existing ones
+if [[ "$BRANCH_EXISTS" == false ]] || [[ "$WORKTREE_EXISTS" == false ]]; then
+    if [[ "$BRANCH_EXISTS" == false ]]; then
+        echo -e "${BLUE}Creating branch and worktree...${NC}"
+        git worktree add -b "$BRANCH_NAME" "$WORKTREE_DIR" main
+    fi
+fi
 
-# Copy environment files
+# Change to worktree directory
+cd "$WORKTREE_DIR"
+
+# Copy environment files (idempotent)
 echo -e "${BLUE}Setting up environment...${NC}"
 cp "${REPO_ROOT}/.env" "${WORKTREE_DIR}/.env" 2>/dev/null || true
 cp "${REPO_ROOT}/.env.example" "${WORKTREE_DIR}/.env.example" 2>/dev/null || true
 
-# Create .env.local with unique ports
-# Find the next available port set
-USED_PORTS=$(find "${REPO_ROOT}/.." -name ".env.local" -type f 2>/dev/null | \
-    xargs grep -h "VITE_DEV_PORT" 2>/dev/null | \
-    sed 's/.*=//' | sort -n | tail -1 || echo "3000")
-
-if [[ -z "$USED_PORTS" ]] || [[ "$USED_PORTS" == "3000" ]]; then
-    BASE_PORT=3003
+# Create or update .env.local with unique ports
+# Check if .env.local already exists and has valid ports
+if [[ -f "${WORKTREE_DIR}/.env.local" ]] && grep -q "VITE_DEV_PORT" "${WORKTREE_DIR}/.env.local"; then
+    EXISTING_PORT=$(grep "VITE_DEV_PORT" "${WORKTREE_DIR}/.env.local" | sed 's/.*=//')
+    echo -e "${GREEN}✓ Using existing port configuration: ${EXISTING_PORT}${NC}"
 else
-    BASE_PORT=$((USED_PORTS + 3))
-fi
+    # Find the next available port set
+    USED_PORTS=$(find "${REPO_ROOT}/.." -name ".env.local" -type f 2>/dev/null | \
+        xargs grep -h "VITE_DEV_PORT" 2>/dev/null | \
+        sed 's/.*=//' | sort -n | tail -1 || echo "3000")
 
-cat > "${WORKTREE_DIR}/.env.local" << EOF
+    if [[ -z "$USED_PORTS" ]] || [[ "$USED_PORTS" == "3000" ]]; then
+        BASE_PORT=3003
+    else
+        BASE_PORT=$((USED_PORTS + 3))
+    fi
+
+    cat > "${WORKTREE_DIR}/.env.local" << EOF
 # Worktree-specific port configuration for issue-${ISSUE_NUMBER}
 VITE_DEV_PORT=${BASE_PORT}
 VITE_PREVIEW_PORT=$((BASE_PORT + 1))
 VITE_DEBUG_PORT=$((BASE_PORT + 2))
 EOF
 
-echo -e "${GREEN}✓ Worktree created at: ${WORKTREE_DIR}${NC}"
-echo -e "${GREEN}✓ Ports allocated: ${BASE_PORT}-$((BASE_PORT + 2))${NC}"
+    echo -e "${GREEN}✓ Ports allocated: ${BASE_PORT}-$((BASE_PORT + 2))${NC}"
+fi
 
-# Install dependencies
+echo -e "${GREEN}✓ Worktree at: ${WORKTREE_DIR}${NC}"
+
+# Install dependencies (idempotent - npm install is already idempotent)
 echo -e "${BLUE}Installing dependencies...${NC}"
-cd "$WORKTREE_DIR"
-npm install
-
-# Create initial commit
-git add .env.local
-git commit -m "chore: setup worktree for issue #${ISSUE_NUMBER}" || true
+if ! npm install; then
+    echo -e "${YELLOW}Warning: npm install failed. Attempting to continue...${NC}"
+    echo -e "${YELLOW}You may need to run 'npm install' manually later${NC}"
+fi
 
 if [[ "$PREPARE_ONLY" == true ]]; then
     echo -e "${GREEN}✓ Worktree prepared successfully${NC}"
