@@ -251,6 +251,84 @@ done
 agent --model gemini --print "Generate API documentation"
 ```
 
+## Official Documentation
+
+### Claude Code Documentation
+Official documentation: https://docs.anthropic.com/en/docs/claude-code
+
+Key pages:
+- **Overview**: https://docs.anthropic.com/en/docs/claude-code/overview - Introduction and key features
+- **Quickstart**: https://docs.anthropic.com/en/docs/claude-code/quickstart - Get up and running quickly
+- **CLI Reference**: https://docs.anthropic.com/en/docs/claude-code/cli-reference - Complete command reference
+- **Hooks**: https://docs.anthropic.com/en/docs/claude-code/hooks - Defining and using hooks
+- **Common Workflows**: https://docs.anthropic.com/en/docs/claude-code/common-workflows - Extended thinking, pasting images, --resume
+- **Settings**: https://docs.anthropic.com/en/docs/claude-code/settings - Configuration files and environment variables
+- **SDK**: https://docs.anthropic.com/en/docs/claude-code/sdk - Programmatic usage
+- **Memory**: https://docs.anthropic.com/en/docs/claude-code/memory - Memory management and CLAUDE.md
+- **MCP**: https://docs.anthropic.com/en/docs/claude-code/mcp - Model Context Protocol servers
+- **IDE Integrations**: https://docs.anthropic.com/en/docs/claude-code/ide-integrations
+- **Security**: https://docs.anthropic.com/en/docs/claude-code/security
+- **Troubleshooting**: https://docs.anthropic.com/en/docs/claude-code/troubleshooting
+
+### Gemini CLI Documentation
+Official repository: https://github.com/google-gemini/gemini-cli
+
+Key documentation files:
+- **Main Docs**: https://github.com/google-gemini/gemini-cli/blob/main/docs/index.md - Comprehensive guide
+- **CLI Commands**: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/commands.md - All slash commands (/, @, !)
+- **Configuration**: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/configuration.md - Settings and environment variables
+- **Tools**: https://github.com/google-gemini/gemini-cli/tree/main/docs/tools - Available tools documentation
+- **Core Concepts**: https://github.com/google-gemini/gemini-cli/blob/main/docs/core/index.md
+- **GEMINI.md**: https://github.com/google-gemini/gemini-cli/blob/main/GEMINI.md - Project-specific instructions
+- **GitHub Action**: https://github.com/google-gemini/gemini-cli-action - CI/CD integration
+
+## Configuration Quick Reference
+
+### Claude Code Configuration
+**Settings locations**:
+- User: `~/.claude/settings.json`
+- Project: `.claude/settings.json` 
+- Local (not committed): `.claude/settings.local.json`
+
+**Hook definition**:
+```json
+{
+  "hooks": {
+    "EventName": [{
+      "matcher": "ToolPattern",
+      "hooks": [{
+        "type": "command",
+        "command": "your-command-here"
+      }]
+    }]
+  }
+}
+```
+
+**Storage behavior** (undocumented but observed):
+- Without `CLAUDE_CONFIG_DIR`: Files in `~/{.claude/*,.claude.json}`
+- With `CLAUDE_CONFIG_DIR`: Files in `<dir>/{*,.claude.json}` (easier for mounting)
+
+### Gemini CLI Configuration
+**Settings locations** (hierarchical precedence):
+- System: `/etc/gemini-cli/settings.json` (Linux), `C:\ProgramData\gemini-cli\settings.json` (Windows), `/Library/Application Support/GeminiCli/settings.json` (macOS)
+- User: `~/.gemini/settings.json`
+- Project: `.gemini/settings.json` (highest priority)
+
+**Key environment variables**:
+- `GEMINI_API_KEY` (required)
+- `GOOGLE_API_KEY`
+- `GOOGLE_CLOUD_PROJECT`
+- `GOOGLE_APPLICATION_CREDENTIALS`
+
+**Custom tools**:
+```json
+{
+  "toolDiscoveryCommand": "bin/get_tools",
+  "toolCallCommand": "bin/call_tool"
+}
+```
+
 ## Future Enhancements
 
 Potential improvements being considered:
