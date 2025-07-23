@@ -91,12 +91,11 @@ export interface FeatureProps {
 ### 2. Agent Assignment
 When starting an agent on a task:
 ```bash
-# Create branch from issue number
-git checkout -b task/issue-124-feature-name
+# Use workagent to prepare worktree and show agent command
+workagent 124 --model sonnet
 
-# Start agent with issue reference
-workagent run --branch task/issue-124-feature-name --model sonnet \
-  --message "Implement the task described in GitHub issue #124. Check the issue for specifications and requirements."
+# Then run the displayed command to start the agent
+cd ../tetraspore-issue-124 && agent --model sonnet '/implement-issue 124'
 ```
 
 ### 3. Agent Communication

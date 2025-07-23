@@ -32,8 +32,9 @@ gh issue view $ISSUE_NUMBER
 # Read all comments
 gh issue view $ISSUE_NUMBER --comments
 
-# Create feature branch
-git checkout -b task/issue-$ISSUE_NUMBER-brief-description
+# Verify you're on the correct branch (should be issue-$ISSUE_NUMBER in a worktree)
+git branch --show-current
+pwd  # Should show ../tetraspore-issue-$ISSUE_NUMBER
 
 # Comment that you're starting
 gh issue comment $ISSUE_NUMBER --body "Starting implementation of this issue."
@@ -235,8 +236,8 @@ git commit -m "feat: implement ComponentName (#$ISSUE_NUMBER)
 - Create Storybook stories for all states
 - Handle edge cases as specified"
 
-# Push branch
-git push -u origin task/issue-$ISSUE_NUMBER-brief-description
+# Push branch (should already be set up by workagent)
+git push
 
 # Create PR
 gh pr create \
@@ -327,11 +328,11 @@ npm test -- ComponentName
 npm run lint
 npm run build
 
-# Git workflow
-git checkout -b task/issue-$NUMBER-description
+# Git workflow (branch already created by workagent)
+git status
 git add -A
 git commit -m "type: message (#$NUMBER)"
-git push -u origin branch-name
+git push
 
 # PR creation
 gh pr create --title "Title (#$NUMBER)" --body "Description"

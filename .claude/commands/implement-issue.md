@@ -16,9 +16,11 @@ ID/Instructions: $ARGUMENTS
    - @docs/style-guide-implementing-issues.md - Complete implementation guide
    - @package.json - Available scripts (test, lint, build)
 
-3. **Create branch and implement**:
+3. **Verify branch and implement**:
    ```bash
-   git checkout -b task/issue-ID-brief-description
+   # You should already be on the correct branch (issue-ID) in a worktree
+   git branch --show-current
+   git status
    ```
    Then implement EXACTLY what the issue specifies - no more, no less.
 
