@@ -1,0 +1,345 @@
+#!/bin/bash
+# issue-monitor - Monitor GitHub issues, worktrees, agent processes, and branch states
+# Updates every 5 seconds with a comprehensive status table
+
+set -e
+
+# Configuration
+REFRESH_INTERVAL=5
+REPO_ROOT="/workspaces/tetraspore"
+WORKTREE_PREFIX="tetraspore-issue-"
+WATCH_MODE=false  # Default to once mode
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --watch|-w)
+            WATCH_MODE=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: issue-monitor [OPTIONS]"
+            echo ""
+            echo "Monitor GitHub issues, worktrees, AI agents, and branch states."
+            echo ""
+            echo "Options:"
+            echo "  --watch, -w    Continuously update every ${REFRESH_INTERVAL} seconds"
+            echo "  --help, -h     Show this help message"
+            echo ""
+            echo "Default: Run once and exit"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Cache for issue data to avoid rate limits
+declare -A ISSUE_CACHE
+declare -A ISSUE_CACHE_TIME
+CACHE_TTL=60  # Cache for 60 seconds
+
+# Function to get current timestamp
+get_timestamp() {
+    date +%s
+}
+
+# Function to move cursor to top without clearing
+move_to_top() {
+    if [[ "$WATCH_MODE" == "true" ]]; then
+        printf "\033[H"
+    fi
+}
+
+# Function to print header
+print_header() {
+    echo -e "${BOLD}${CYAN}Tetraspore Issue Monitor${NC} - $(date '+%Y-%m-%d %H:%M:%S')"
+    echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════${NC}"
+}
+
+# Function to get issue list with caching
+get_issues() {
+    local current_time=$(get_timestamp)
+    local cache_key="issue_list"
+    
+    if [[ -n "${ISSUE_CACHE[$cache_key]}" ]] && (( current_time - ${ISSUE_CACHE_TIME[$cache_key]:-0} < CACHE_TTL )); then
+        echo "${ISSUE_CACHE[$cache_key]}"
+    else
+        local issues=$(gh issue list --limit 100 --json number,title,state,updatedAt,comments 2>/dev/null || echo "[]")
+        ISSUE_CACHE[$cache_key]="$issues"
+        ISSUE_CACHE_TIME[$cache_key]=$current_time
+        echo "$issues"
+    fi
+}
+
+# Function to check if issue has new activity (simplified check)
+check_issue_activity() {
+    local issue_num=$1
+    local updated_at=$2
+    local current_time=$(get_timestamp)
+    local updated_timestamp=$(date -d "$updated_at" +%s 2>/dev/null || echo 0)
+    local time_diff=$((current_time - updated_timestamp))
+    
+    # Consider "new" if updated within last 5 minutes
+    if (( time_diff < 300 )); then
+        echo "NEW"
+    else
+        echo ""
+    fi
+}
+
+# Function to get worktree info
+get_worktree_info() {
+    local issue_num=$1
+    local worktree_path="../${WORKTREE_PREFIX}${issue_num}"
+    
+    if [[ -d "$worktree_path" ]]; then
+        echo "YES"
+    else
+        echo "NO"
+    fi
+}
+
+# Function to check agent processes
+check_agent_process() {
+    local issue_num=$1
+    local worktree_name="${WORKTREE_PREFIX}${issue_num}"
+    local worktree_path="/workspaces/${worktree_name}"
+    
+    # Look for AI agent processes only
+    local agent_found=""
+    local agent_pid=""
+    
+    # Get all PIDs and check their working directories
+    for pid in $(ls /proc 2>/dev/null | grep -E '^[0-9]+$'); do
+        if [[ -e "/proc/$pid/cwd" ]]; then
+            local cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null)
+            if [[ "$cwd" == "$worktree_path"* ]]; then
+                # Get process info
+                local cmd=$(ps -p "$pid" -o comm= 2>/dev/null)
+                
+                # Only care about AI agents
+                case "$cmd" in
+                    claude)
+                        agent_found="claude"
+                        agent_pid="$pid"
+                        break  # Claude takes priority
+                        ;;
+                    gemini)
+                        if [[ -z "$agent_found" ]]; then
+                            agent_found="gemini"
+                            agent_pid="$pid"
+                        fi
+                        # Keep looking in case claude is also running
+                        ;;
+                esac
+            fi
+        fi
+    done
+    
+    # Output
+    if [[ -n "$agent_found" ]]; then
+        echo "${agent_found}($agent_pid)"
+    else
+        echo "none"
+    fi
+}
+
+# Function to get branch state
+get_branch_state() {
+    local issue_num=$1
+    local branch_name="issue-${issue_num}"
+    local worktree_path="../${WORKTREE_PREFIX}${issue_num}"
+    
+    # Check if branch exists
+    local branch_exists=$(git branch -a 2>/dev/null | grep -E "(^|\s)${branch_name}($|\s)" | head -1)
+    
+    if [[ -z "$branch_exists" ]]; then
+        echo "NO_BRANCH"
+        return
+    fi
+    
+    # If worktree exists, check its state
+    if [[ -d "$worktree_path" ]]; then
+        pushd "$worktree_path" > /dev/null 2>&1
+        
+        # Check for uncommitted changes
+        local has_changes=$(git status --porcelain 2>/dev/null | wc -l)
+        
+        # Check if branch is ahead/behind
+        local upstream=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+        if [[ -n "$upstream" ]]; then
+            local ahead=$(git rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
+            local behind=$(git rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+            
+            if (( has_changes > 0 )); then
+                echo "UNCOMMITTED"
+            elif (( ahead > 0 && behind > 0 )); then
+                echo "DIVERGED"
+            elif (( ahead > 0 )); then
+                echo "NEEDS_PUSH"
+            elif (( behind > 0 )); then
+                echo "NEEDS_PULL"
+            else
+                echo "CLEAN"
+            fi
+        else
+            if (( has_changes > 0 )); then
+                echo "UNCOMMITTED"
+            else
+                echo "NO_REMOTE"
+            fi
+        fi
+        
+        popd > /dev/null 2>&1
+    else
+        # Branch exists but no worktree
+        echo "NO_WORKTREE"
+    fi
+}
+
+# Function to format branch state
+format_branch_state() {
+    local state=$1
+    case $state in
+        "NO_BRANCH")    echo "no branch" ;;
+        "UNCOMMITTED")  echo "uncommitted" ;;
+        "NEEDS_PUSH")   echo "needs push" ;;
+        "NEEDS_PULL")   echo "needs pull" ;;
+        "DIVERGED")     echo "diverged" ;;
+        "CLEAN")        echo "clean" ;;
+        "NO_REMOTE")    echo "no remote" ;;
+        "NO_WORKTREE")  echo "branch only" ;;
+        *)              echo "$state" ;;
+    esac
+}
+
+# Function to format issue state
+format_issue_state() {
+    local state=$1
+    local activity=$2
+    
+    if [[ "$state" == "CLOSED" ]]; then
+        echo "CLOSED"
+    elif [[ "$activity" == "NEW" ]]; then
+        echo "OPEN*"
+    else
+        echo "OPEN"
+    fi
+}
+
+# Function to truncate string
+truncate_string() {
+    local str=$1
+    local max_len=$2
+    if (( ${#str} > max_len )); then
+        echo "${str:0:$((max_len-3))}..."
+    else
+        echo "$str"
+    fi
+}
+
+# Main monitoring loop
+main() {
+    # Change to repo root
+    cd "$REPO_ROOT"
+    
+    # Clear screen once at start (only in watch mode)
+    if [[ "$WATCH_MODE" == "true" ]]; then
+        clear
+    fi
+    
+    # First run flag
+    local first_run=true
+    
+    while true; do
+        # Build entire output in a variable
+        local output=""
+        
+        # Header
+        output+="Tetraspore Issue Monitor - $(date '+%Y-%m-%d %H:%M:%S')\n"
+        output+="════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════\n"
+        
+        # Table header
+        output+=$(printf "%-8s %-12s %-50s %-10s %-15s %-15s %-8s\n" \
+            "Issue#" "Status" "\"Title\"" "Worktree" "Agent" "Branch State" "Comments")
+        output+="\n────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n"
+        
+        # Get all issues
+        local issues=$(get_issues)
+        
+        # Process each issue and collect output
+        local issue_rows=""
+        while IFS= read -r encoded_issue; do
+            # Decode issue data
+            local issue_data=$(echo "$encoded_issue" | base64 -d)
+            local issue_num=$(echo "$issue_data" | jq -r '.number')
+            local issue_title=$(echo "$issue_data" | jq -r '.title')
+            local issue_state=$(echo "$issue_data" | jq -r '.state')
+            local updated_at=$(echo "$issue_data" | jq -r '.updatedAt')
+            local comment_count=$(echo "$issue_data" | jq -r '.comments | length')
+            
+            # Get additional info
+            local activity=$(check_issue_activity "$issue_num" "$updated_at")
+            local worktree_exists=$(get_worktree_info "$issue_num")
+            local agent_process=$(check_agent_process "$issue_num")
+            local branch_state=$(get_branch_state "$issue_num")
+            
+            # Format values
+            local formatted_state=$(format_issue_state "$issue_state" "$activity")
+            local formatted_branch=$(format_branch_state "$branch_state")
+            local truncated_title=$(truncate_string "$issue_title" 48)
+            
+            # Add row to output
+            issue_rows+=$(printf "%-8s %-12s \"%-48s\" %-10s %-15s %-15s %-8s\n" \
+                "#$issue_num" \
+                "$formatted_state" \
+                "$truncated_title" \
+                "$worktree_exists" \
+                "$agent_process" \
+                "$formatted_branch" \
+                "$comment_count")
+            issue_rows+="\n"
+        done < <(echo "$issues" | jq -r '.[] | @base64')
+        
+        output+="$issue_rows"
+        
+        # Footer with improved legend
+        output+="\nLegend:\n"
+        output+="  Status:  OPEN = open issue, OPEN* = updated <5min ago, CLOSED = closed issue\n"
+        output+="  Branch:  Shows git branch state relative to remote (clean/uncommitted/needs push/etc)\n"
+        output+="  Agent:   Shows AI agent if running in worktree (claude/gemini), otherwise 'none'\n"
+        output+="  Worktree: YES = local worktree exists at ../tetraspore-issue-NUMBER\n"
+        
+        if [[ "$WATCH_MODE" == "true" ]]; then
+            output+="\nRefreshing every ${REFRESH_INTERVAL} seconds... (Press Ctrl+C to exit)\n"
+        fi
+        
+        # Move cursor to top and print entire output at once
+        move_to_top
+        echo -e "$output"
+        
+        # Clear any remaining lines from previous display
+        if [[ "$first_run" != "true" && "$WATCH_MODE" == "true" ]]; then
+            # Clear to end of display
+            printf "\033[J"
+        fi
+        first_run=false
+        
+        # Exit if not in watch mode
+        if [[ "$WATCH_MODE" != "true" ]]; then
+            break
+        fi
+        
+        sleep $REFRESH_INTERVAL
+    done
+}
+
+# Handle Ctrl+C gracefully
+trap 'echo -e "\nMonitoring stopped."; exit 0' INT
+
+# Run main function
+main "$@"
