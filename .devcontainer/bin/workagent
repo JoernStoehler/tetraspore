@@ -327,10 +327,15 @@ if [[ -n "$INITIAL_CMD" ]]; then
     echo
 fi
 
-# Run the agent (this will take over the terminal)
+# Display the command to run
+echo
+echo -e "${GREEN}✓ Worktree ready! Run this command to start the agent:${NC}"
+echo
 if [[ -n "$INITIAL_CMD" ]]; then
-    # Use echo to send the initial command
-    echo "$INITIAL_CMD" | $AGENT_CMD $MODEL_FLAG
+    echo -e "${BLUE}$AGENT_CMD $MODEL_FLAG '$INITIAL_CMD'${NC}"
 else
-    $AGENT_CMD $MODEL_FLAG
+    echo -e "${BLUE}$AGENT_CMD $MODEL_FLAG${NC}"
 fi
+echo
+echo "Or cd to the worktree first:"
+echo -e "${BLUE}cd $WORKTREE_DIR${NC}"
