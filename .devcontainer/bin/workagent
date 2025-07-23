@@ -288,7 +288,7 @@ if [[ "$PREPARE_ONLY" == true ]]; then
     echo
     echo "Next steps:"
     echo "  cd $WORKTREE_DIR"
-    echo "  claude --model $MODEL"
+    echo "  agent --model $MODEL"
     echo "  /implement-issue $ISSUE_NUMBER"
     exit 0
 fi
@@ -299,21 +299,9 @@ if [[ "$NO_AUTO_CMD" == false ]]; then
     INITIAL_CMD="/implement-issue ${ISSUE_NUMBER}"
 fi
 
-# Map model names to full agent commands
-case $MODEL in
-    opus|sonnet)
-        AGENT_CMD="claude"
-        MODEL_FLAG="--model ${MODEL}"
-        ;;
-    gemini)
-        AGENT_CMD="gemini"
-        MODEL_FLAG="--model gemini-2.0-flash-exp"
-        ;;
-    flash)
-        AGENT_CMD="gemini"
-        MODEL_FLAG="--model gemini-2.0-flash-exp"
-        ;;
-esac
+# Use the agent wrapper command which handles all models
+AGENT_CMD="agent"
+MODEL_FLAG="--model ${MODEL}"
 
 # Display the command to run
 echo
