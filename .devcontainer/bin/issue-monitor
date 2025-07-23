@@ -1,6 +1,57 @@
 #!/bin/bash
 # issue-monitor - Monitor GitHub issues, worktrees, agent processes, and branch states
-# Updates every 5 seconds with a comprehensive status table
+#
+# PURPOSE:
+# Provides a unified view of development state across issues, worktrees, and agents.
+# Designed for the Tetraspore workflow where each issue gets its own worktree.
+#
+# ARCHITECTURE DECISIONS:
+#
+# 1. DEFAULT TO SINGLE RUN (not watch mode)
+#    - Most uses are quick status checks, not continuous monitoring
+#    - Reduces resource usage and terminal occupation
+#    - Watch mode available via --watch for when needed
+#
+# 2. NO COLOR OUTPUT
+#    - Clean output for parsing and logging
+#    - Works better in CI/CD environments
+#    - Avoids terminal compatibility issues
+#
+# 3. SHOWS ALL ISSUES (including closed)
+#    - Critical for detecting worktrees that need cleanup
+#    - Closed issues with worktrees indicate incomplete cleanup
+#    - More comprehensive view of repository state
+#
+# 4. ONLY DETECTS AI AGENTS (not all processes)
+#    - Reduces noise from shell sessions, editors, etc.
+#    - Focuses on what matters: is an AI actively working?
+#    - Uses /proc/PID/cwd for accurate detection
+#
+# 5. ACTION-ORIENTED DESIGN
+#    - "Action Needed" column tells you what to do
+#    - Removes cognitive load of interpreting states
+#    - Prioritizes agent activity over other actions
+#
+# 6. FIXED-WIDTH COLUMN LAYOUT
+#    - Uses calculated widths for perfect alignment
+#    - Column widths defined as variables for easy adjustment
+#    - Total width calculated to ensure separators match
+#
+# 7. CACHES GITHUB API CALLS
+#    - 60-second cache prevents rate limiting
+#    - Allows frequent runs without API concerns
+#    - Cache is in-memory only (not persistent)
+#
+# 8. BRANCH STATE DETECTION
+#    - Checks uncommitted changes, push/pull needs
+#    - Handles edge cases like no remote, diverged branches
+#    - Used to determine suggested actions
+#
+# PERFORMANCE NOTES:
+# - Process detection scans /proc once per issue
+# - GitHub API called at most once per minute
+# - No external commands in tight loops
+# - Single-run mode exits immediately
 
 set -e
 
