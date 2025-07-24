@@ -43,6 +43,7 @@ Add new learnings there, not in the guidelines above.
 - **Development**: [development-principles.md](docs/development-principles.md) - Code standards, testing, patterns
 - **Issues**: [style-guide-implementing-issues.md](docs/style-guide-implementing-issues.md) - How to work on issues
 - **Infrastructure**: [milestone-00.md](docs/rfc/milestone-00.md) - What's already built
+- **CI/CD**: [tool-guide-ci.md](docs/tool-guide-ci.md) - Continuous integration and automated testing
 
 ### Quick Links
 - Issue template: [.github/ISSUE_TEMPLATE/task.md](.github/ISSUE_TEMPLATE/task.md)
@@ -81,6 +82,7 @@ npm run storybook  # Component development
 gh issue list      # See open issues
 gh issue view 123  # Read issue details
 gh pr create       # Submit your work
+gh pr checks       # Check CI status
 ```
 
 ## Environment Notes

@@ -4,47 +4,53 @@ test.describe('Tetraspore App', () => {
   test('should load the home page', async ({ page }) => {
     await page.goto('/');
     
-    // Check that the app title is visible
-    await expect(page.locator('h1')).toContainText('Tetraspore Evolution Game');
+    // Check that the app has a navigation bar
+    await expect(page.locator('nav')).toBeVisible();
     
-    // Check that the turn counter is visible
-    await expect(page.locator('h2')).toContainText('Turn 0');
+    // Check that the Planet Selection heading is visible
+    await expect(page.locator('h1')).toContainText('Planet Selection');
     
-    // Check that the End Turn button exists
-    const endTurnButton = page.locator('button:has-text("End Turn")');
-    await expect(endTurnButton).toBeVisible();
-    await expect(endTurnButton).toBeEnabled();
+    // Check that navigation buttons exist
+    const planetSelectionButton = page.locator('button:has-text("Planet Selection")');
+    await expect(planetSelectionButton).toBeVisible();
     
-    // Check that Reset Game button exists
-    const resetButton = page.locator('button:has-text("Reset Game")');
-    await expect(resetButton).toBeVisible();
+    const mapButton = page.locator('button:has-text("Map")');
+    await expect(mapButton).toBeVisible();
+    
+    const evolutionButton = page.locator('button:has-text("Evolution")');
+    await expect(evolutionButton).toBeVisible();
+    
+    const technologyButton = page.locator('button:has-text("Technology")');
+    await expect(technologyButton).toBeVisible();
   });
 
-  test('should display Tree of Life visualization', async ({ page }) => {
+  test('should display planet selection cards', async ({ page }) => {
     await page.goto('/');
     
-    // Check that the Tree of Life container exists
-    const treeContainer = page.locator('.tree-of-life-container');
-    await expect(treeContainer).toBeVisible();
+    // Check that planet cards are visible by targeting the heading specifically
+    await expect(page.getByRole('heading', { name: 'Planet 1' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Planet 2' })).toBeVisible(); 
+    await expect(page.getByRole('heading', { name: 'Planet 3' })).toBeVisible();
     
-    // Check that the SVG element exists within the tree
-    const treeSvg = treeContainer.locator('svg');
-    await expect(treeSvg).toBeVisible();
+    // Check that instruction text exists
+    await expect(page.locator('text=Select a planet to begin exploration')).toBeVisible();
   });
 
-  test('should advance turn when End Turn is clicked', async ({ page }) => {
+  test('should have functional navigation', async ({ page }) => {
     await page.goto('/');
     
-    // Check initial turn
-    await expect(page.locator('h2')).toContainText('Turn 0');
+    // Click on Map button
+    await page.locator('button:has-text("Map")').click();
     
-    // Click End Turn
-    await page.locator('button:has-text("End Turn")').click();
+    // Check that Map button is now active (should have different styling)
+    const mapButton = page.locator('button:has-text("Map")');
+    await expect(mapButton).toHaveClass(/bg-blue-600/);
     
-    // Wait for turn to advance (includes loading state)
-    await expect(page.locator('h2')).toContainText('Turn 1', { timeout: 10000 });
+    // Click back to Planet Selection
+    await page.locator('button:has-text("Planet Selection")').click();
     
-    // Check that species list has been updated
-    await expect(page.locator('text=Living Species')).toBeVisible();
+    // Check that Planet Selection button is now active
+    const planetButton = page.locator('button:has-text("Planet Selection")');
+    await expect(planetButton).toHaveClass(/bg-blue-600/);
   });
 });
