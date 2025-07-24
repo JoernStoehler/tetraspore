@@ -105,6 +105,20 @@ The tool is designed to work with the Tetraspore development workflow:
 2. **During development**: Use `issue-monitor --watch` to monitor agent activity
 3. **After completion**: Check for cleanup actions needed
 
+### Agent Tagging Workflow
+
+When an AI agent is tagged with `@agent` in a GitHub issue comment, the agent monitor ensures the proper environment is established:
+
+1. **Environment Verification**: Agent confirms it's in the correct worktree (`../tetraspore-issue-NUMBER`)
+2. **Branch Check**: Verifies it's on the correct branch (`issue-NUMBER`)
+3. **Status Assessment**: Uses `git status` to understand the current work state
+4. **Action Execution**: Implements, continues, or assists based on the issue context
+
+The agent monitor system ensures that:
+- One issue = One branch = One worktree = One agent
+- Each agent operates in complete isolation
+- Development environments are properly configured with unique ports
+
 ## Common Use Cases
 
 ### Finding Issues to Work On
