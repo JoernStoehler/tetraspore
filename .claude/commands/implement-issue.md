@@ -40,6 +40,15 @@ ID/Instructions: $ARGUMENTS
    EOF
    )" \
      --base main
+   
+   # Wait for CI to pass and fix any failures:
+   sleep 30  # Allow CI to start
+   gh pr checks --watch
+   
+   # If CI fails, fix issues and push again:
+   # npm test && npm run lint && npm run build
+   # git add -A && git commit -m "fix: resolve CI failures"
+   # git push
    ```
 
 Ask questions via `gh issue comment` if requirements are unclear. Do NOT make assumptions.
