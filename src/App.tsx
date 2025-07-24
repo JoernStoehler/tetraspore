@@ -44,7 +44,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="h-screen bg-gray-100 flex flex-col">
       <NavBar
         currentView={currentView}
         onViewChange={handleViewChange}
@@ -52,7 +52,9 @@ function App() {
         onReportBugClick={handleReportBug}
       />
       
-      {renderCurrentView()}
+      <div className="flex-1 overflow-hidden">
+        {renderCurrentView()}
+      </div>
       
       <SettingsModal
         isOpen={isSettingsOpen}
