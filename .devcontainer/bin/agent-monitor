@@ -57,23 +57,59 @@ log() {
 spawn_agent() {
     local issue_num=$1
     local model=${2:-$DEFAULT_MODEL}
+    local is_pr=${3:-false}
     local worktree_dir="/workspaces/tetraspore/../tetraspore-issue-$issue_num"
     local branch_name="issue-$issue_num"
     
-    log "Spawning agent for issue #$issue_num with model $model"
+    # If this is a PR, get its actual branch name and derive the issue number
+    if [ "$is_pr" = "true" ]; then
+        log "Detected PR #$issue_num, getting PR branch"
+        local pr_branch=$(gh pr view "$issue_num" --json headRefName -q .headRefName 2>/dev/null)
+        if [ -n "$pr_branch" ]; then
+            branch_name="$pr_branch"
+            log "PR uses branch: $branch_name"
+            
+            # Extract issue number from branch name if it follows our pattern
+            if [[ "$pr_branch" =~ ^issue-([0-9]+)$ ]]; then
+                local original_issue="${BASH_REMATCH[1]}"
+                worktree_dir="/workspaces/tetraspore/../tetraspore-issue-$original_issue"
+                log "PR is from issue #$original_issue, using worktree: $worktree_dir"
+            else
+                # Non-standard branch name, use PR number as fallback
+                log "WARNING: PR branch doesn't follow issue-N pattern, using PR number for worktree"
+            fi
+        else
+            log "ERROR: Could not get PR branch"
+            return 1
+        fi
+    fi
+    
+    log "Spawning agent for item #$issue_num (branch: $branch_name, model: $model)"
     
     # Check if worktree already exists
     if [ -d "$worktree_dir" ]; then
-        log "Worktree exists, starting agent with --continue"
         cd "$worktree_dir" || return 1
         
-        # Start agent in background with --continue
-        nohup agent --model "$model" --print --output-format json --continue \
-            "/agent-tagged $issue_num" \
-            > "$HOME/agent-$issue_num.jsonl" 2>&1 &
-        
-        local pid=$!
-        log "Agent started with PID $pid (continuing existing work)"
+        # Check if there's an existing agent log to continue from
+        if [ -f "$HOME/agent-$issue_num.jsonl" ] && [ -s "$HOME/agent-$issue_num.jsonl" ]; then
+            log "Worktree and agent log exist, starting agent with --continue"
+            # Start agent in background with --continue
+            nohup agent --model "$model" --print --output-format json --continue \
+                "/agent-tagged $issue_num" \
+                >> "$HOME/agent-$issue_num.jsonl" 2>&1 &
+            
+            local pid=$!
+            log "Agent started with PID $pid (continuing from existing conversation)"
+        else
+            log "Worktree exists but no agent log, starting fresh"
+            # Start agent in background without --continue
+            nohup agent --model "$model" --print --output-format json \
+                "/agent-tagged $issue_num" \
+                > "$HOME/agent-$issue_num.jsonl" 2>&1 &
+            
+            local pid=$!
+            log "Agent started with PID $pid (fresh start in existing worktree)"
+        fi
         return 0
     fi
     
@@ -202,7 +238,7 @@ while true; do
            . as $issue | 
            .comments.nodes[] | 
            select(.body | contains("@agent")) | 
-           {issue: $issue.number, id: .id, body: .body, author: .author.login}' 2>/dev/null || true)
+           {issue: $issue.number, id: .id, body: .body, author: .author.login, type: "issue"}' 2>/dev/null || true)
     
     # Also check pull request comments
     pr_mentions=$(gh api graphql -f query='
@@ -231,7 +267,7 @@ while true; do
            .comments.nodes[] | 
            select(.body | contains("@agent")) | 
            select(.createdAt > "'$since_time'") |
-           {issue: $pr.number, id: .id, body: .body, author: .author.login}' 2>/dev/null || true)
+           {issue: $pr.number, id: .id, body: .body, author: .author.login, type: "pr"}' 2>/dev/null || true)
     
     # Combine mentions
     all_mentions=$(echo -e "$mentions\n$pr_mentions" | grep -v '^$' || true)
@@ -245,6 +281,7 @@ while true; do
             issue_num=$(echo "$mention" | jq -r '.issue' 2>/dev/null || continue)
             comment_body=$(echo "$mention" | jq -r '.body' 2>/dev/null || continue)
             author=$(echo "$mention" | jq -r '.author' 2>/dev/null || echo "unknown")
+            item_type=$(echo "$mention" | jq -r '.type' 2>/dev/null || echo "issue")
             
             # Skip if issue number is invalid
             if [ -z "$issue_num" ] || [ "$issue_num" = "null" ]; then
@@ -264,15 +301,15 @@ while true; do
             # Parse model from comment
             model=$(parse_agent_mention "$comment_body")
             
-            log "Found @agent mention in issue #$issue_num by $author (model: $model)"
+            log "Found @agent mention in $item_type #$issue_num by $author (model: $model)"
             
-            # Spawn agent
-            if spawn_agent "$issue_num" "$model"; then
+            # Spawn agent with type information
+            if spawn_agent "$issue_num" "$model" "$([[ "$item_type" == "pr" ]] && echo "true" || echo "false")"; then
                 # Mark as processed
                 echo "$comment_id" >> "$PROCESSED_FILE"
-                log "Successfully spawned agent for issue #$issue_num"
+                log "Successfully spawned agent for $item_type #$issue_num"
             else
-                log "Failed to spawn agent for issue #$issue_num"
+                log "Failed to spawn agent for $item_type #$issue_num"
             fi
         done
     fi
