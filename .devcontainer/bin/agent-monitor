@@ -94,7 +94,7 @@ spawn_agent() {
         if [ -f "$HOME/agent-$issue_num.jsonl" ] && [ -s "$HOME/agent-$issue_num.jsonl" ]; then
             log "Worktree and agent log exist, starting agent with --continue"
             # Start agent in background with --continue
-            nohup agent --model "$model" --print --output-format json --continue \
+            nohup agent --model "$model" --print --output-format stream-json --continue \
                 "/agent-tagged $issue_num" \
                 >> "$HOME/agent-$issue_num.jsonl" 2>&1 &
             
@@ -103,7 +103,7 @@ spawn_agent() {
         else
             log "Worktree exists but no agent log, starting fresh"
             # Start agent in background without --continue
-            nohup agent --model "$model" --print --output-format json \
+            nohup agent --model "$model" --print --output-format stream-json \
                 "/agent-tagged $issue_num" \
                 > "$HOME/agent-$issue_num.jsonl" 2>&1 &
             
@@ -160,7 +160,7 @@ EOF
     }
     
     # Start agent in background
-    nohup agent --model "$model" --print --output-format json \
+    nohup agent --model "$model" --print --output-format stream-json \
         "/agent-tagged $issue_num" \
         > "$HOME/agent-$issue_num.jsonl" 2>&1 &
     
@@ -237,7 +237,8 @@ while true; do
            select(.state == "OPEN") | 
            . as $issue | 
            .comments.nodes[] | 
-           select(.body | contains("@agent")) | 
+           select(.body | test("@agent\\b"; "i")) | 
+           select(.body | contains("_Posted by AI Agent_") | not) |
            {issue: $issue.number, id: .id, body: .body, author: .author.login, type: "issue"}' 2>/dev/null || true)
     
     # Also check pull request comments
@@ -265,7 +266,8 @@ while true; do
     --jq '.data.repository.pullRequests.nodes[] | 
            . as $pr | 
            .comments.nodes[] | 
-           select(.body | contains("@agent")) | 
+           select(.body | test("@agent\\b"; "i")) | 
+           select(.body | contains("_Posted by AI Agent_") | not) |
            select(.createdAt > "'$since_time'") |
            {issue: $pr.number, id: .id, body: .body, author: .author.login, type: "pr"}' 2>/dev/null || true)
     
