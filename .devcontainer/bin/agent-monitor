@@ -199,15 +199,16 @@ while true; do
     }' -f owner="${REPO%/*}" -f name="${REPO#*/}" -f since="$since_time" \
     --jq '.data.repository.issues.nodes[] | 
            select(.state == "OPEN") | 
+           . as $issue | 
            .comments.nodes[] | 
            select(.body | contains("@agent")) | 
-           {issue: (.issue.number // empty), id: .id, body: .body, author: .author.login}' 2>/dev/null || true)
+           {issue: $issue.number, id: .id, body: .body, author: .author.login}' 2>/dev/null || true)
     
     # Also check pull request comments
     pr_mentions=$(gh api graphql -f query='
-    query($owner: String!, $name: String!, $since: DateTime!) {
+    query($owner: String!, $name: String!) {
       repository(owner: $owner, name: $name) {
-        pullRequests(last: 100, filterBy: {since: $since}) {
+        pullRequests(last: 100, states: [OPEN]) {
           nodes {
             number
             state
@@ -224,12 +225,13 @@ while true; do
           }
         }
       }
-    }' -f owner="${REPO%/*}" -f name="${REPO#*/}" -f since="$since_time" \
+    }' -f owner="${REPO%/*}" -f name="${REPO#*/}" \
     --jq '.data.repository.pullRequests.nodes[] | 
-           select(.state == "OPEN") | 
+           . as $pr | 
            .comments.nodes[] | 
            select(.body | contains("@agent")) | 
-           {issue: (.issue.number // empty), id: .id, body: .body, author: .author.login}' 2>/dev/null || true)
+           select(.createdAt > "'$since_time'") |
+           {issue: $pr.number, id: .id, body: .body, author: .author.login}' 2>/dev/null || true)
     
     # Combine mentions
     all_mentions=$(echo -e "$mentions\n$pr_mentions" | grep -v '^$' || true)
@@ -243,6 +245,16 @@ while true; do
             issue_num=$(echo "$mention" | jq -r '.issue' 2>/dev/null || continue)
             comment_body=$(echo "$mention" | jq -r '.body' 2>/dev/null || continue)
             author=$(echo "$mention" | jq -r '.author' 2>/dev/null || echo "unknown")
+            
+            # Skip if issue number is invalid
+            if [ -z "$issue_num" ] || [ "$issue_num" = "null" ]; then
+                log "WARNING: Invalid issue number in mention"
+                log "  Comment ID: $comment_id"
+                log "  Author: $author"
+                log "  Body preview: $(echo "$comment_body" | head -c 100)..."
+                log "  Raw mention data: $mention"
+                continue
+            fi
             
             # Skip if already processed
             if grep -q "^$comment_id$" "$PROCESSED_FILE" 2>/dev/null; then
