@@ -5,6 +5,6 @@ import App from './App';
 describe('App', () => {
   it('renders without crashing', () => {
     render(<App />);
-    expect(screen.getByText('Tetraspore Evolution Game')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Planet Selection' })).toBeInTheDocument();
   });
 });
