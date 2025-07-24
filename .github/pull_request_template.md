@@ -1,3 +1,17 @@
+<!-- Quick human template - delete the sections you don't need -->
+
+## What
+<!-- One line summary -->
+
+## Why
+Closes #<!-- issue number -->
+
+---
+
+<!-- Detailed AI template below - humans can delete this entire section -->
+<details>
+<summary>📝 Detailed PR template (for AI agents)</summary>
+
 ## Summary
 <!-- Brief description of changes -->
 
@@ -20,5 +34,10 @@ Closes #<!-- issue number -->
 ## Additional Notes
 <!-- Any other context or screenshots -->
 
+</details>
+
 ---
+<!-- Sign your PR: -->
+🧑 _Posted by Human_
+<!-- or -->
 🤖 _Posted by AI Agent_
