@@ -68,7 +68,6 @@ The agent will:
 ### Key Commands
 - `/implement-issue NUMBER` - Start work on an issue
 - `/write-issue` - Create a new issue
-- `/agent-tagged NUMBER` - Handle @agent mentions in GitHub comments
 
 ## Development Commands
 ```bash
@@ -103,7 +102,6 @@ gh pr checks       # Check CI status
 - 2025-01-16: DevContainer self-contained - all env files in `.devcontainer/`
 - 2025-01-22: GitHub issue workflow - tasks managed via issues
 - 2025-01-22: One issue = One branch = One worktree = One agent
-- 2025-01-24: Agent monitor system - AI agents respond to @agent tags in GitHub comments
 
 ## Common Mistakes Log
 *(Add mistakes to avoid here)*
