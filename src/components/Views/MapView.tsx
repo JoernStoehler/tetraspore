@@ -43,20 +43,20 @@ export const MapView: FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="h-full bg-gray-100 flex">
       {/* Map Area */}
-      <div className="flex-1 p-6">
-        <div className="mb-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800">Planet Map</h1>
+      <div className="flex-1 p-2">
+        <div className="mb-2 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">Planet Map</h1>
           <button
             onClick={() => setIs3D(!is3D)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
           >
             Switch to {is3D ? '2D' : '3D'} View
           </button>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md border-2 border-gray-300 h-96 flex items-center justify-center">
+        <div className="bg-white rounded shadow-sm h-full flex items-center justify-center" style={{height: 'calc(100% - 3rem)'}}>
           <div className="text-center">
             <div className="text-6xl mb-4">{is3D ? '🌍' : '🗺️'}</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">
@@ -87,37 +87,37 @@ export const MapView: FC = () => {
       </div>
       
       {/* Region Details Panel */}
-      <div className="w-80 bg-white border-l border-gray-300 p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Region Details</h2>
+      <div className="w-1/4 min-w-72 bg-white border-l border-gray-300 p-3">
+        <h2 className="text-lg font-bold text-gray-800 mb-2">Region Details</h2>
         
         {selectedRegion ? (
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            <h3 className="text-base font-semibold text-gray-800 mb-1">
               {selectedRegion.name}
             </h3>
-            <div className="mb-3">
-              <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+            <div className="mb-2">
+              <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                 {selectedRegion.type}
               </span>
             </div>
-            <p className="text-gray-600 mb-4">{selectedRegion.description}</p>
+            <p className="text-gray-600 text-sm mb-3">{selectedRegion.description}</p>
             
-            <div className="space-y-2">
-              <h4 className="font-semibold text-gray-800">Quick Actions:</h4>
-              <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+            <div className="space-y-1">
+              <h4 className="font-semibold text-gray-800 text-sm">Quick Actions:</h4>
+              <button className="w-full px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-xs">
                 Explore Region
               </button>
-              <button className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+              <button className="w-full px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs">
                 View Resources
               </button>
-              <button className="w-full px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+              <button className="w-full px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-xs">
                 Establish Base
               </button>
             </div>
             
             {/* Navigation between regions */}
-            <div className="mt-6">
-              <h4 className="font-semibold text-gray-800 mb-2">Navigate to:</h4>
+            <div className="mt-4">
+              <h4 className="font-semibold text-gray-800 mb-1 text-sm">Navigate to:</h4>
               <div className="space-y-1">
                 {regions
                   .filter(region => region.id !== selectedRegion.id)
@@ -125,7 +125,7 @@ export const MapView: FC = () => {
                     <button
                       key={region.id}
                       onClick={() => handleRegionClick(region)}
-                      className="w-full text-left px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      className="w-full text-left px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
                     >
                       {region.name}
                     </button>
@@ -135,8 +135,8 @@ export const MapView: FC = () => {
           </div>
         ) : (
           <div className="text-center text-gray-500">
-            <div className="text-4xl mb-4">🗺️</div>
-            <p>Select a region on the map to view details and available actions.</p>
+            <div className="text-3xl mb-2">🗺️</div>
+            <p className="text-sm">Select a region on the map to view details and available actions.</p>
           </div>
         )}
       </div>
