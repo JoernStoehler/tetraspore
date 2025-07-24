@@ -37,7 +37,10 @@ git branch --show-current
 pwd  # Should show ../tetraspore-issue-$ISSUE_NUMBER
 
 # Comment that you're starting
-gh issue comment $ISSUE_NUMBER --body "Starting implementation of this issue."
+gh issue comment $ISSUE_NUMBER --body "🤖 Starting implementation of this issue.
+
+---
+_Posted by AI Agent_"
 ```
 
 ### 2. Understand Requirements
@@ -164,7 +167,7 @@ Go through each checkbox in the issue and verify:
 
 **Ask Questions**
 ```markdown
-I need clarification on the error handling approach:
+🤖 I need clarification on the error handling approach:
 
 **Current Understanding**: The component should handle network errors gracefully.
 
@@ -176,11 +179,14 @@ I need clarification on the error handling approach:
 **Recommendation**: Option 1 for consistency with existing error patterns.
 
 Could you confirm the preferred approach?
+
+---
+_Posted by AI Agent_
 ```
 
 **Report Blockers**
 ```markdown
-I'm blocked on this issue:
+🤖 I'm blocked on this issue:
 
 **Problem**: The UserAPI type referenced in the specifications doesn't exist yet.
 
@@ -192,11 +198,14 @@ I'm blocked on this issue:
 3. Implement without TypeScript types for now
 
 How would you like me to proceed?
+
+---
+_Posted by AI Agent_
 ```
 
 **Update Progress**
 ```markdown
-Progress update:
+🤖 Progress update:
 
 **Completed**:
 - ✅ Component structure created
@@ -211,6 +220,9 @@ Progress update:
 - Handle edge cases
 
 ETA: 1 hour
+
+---
+_Posted by AI Agent_
 ```
 
 ### 7. Submitting Work
@@ -239,11 +251,15 @@ git commit -m "feat: implement ComponentName (#$ISSUE_NUMBER)
 # Push branch (should already be set up by workagent)
 git push
 
-# Create PR
+# Create PR (see .github/pull_request_template.md for format)
 gh pr create \
   --title "Implement ComponentName (#$ISSUE_NUMBER)" \
-  --body "## Summary
+  --body "$(cat << 'EOF'
+## Summary
 Implements ComponentName as specified in #$ISSUE_NUMBER
+
+## Related Issue
+Closes #$ISSUE_NUMBER
 
 ## Changes
 - Created new component with TypeScript interfaces
@@ -257,15 +273,21 @@ Implements ComponentName as specified in #$ISSUE_NUMBER
 - [x] Manual testing completed
 - [x] Storybook stories verified
 
-Closes #$ISSUE_NUMBER" \
+---
+🤖 _Posted by AI Agent_
+EOF
+)" \
   --base main
 ```
 
 #### Comment on Issue
 ```bash
-gh issue comment $ISSUE_NUMBER --body "Implementation complete! PR submitted: #$PR_NUMBER
+gh issue comment $ISSUE_NUMBER --body "🤖 Implementation complete! PR submitted: #$PR_NUMBER
 
-All acceptance criteria have been met and tests are passing."
+All acceptance criteria have been met and tests are passing.
+
+---
+_Posted by AI Agent_"
 ```
 
 ## Common Pitfalls
@@ -321,7 +343,10 @@ All acceptance criteria have been met and tests are passing."
 ```bash
 # Issue interaction
 gh issue view $NUMBER
-gh issue comment $NUMBER --body "message"
+gh issue comment $NUMBER --body "🤖 message
+
+---
+_Posted by AI Agent_"
 
 # Development
 npm test -- ComponentName
@@ -335,7 +360,10 @@ git commit -m "type: message (#$NUMBER)"
 git push
 
 # PR creation
-gh pr create --title "Title (#$NUMBER)" --body "Description"
+gh pr create --title "Title (#$NUMBER)" --body "Description
+
+---
+🤖 _Posted by AI Agent_"
 ```
 
 ### When Stuck

@@ -302,7 +302,10 @@ You are implementing a new React component for issue #$ARGUMENTS.
    ```bash
    git add -A
    git commit -m "feat: implement NewComponent (#$ARGUMENTS)"
-   gh pr create --title "Add NewComponent (#$ARGUMENTS)" --body "Closes #$ARGUMENTS"
+   gh pr create --title "Add NewComponent (#$ARGUMENTS)" --body "Closes #$ARGUMENTS
+
+---
+🤖 _Posted by AI Agent_"
    ```
 
 ## Success Criteria

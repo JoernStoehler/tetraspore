@@ -132,7 +132,10 @@ EOF
     log "Agent started with PID $pid (fresh start)"
     
     # Post comment on issue
-    gh issue comment "$issue_num" -b "🤖 Agent spawned and working on this issue (model: $model, pid: $pid)" 2>/dev/null || true
+    gh issue comment "$issue_num" -b "🤖 Agent spawned and working on this issue (model: $model, pid: $pid)
+
+---
+_Posted by AI Agent_" 2>/dev/null || true
     
     return 0
 }
