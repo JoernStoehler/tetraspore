@@ -1,0 +1,9 @@
+{
+  "enabledMcpjsonServers": [
+    "tavily",
+    "context7",
+    "puppeteer",
+    "playwright"
+  ],
+  "enableAllProjectMcpServers": true
+}

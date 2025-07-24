@@ -91,6 +91,13 @@ test-*.log
 *-conversation-*.txt
 claude-*.log
 
+# Agent monitor files
+agent-monitor.log
+.agent-monitor-processed
+agent-*.log
+agent-*.jsonl
+.processed-mentions
+
 # -----------------------------------------------------------------------------
 # TEMPORARY & WORKING FILES
 # -----------------------------------------------------------------------------
