@@ -9,7 +9,10 @@ ID/Instructions: $ARGUMENTS
 1. **Read the issue and comment on it**:
    ```bash
    gh issue view ID --comments
-   gh issue comment ID --body "Starting implementation of this issue."
+   gh issue comment ID --body "🤖 Starting implementation of this issue.
+
+---
+_Posted by AI Agent_"
    ```
 
 2. **Read documentation**:
@@ -30,14 +33,27 @@ ID/Instructions: $ARGUMENTS
    npm run lint
    npm run build
    
-   # If all pass, create PR:
+   # If all pass, create PR (see docs/style-guide-implementing-issues.md for full template):
    gh pr create \
      --title "Implement [Component] (#ID)" \
      --body "$(cat <<'EOF'
-   Closes #ID
+## Summary
+[Implementation summary]
 
-   [Brief summary of changes]
-   EOF
+## Related Issue
+Closes #ID
+
+## Changes
+- [List key changes]
+
+## Testing
+- [x] All unit tests pass
+- [x] Linting passes
+- [x] Build succeeds
+
+---
+🤖 _Posted by AI Agent_
+EOF
    )" \
      --base main
    

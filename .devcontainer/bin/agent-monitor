@@ -69,7 +69,7 @@ spawn_agent() {
         
         # Start agent in background with --continue
         nohup agent --model "$model" --print --output-format json --continue \
-            "/implement-issue $issue_num" \
+            "/agent-tagged $issue_num" \
             > "$HOME/agent-$issue_num.jsonl" 2>&1 &
         
         local pid=$!
@@ -125,7 +125,7 @@ EOF
     
     # Start agent in background
     nohup agent --model "$model" --print --output-format json \
-        "/implement-issue $issue_num" \
+        "/agent-tagged $issue_num" \
         > "$HOME/agent-$issue_num.jsonl" 2>&1 &
     
     local pid=$!
