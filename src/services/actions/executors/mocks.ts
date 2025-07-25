@@ -38,7 +38,8 @@ export class MockImageAssetExecutor implements AssetExecutor<AssetImageAction, I
     this.shouldFail = shouldFail;
   }
 
-  async execute(action: AssetImageAction): Promise<ImageAssetResult> {
+  async execute(action: AssetImageAction, _context?: ExecutionContext): Promise<ImageAssetResult> {
+    void _context;
     if (this.shouldFail) {
       throw new Error(`Mock image generation failed for ${action.id}`);
     }
@@ -62,7 +63,7 @@ export class MockImageAssetExecutor implements AssetExecutor<AssetImageAction, I
         mockGenerated: true,
         generatedAt: new Date().toISOString()
       },
-      cost: action.model === 'flux-schnell' ? 0 : 0.009
+      cost: action.model === 'flux-schnell' ? 0.01 : 0.009
     };
 
     return result;
@@ -82,7 +83,7 @@ export class MockImageAssetExecutor implements AssetExecutor<AssetImageAction, I
   }
 
   estimateCost(action: AssetImageAction): CostEstimate {
-    const cost = action.model === 'flux-schnell' ? 0 : 0.009;
+    const cost = action.model === 'flux-schnell' ? 0.01 : 0.009;
     return { min: cost, max: cost, currency: 'USD' };
   }
 
@@ -103,7 +104,8 @@ export class MockSubtitleAssetExecutor implements AssetExecutor<AssetSubtitleAct
     this.shouldFail = shouldFail;
   }
 
-  async execute(action: AssetSubtitleAction): Promise<AudioAssetResult> {
+  async execute(action: AssetSubtitleAction, _context?: ExecutionContext): Promise<AudioAssetResult> {
+    void _context;
     if (this.shouldFail) {
       throw new Error(`Mock TTS generation failed for ${action.id}`);
     }
@@ -174,7 +176,8 @@ export class MockCutsceneAssetExecutor implements AssetExecutor<AssetCutsceneAct
     this.shouldFail = shouldFail;
   }
 
-  async execute(action: AssetCutsceneAction): Promise<CutsceneAssetResult> {
+  async execute(action: AssetCutsceneAction, _context?: ExecutionContext): Promise<CutsceneAssetResult> {
+    void _context;
     if (this.shouldFail) {
       throw new Error(`Mock cutscene assembly failed for ${action.id}`);
     }

@@ -1,0 +1,157 @@
+{
+  "actions": [
+    {
+      "type": "reason",
+      "id": "catastrophe_planning",
+      "ephemeral_reasoning": "Creating a catastrophe scenario with conditional outcomes based on species traits"
+    },
+    {
+      "type": "asset_image",
+      "id": "asteroid_approach",
+      "prompt": "Massive asteroid approaching alien planet, fiery trail through orange methane atmosphere, dramatic perspective from surface",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_image",
+      "id": "impact_devastation",
+      "prompt": "Asteroid impact on alien world, massive explosion, shockwave across methane lakes, destruction and chaos",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_image",
+      "id": "underground_shelter",
+      "prompt": "Alien creatures taking shelter in underground crystalline caves, bioluminescent safety, surviving the catastrophe",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_image",
+      "id": "extinction_scene",
+      "prompt": "Barren alien landscape after impact, dead crystalline structures, empty methane lakes, desolate and lifeless",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "warning_narration",
+      "text": "A cosmic threat approaches. An asteroid, ancient and uncaring, targets your world.",
+      "voice_tone": "urgent",
+      "voice_gender": "neutral",
+      "voice_pace": "fast",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "impact_narration",
+      "text": "The heavens rain fire. The world shakes. Evolution will be tested today.",
+      "voice_tone": "dramatic",
+      "voice_gender": "neutral",
+      "voice_pace": "slow",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "survival_narration",
+      "text": "Your species' adaptations prove their worth. In the depths, life endures.",
+      "voice_tone": "hopeful",
+      "voice_gender": "neutral",
+      "voice_pace": "normal",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "extinction_narration",
+      "text": "The impact proves too much. Your species joins the cosmic dance of extinction.",
+      "voice_tone": "somber",
+      "voice_gender": "neutral",
+      "voice_pace": "slow",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "asteroid_warning",
+      "shots": [
+        {
+          "image_id": "asteroid_approach",
+          "subtitle_id": "warning_narration",
+          "duration": 5.0,
+          "animation": "shake"
+        }
+      ]
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "impact_scene",
+      "shots": [
+        {
+          "image_id": "impact_devastation",
+          "subtitle_id": "impact_narration",
+          "duration": 4.0,
+          "animation": "flash"
+        }
+      ]
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "survival_ending",
+      "shots": [
+        {
+          "image_id": "underground_shelter",
+          "subtitle_id": "survival_narration",
+          "duration": 5.0,
+          "animation": "fade_in"
+        }
+      ]
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "extinction_ending",
+      "shots": [
+        {
+          "image_id": "extinction_scene",
+          "subtitle_id": "extinction_narration",
+          "duration": 6.0,
+          "animation": "slow_zoom"
+        }
+      ]
+    },
+    {
+      "type": "when_then",
+      "id": "trigger_catastrophe",
+      "condition": "game.catastrophe_triggered",
+      "action": {
+        "type": "play_cutscene",
+        "cutscene_id": "asteroid_warning"
+      }
+    },
+    {
+      "type": "when_then",
+      "id": "show_impact",
+      "condition": "game.catastrophe_triggered",
+      "action": {
+        "type": "play_cutscene",
+        "cutscene_id": "impact_scene"
+      }
+    },
+    {
+      "type": "when_then",
+      "id": "survival_outcome",
+      "condition": "game.species_has_underground_adaptation AND game.catastrophe_triggered",
+      "action": {
+        "type": "play_cutscene",
+        "cutscene_id": "survival_ending"
+      }
+    },
+    {
+      "type": "when_then",
+      "id": "extinction_outcome",
+      "condition": "NOT game.species_has_underground_adaptation AND game.catastrophe_triggered",
+      "action": {
+        "type": "play_cutscene",
+        "cutscene_id": "extinction_ending"
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "actions": [
+    {
+      "type": "reason",
+      "id": "planning",
+      "ephemeral_reasoning": "Creating a planet introduction cutscene with space view and surface view"
+    },
+    {
+      "type": "asset_image",
+      "id": "planet_space",
+      "prompt": "Alien planet from space, methane atmosphere, orange and brown swirling clouds, gas giant with rings, dramatic lighting from nearby star",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_image",
+      "id": "planet_surface",
+      "prompt": "Alien planet surface, methane lakes, orange sky, crystalline formations, exotic alien landscape, atmospheric",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "intro_narration",
+      "text": "A new world emerges from the cosmic forge. Its methane-rich atmosphere promises unique evolutionary pathways.",
+      "voice_tone": "epic",
+      "voice_gender": "neutral",
+      "voice_pace": "slow",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "surface_narration",
+      "text": "On the surface, primordial chemistry begins its ancient dance. Life will find a way.",
+      "voice_tone": "mysterious",
+      "voice_gender": "neutral",
+      "voice_pace": "normal",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "planet_intro",
+      "shots": [
+        {
+          "image_id": "planet_space",
+          "subtitle_id": "intro_narration",
+          "duration": 6.0,
+          "animation": "slow_zoom"
+        },
+        {
+          "image_id": "planet_surface",
+          "subtitle_id": "surface_narration",
+          "duration": 5.0,
+          "animation": "pan_right"
+        }
+      ]
+    },
+    {
+      "type": "when_then",
+      "id": "play_on_creation",
+      "condition": "game.planet_just_created",
+      "action": {
+        "type": "play_cutscene",
+        "cutscene_id": "planet_intro"
+      }
+    }
+  ]
+}

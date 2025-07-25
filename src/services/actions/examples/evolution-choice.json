@@ -1,0 +1,116 @@
+{
+  "actions": [
+    {
+      "type": "reason",
+      "id": "choice_planning",
+      "ephemeral_reasoning": "Creating assets for an evolution choice scenario with multiple paths"
+    },
+    {
+      "type": "asset_image",
+      "id": "creature_base",
+      "prompt": "Primitive alien creature, translucent body, bioluminescent organs, swimming in methane lake, ethereal and otherworldly",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_image",
+      "id": "evolution_predator",
+      "prompt": "Evolved alien predator, sharp crystalline teeth, powerful limbs, bioluminescent hunting organs, menacing but beautiful",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_image",
+      "id": "evolution_symbiont",
+      "prompt": "Evolved symbiotic alien, flowing tendrils, gentle appearance, glowing communication organs, peaceful and wise",
+      "size": "1024x768",
+      "model": "flux-schnell"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "choice_intro",
+      "text": "Your species stands at an evolutionary crossroads. Which path will ensure survival?",
+      "voice_tone": "thoughtful",
+      "voice_gender": "neutral",
+      "voice_pace": "normal",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "predator_description",
+      "text": "The path of the predator: strength through dominance, survival through conquest.",
+      "voice_tone": "intense",
+      "voice_gender": "neutral",
+      "voice_pace": "slow",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_subtitle",
+      "id": "symbiont_description",
+      "text": "The path of symbiosis: strength through cooperation, survival through harmony.",
+      "voice_tone": "peaceful",
+      "voice_gender": "neutral",
+      "voice_pace": "slow",
+      "model": "openai-tts"
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "evolution_choice_intro",
+      "shots": [
+        {
+          "image_id": "creature_base",
+          "subtitle_id": "choice_intro",
+          "duration": 5.0,
+          "animation": "fade_in"
+        }
+      ]
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "predator_path_preview",
+      "shots": [
+        {
+          "image_id": "evolution_predator",
+          "subtitle_id": "predator_description",
+          "duration": 4.0,
+          "animation": "slow_zoom"
+        }
+      ]
+    },
+    {
+      "type": "asset_cutscene",
+      "id": "symbiont_path_preview",
+      "shots": [
+        {
+          "image_id": "evolution_symbiont",
+          "subtitle_id": "symbiont_description",
+          "duration": 4.0,
+          "animation": "slow_zoom"
+        }
+      ]
+    },
+    {
+      "type": "player_choice",
+      "id": "evolution_decision",
+      "prompt": "Choose your evolutionary path",
+      "choices": [
+        {
+          "id": "choose_predator",
+          "text": "Evolve into apex predators",
+          "reaction": {
+            "type": "play_cutscene",
+            "cutscene_id": "predator_path_preview"
+          }
+        },
+        {
+          "id": "choose_symbiont",
+          "text": "Evolve symbiotic relationships",
+          "reaction": {
+            "type": "play_cutscene",
+            "cutscene_id": "symbiont_path_preview"
+          }
+        }
+      ]
+    }
+  ]
+}
