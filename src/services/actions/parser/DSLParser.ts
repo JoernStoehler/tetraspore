@@ -28,6 +28,22 @@ import { errorToValidationError, SchemaValidationError } from './errors';
 export class DSLParser {
   /**
    * Parse JSON string into validated action graph
+   * 
+   * @param json - JSON string containing action DSL to parse
+   * @returns ParserResult with either success graph or validation errors
+   * 
+   * @example
+   * ```typescript
+   * const parser = new DSLParser();
+   * const result = parser.parse('{"actions": [...]}');
+   * 
+   * if (result.success) {
+   *   console.log(`Parsed ${result.graph.nodes.size} actions`);
+   *   // Execute actions in result.graph.executionOrder
+   * } else {
+   *   result.errors.forEach(error => console.error(error.message));
+   * }
+   * ```
    */
   parse(json: string): ParserResult {
     try {
@@ -43,6 +59,28 @@ export class DSLParser {
 
   /**
    * Parse JavaScript object into validated action graph
+   * 
+   * @param obj - JavaScript object containing action DSL to parse
+   * @returns ParserResult with either success graph or validation errors
+   * 
+   * @description
+   * Performs comprehensive validation in these steps:
+   * 1. Schema validation using Zod schemas
+   * 2. Semantic validation (unique IDs, valid references)
+   * 3. Dependency analysis and circular dependency detection
+   * 4. Builds execution-ready action graph with topological ordering
+   * 
+   * @example
+   * ```typescript
+   * const actionDSL = {
+   *   actions: [
+   *     { type: 'asset_image', id: 'bg', prompt: 'Forest scene', size: '1024x768', model: 'flux-schnell' },
+   *     { type: 'play_cutscene', cutscene_id: 'intro' }
+   *   ]
+   * };
+   * 
+   * const result = parser.parseObject(actionDSL);
+   * ```
    */
   parseObject(obj: object): ParserResult {
     const errors: ValidationError[] = [];
@@ -150,9 +188,14 @@ export class DSLParser {
     // Categorize actions  
     const { assetActions, gameActions } = categorizeActions(actions);
 
+    // Include synthetic IDs in execution order for actions without real IDs
+    const allNodeIds = Array.from(nodes.keys());
+    const syntheticIds = allNodeIds.filter(id => !executionOrder.includes(id));
+    const fullExecutionOrder = [...executionOrder.filter(id => nodes.has(id)), ...syntheticIds];
+
     return {
       nodes,
-      executionOrder: executionOrder.filter(id => nodes.has(id)),
+      executionOrder: fullExecutionOrder,
       assetActions: assetActions.filter(id => nodes.has(id)),
       gameActions: gameActions.filter(id => nodes.has(id))
     };

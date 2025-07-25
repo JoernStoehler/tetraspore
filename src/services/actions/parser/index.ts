@@ -39,7 +39,8 @@ export {
   InvalidConditionError,
   InvalidTargetError,
   errorToValidationError,
-  findSimilarString
+  findSimilarString,
+  findSimilarStrings
 } from './errors';
 
 // Validation functions (useful for external validation)

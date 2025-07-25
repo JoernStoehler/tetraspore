@@ -16,7 +16,7 @@ import {
   CircularDependencyError,
   InvalidConditionError,
   InvalidTargetError,
-  findSimilarString
+  findSimilarStrings
 } from './errors';
 import { extractActionIds, extractReferencedIds, hasId } from './schemas';
 
@@ -66,8 +66,8 @@ export function validateReferences(actions: Action[]): ValidationError[] {
     
     for (const refId of referencedIds) {
       if (!availableIds.has(refId)) {
-        const suggestion = findSimilarString(refId, availableIdsList);
-        errors.push(new UnknownReferenceError(refId, index, actionId, suggestion).toValidationError());
+        const suggestions = findSimilarStrings(refId, availableIdsList);
+        errors.push(new UnknownReferenceError(refId, index, actionId, suggestions).toValidationError());
       }
     }
   });

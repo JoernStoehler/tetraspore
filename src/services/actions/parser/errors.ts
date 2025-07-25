@@ -65,10 +65,18 @@ export class DuplicateIdError extends DSLParserError {
  * Error thrown when a referenced ID cannot be found
  */
 export class UnknownReferenceError extends DSLParserError {
-  constructor(id: string, actionIndex?: number, actionId?: string, suggestion?: string) {
-    const message = suggestion 
-      ? `Unknown reference '${id}' in action '${actionId}'. Did you mean '${suggestion}'?`
-      : `Unknown reference: ${id}`;
+  constructor(id: string, actionIndex?: number, actionId?: string, suggestions?: string[]) {
+    let message = `Unknown reference: ${id}`;
+    
+    if (suggestions && suggestions.length > 0) {
+      const actionContext = actionId ? ` in action '${actionId}'` : '';
+      if (suggestions.length === 1) {
+        message = `Unknown reference '${id}'${actionContext}. Did you mean '${suggestions[0]}'?`;
+      } else {
+        const suggestionList = suggestions.slice(0, 3).map(s => `'${s}'`).join(', ');
+        message = `Unknown reference '${id}'${actionContext}. Did you mean one of: ${suggestionList}?`;
+      }
+    }
     
     super('unknown_reference', message, { actionIndex, actionId });
     this.name = 'UnknownReferenceError';
@@ -139,24 +147,40 @@ export function errorToValidationError(error: unknown, actionIndex?: number): Va
 
 /**
  * Simple string similarity function for suggesting corrections
+ * 
+ * @param target - The string to find suggestions for
+ * @param candidates - Array of possible matches
+ * @param maxSuggestions - Maximum number of suggestions to return (default: 3)
+ * @returns Array of suggested strings, limited to maxSuggestions
  */
-export function findSimilarString(target: string, candidates: string[]): string | undefined {
-  if (candidates.length === 0) return undefined;
+export function findSimilarStrings(target: string, candidates: string[], maxSuggestions = 3): string[] {
+  if (candidates.length === 0) return [];
 
-  let bestMatch = candidates[0];
-  let bestScore = levenshteinDistance(target, bestMatch);
+  // Calculate distances for all candidates
+  const scores = candidates.map(candidate => ({
+    candidate,
+    score: levenshteinDistance(target, candidate)
+  }));
 
-  for (let i = 1; i < candidates.length; i++) {
-    const score = levenshteinDistance(target, candidates[i]);
-    if (score < bestScore) {
-      bestScore = score;
-      bestMatch = candidates[i];
-    }
-  }
+  // Sort by score (best matches first)
+  scores.sort((a, b) => a.score - b.score);
 
   // Only suggest if the similarity is reasonable (less than half the target length different)
   const threshold = Math.max(2, Math.floor(target.length / 2));
-  return bestScore <= threshold ? bestMatch : undefined;
+  
+  return scores
+    .filter(item => item.score <= threshold)
+    .slice(0, maxSuggestions)
+    .map(item => item.candidate);
+}
+
+/**
+ * Simple string similarity function for suggesting corrections (single result)
+ * @deprecated Use findSimilarStrings for multiple suggestions
+ */
+export function findSimilarString(target: string, candidates: string[]): string | undefined {
+  const suggestions = findSimilarStrings(target, candidates, 1);
+  return suggestions.length > 0 ? suggestions[0] : undefined;
 }
 
 /**
