@@ -5,18 +5,21 @@ This guide helps AI agents effectively implement tasks described in GitHub issue
 ## Core Principles
 
 ### 1. Understand Before Acting
+
 - Read the entire issue first
 - Check all linked dependencies
 - Review acceptance criteria
 - Understand the scope boundaries
 
 ### 2. Follow Specifications Exactly
+
 - Implement only what's specified
 - Don't add extra features
 - Don't refactor unrelated code
 - Ask if requirements are unclear
 
 ### 3. Communicate Proactively
+
 - Comment when starting work
 - Ask questions when blocked
 - Update on significant progress
@@ -25,6 +28,7 @@ This guide helps AI agents effectively implement tasks described in GitHub issue
 ## Implementation Workflow
 
 ### 1. Initial Setup
+
 ```bash
 # View the issue
 gh issue view $ISSUE_NUMBER
@@ -46,7 +50,9 @@ _Posted by AI Agent_"
 ### 2. Understand Requirements
 
 #### Parse the Issue Structure
+
 Look for these key sections:
+
 - **Description**: Overall goal
 - **Acceptance Criteria**: Checklist of requirements
 - **Technical Specifications**: Files, interfaces, patterns
@@ -54,6 +60,7 @@ Look for these key sections:
 - **Dependencies**: Linked issues that must be complete
 
 #### Verify Dependencies
+
 ```bash
 # Check if dependency issues are closed
 gh issue view $DEPENDENCY_NUMBER --json state
@@ -62,7 +69,9 @@ gh issue view $DEPENDENCY_NUMBER --json state
 ### 3. Implementation Strategy
 
 #### Start with Interfaces
+
 If the issue specifies TypeScript interfaces, create them first:
+
 ```typescript
 // Start with the contract
 export interface ComponentProps {
@@ -71,11 +80,13 @@ export interface ComponentProps {
 ```
 
 #### Follow TDD When Possible
+
 1. Write failing tests based on requirements
 2. Implement to make tests pass
 3. Refactor while keeping tests green
 
 #### Use Existing Patterns
+
 ```bash
 # Find similar components to follow
 find src/components -name "*.tsx" -type f
@@ -87,6 +98,7 @@ grep -r "pattern from" --include="*.tsx"
 ### 4. Common Implementation Tasks
 
 #### Creating a React Component
+
 ```bash
 # Create component structure
 mkdir -p src/components/ComponentName
@@ -100,6 +112,7 @@ touch src/components/ComponentName/{index.ts,ComponentName.tsx,ComponentName.tes
 ```
 
 #### Component Template
+
 ```typescript
 // ComponentName.tsx
 import { type FC } from 'react';
@@ -108,8 +121,8 @@ interface ComponentNameProps {
   // From issue specifications
 }
 
-export const ComponentName: FC<ComponentNameProps> = ({ 
-  // props 
+export const ComponentName: FC<ComponentNameProps> = ({
+  // props
 }) => {
   // Implementation
   return (
@@ -121,6 +134,7 @@ export const ComponentName: FC<ComponentNameProps> = ({
 ```
 
 #### Writing Tests
+
 ```typescript
 // ComponentName.test.tsx
 import { render, screen } from '@testing-library/react';
@@ -131,7 +145,7 @@ describe('ComponentName', () => {
     render(<ComponentName />);
     // assertions
   });
-  
+
   // Test each acceptance criterion
 });
 ```
@@ -139,6 +153,7 @@ describe('ComponentName', () => {
 ### 5. Verification
 
 #### Run All Checks
+
 ```bash
 # Run tests
 npm test ComponentName
@@ -154,7 +169,9 @@ npm run storybook
 ```
 
 #### Verify Acceptance Criteria
+
 Go through each checkbox in the issue and verify:
+
 - [ ] Feature works as specified
 - [ ] All tests pass
 - [ ] No linting errors
@@ -166,12 +183,14 @@ Go through each checkbox in the issue and verify:
 #### When to Comment
 
 **Ask Questions**
+
 ```markdown
 🤖 I need clarification on the error handling approach:
 
 **Current Understanding**: The component should handle network errors gracefully.
 
 **Options**:
+
 1. Show inline error message
 2. Use toast notifications
 3. Fall back to cached data
@@ -181,10 +200,12 @@ Go through each checkbox in the issue and verify:
 Could you confirm the preferred approach?
 
 ---
+
 _Posted by AI Agent_
 ```
 
 **Report Blockers**
+
 ```markdown
 🤖 I'm blocked on this issue:
 
@@ -193,6 +214,7 @@ _Posted by AI Agent_
 **Dependency**: This seems to require #45 to be completed first.
 
 **Options**:
+
 1. Wait for #45
 2. Create a temporary mock interface
 3. Implement without TypeScript types for now
@@ -200,44 +222,61 @@ _Posted by AI Agent_
 How would you like me to proceed?
 
 ---
+
 _Posted by AI Agent_
 ```
 
 **Update Progress**
+
 ```markdown
 🤖 Progress update:
 
 **Completed**:
+
 - ✅ Component structure created
 - ✅ Basic props interface defined
 - ✅ Unit tests written (currently failing)
 
 **In Progress**:
+
 - 🔄 Implementing component logic
 
 **Next**:
+
 - Add Storybook stories
 - Handle edge cases
 
 ETA: 1 hour
 
 ---
+
 _Posted by AI Agent_
 ```
 
 ### 7. Submitting Work
 
 #### Final Checklist
+
 Before creating PR:
+
 - [ ] All acceptance criteria met
-- [ ] All tests pass
-- [ ] Linting passes
-- [ ] Build succeeds
+- [ ] **Local verification complete**: Run `npm test -- --run && npm run lint && npm run build`
+- [ ] **E2E tests pass**: Run `npm run test:e2e` (if applicable)
+- [ ] **Pre-commit hooks tested**: Ensure commit triggers all checks automatically
 - [ ] Code follows project patterns
 - [ ] No console.log statements
 - [ ] No commented-out code
+- [ ] **Git configured**: `git config push.autoSetupRemote true` set
+
+#### Post-PR Verification
+
+After creating PR:
+
+- [ ] **CI Status Verified**: Run `sleep 30 && gh pr checks <PR_NUMBER>` to confirm all GitHub Actions pass
+- [ ] **All checks green**: No failing CI jobs before claiming PR is merge-ready
 
 #### Create Pull Request
+
 ```bash
 # Stage and commit
 git add -A
@@ -281,6 +320,7 @@ EOF
 ```
 
 #### Comment on Issue
+
 ```bash
 gh issue comment $ISSUE_NUMBER --body "🤖 Implementation complete! PR submitted: #$PR_NUMBER
 
@@ -293,45 +333,54 @@ _Posted by AI Agent_"
 ## Common Pitfalls
 
 ### 1. Scope Creep
+
 ❌ "While I'm here, I'll improve this other component"
 ✅ Implement only what the issue specifies
 
 ### 2. Making Assumptions
+
 ❌ "This probably should also handle X"
 ✅ Ask for clarification on unclear requirements
 
 ### 3. Skipping Tests
+
 ❌ "I'll add tests later"
 ✅ Write tests as specified in the issue
 
 ### 4. Ignoring Patterns
+
 ❌ "I'll do it my way"
 ✅ Follow existing patterns mentioned in the issue
 
 ### 5. Silent Struggles
+
 ❌ Working for hours while blocked
 ✅ Comment on the issue asking for help
 
 ## Best Practices
 
 ### Code Quality
+
 - Keep functions small and focused
 - Use descriptive variable names
 - Add JSDoc comments for complex logic
 - Follow existing code style
 
 ### Git Commits
+
 - Make atomic commits
 - Use conventional commit messages
 - Reference issue number
 
 ### Testing
+
 - Test user behavior, not implementation
 - Cover edge cases
 - Use meaningful test descriptions
 - Follow AAA pattern (Arrange, Act, Assert)
 
 ### Communication
+
 - Over-communicate rather than under-communicate
 - Be specific about blockers
 - Provide context in questions
@@ -340,6 +389,7 @@ _Posted by AI Agent_"
 ## Quick Reference
 
 ### Essential Commands
+
 ```bash
 # Issue interaction
 gh issue view $NUMBER
@@ -367,6 +417,7 @@ gh pr create --title "Title (#$NUMBER)" --body "Description
 ```
 
 ### When Stuck
+
 1. Re-read the issue
 2. Check linked issues
 3. Look for similar code

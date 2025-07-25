@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged for faster checks on staged files only
+npx lint-staged
+
+# Run full test suite to catch integration issues  
+npm run test -- --run
+
+# Run build to catch TypeScript errors
+npm run build
