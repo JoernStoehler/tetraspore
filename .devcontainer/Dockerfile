@@ -71,6 +71,11 @@ RUN npm config set prefix '/home/vscode/.local' \
 # Add .local/bin to PATH for npm global packages
 ENV PATH="/home/vscode/.local/bin:$PATH"
 
+# Pre-install Playwright browsers with system dependencies
+# This moves the ~90-second browser installation to Docker build time
+RUN npx -y playwright@1.54.1 install --with-deps chromium firefox webkit \
+    && chmod -R 755 /home/vscode/.cache
+
 # Copy starship config
 COPY --chown=vscode:vscode .config/starship.toml /home/vscode/.config/starship.toml
 

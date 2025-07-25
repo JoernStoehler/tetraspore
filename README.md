@@ -45,7 +45,7 @@ If `.devcontainer/.env` is missing, contact DevOps for Honeycomb telemetry setup
 The project includes custom CLI tools for AI agent orchestration:
 
 - **workagent** - Manage AI agent worktrees
-- **mail** - Inter-agent communication  
+- **mail** - Inter-agent communication
 - **agent** - Run Claude with telemetry
 
 See tool guides in `docs/` for detailed usage.
@@ -54,4 +54,4 @@ See tool guides in `docs/` for detailed usage.
 
 See [MILESTONES.md](MILESTONES.md) for current project state, completed features, and known issues.
 
-This project uses git worktrees for parallel development with multiple AI agents. See [CLAUDE.md](CLAUDE.md) for complete setup and workflow instructions.
+This project uses git worktrees for parallel development with multiple AI agents. See [CLAUDE.md](CLAUDE.md) for complete setup and workflow instructions.# Test cache hit

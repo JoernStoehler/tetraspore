@@ -51,6 +51,10 @@ jobs:
   # E2E tests job - runs only after lint/type check and unit tests pass
   e2e-tests:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.54.1-noble
+    env:
+      HOME: /root
     needs: [lint-and-type-check, unit-tests]
     steps:
     - name: Checkout code
@@ -67,9 +71,6 @@ jobs:
       
     - name: Build application
       run: npm run build
-      
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
       
     - name: E2E tests
       run: npm run test:e2e
