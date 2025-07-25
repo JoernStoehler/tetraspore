@@ -1,37 +1,48 @@
-import { useState, useEffect } from 'react';
+// External dependencies
+import { useEffect } from 'react';
+
+// Internal imports
+import { useUIStore } from '@/stores';
+
+// Relative imports
 import { NavBar, PlanetSelectionView, MapView, EvolutionView, TechnologyView, SettingsModal } from './components';
 
+// Type imports
+import type { ViewType } from '@/stores';
+
 function App() {
-  const [currentView, setCurrentView] = useState('planet-selection');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // UI state from Zustand store - using selectors for performance optimization
+  // Each selector creates a separate subscription to minimize re-renders
+  const currentView = useUIStore((state) => state.currentView);
+  const isSettingsOpen = useUIStore((state) => state.isSettingsOpen);
+  const setCurrentView = useUIStore((state) => state.setCurrentView);
+  const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
+  const toggleSettings = useUIStore((state) => state.toggleSettings);
+  const navigateToMap = useUIStore((state) => state.navigateToMap);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsSettingsOpen(prev => !prev);
+        toggleSettings();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [toggleSettings]);
 
-  const handleViewChange = (view: string) => {
-    setCurrentView(view);
+  const handleViewChange = (view: string): void => {
+    setCurrentView(view as ViewType);
   };
 
-  const handleNavigateToMap = () => {
-    setCurrentView('map');
-  };
-
-  const handleReportBug = () => {
+  const handleReportBug = (): void => {
     window.open('https://github.com/JoernStoehler/tetraspore/issues/new', '_blank');
   };
 
-  const renderCurrentView = () => {
+  const renderCurrentView = (): JSX.Element => {
     switch (currentView) {
       case 'planet-selection':
-        return <PlanetSelectionView onNavigateToMap={handleNavigateToMap} />;
+        return <PlanetSelectionView onNavigateToMap={navigateToMap} />;
       case 'map':
         return <MapView />;
       case 'evolution':
@@ -39,7 +50,7 @@ function App() {
       case 'technology':
         return <TechnologyView />;
       default:
-        return <PlanetSelectionView onNavigateToMap={handleNavigateToMap} />;
+        return <PlanetSelectionView onNavigateToMap={navigateToMap} />;
     }
   };
 
@@ -48,7 +59,7 @@ function App() {
       <NavBar
         currentView={currentView}
         onViewChange={handleViewChange}
-        onSettingsClick={() => setIsSettingsOpen(true)}
+        onSettingsClick={() => setSettingsOpen(true)}
         onReportBugClick={handleReportBug}
       />
       
@@ -58,7 +69,7 @@ function App() {
       
       <SettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={() => setSettingsOpen(false)}
       />
     </div>
   );
