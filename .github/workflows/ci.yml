@@ -81,9 +81,14 @@ jobs:
     - name: Build application
       run: npm run build
       
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
+    - name: Install Playwright browsers and dependencies
+      run: |
+        if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+          npx playwright install --with-deps
+        else
+          # Browsers cached, but need to ensure system dependencies are installed
+          npx playwright install-deps
+        fi
       
     - name: E2E tests
       run: npm run test:e2e
