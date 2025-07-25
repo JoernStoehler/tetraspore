@@ -11,6 +11,7 @@ export interface BaseAction {
 // Individual action types
 export interface ReasonAction extends BaseAction {
   type: 'reason';
+  id?: string;
   ephemeral_reasoning: string;
 }
 
@@ -73,6 +74,7 @@ export interface RemoveFeatureAction extends BaseAction {
 
 export interface WhenThenAction extends BaseAction {
   type: 'when_then';
+  id?: string;
   condition: string;
   action: Action;
 }

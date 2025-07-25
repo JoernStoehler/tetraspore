@@ -1,6 +1,7 @@
 import { type FC, useState, useEffect } from 'react';
 import { useActionProcessor } from '../hooks/useActionProcessor.js';
 import { CutscenePlayer } from '../components/CutscenePlayer/index.js';
+import type { AssetResult } from '../services/actions/executors/types.js';
 import planetCreationExample from '../services/actions/examples/planet-creation.json';
 import evolutionChoiceExample from '../services/actions/examples/evolution-choice.json';
 import catastropheExample from '../services/actions/examples/catastrophe.json';
@@ -38,7 +39,7 @@ export const CutsceneTestPage: FC = () => {
       
       // Find and play the first cutscene if any
       const cutsceneAsset = result.assetsGenerated.find(
-        asset => (asset as any).type === 'cutscene'
+        asset => 'type' in asset && (asset as AssetResult & { type: string }).type === 'cutscene'
       );
       if (cutsceneAsset && 'id' in cutsceneAsset) {
         setCurrentCutsceneId(cutsceneAsset.id);
@@ -206,7 +207,7 @@ export const CutsceneTestPage: FC = () => {
                       <ul className="mt-1 space-y-1">
                         {lastResult.assetsGenerated.map((asset, i) => (
                           <li key={i} className="text-xs">
-                            {(asset as any).type}: {asset.id}
+                            {'type' in asset ? (asset as AssetResult & { type: string }).type : 'unknown'}: {asset.id}
                           </li>
                         ))}
                       </ul>

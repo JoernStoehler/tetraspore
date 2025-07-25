@@ -46,7 +46,7 @@ class MockAssetStorage implements AssetStorage {
     return item?.metadata;
   }
 
-  async getDuration(_id: string) {
+  async getDuration() {
     return undefined;
   }
 }
@@ -92,7 +92,7 @@ describe('ActionProcessor', () => {
       expect(result.success).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.assetsGenerated).toHaveLength(1);
-      expect((result.assetsGenerated[0] as any).type).toBe('image');
+      expect('type' in result.assetsGenerated[0] && (result.assetsGenerated[0] as AssetResult & { type: string }).type).toBe('image');
       expect(result.actionsExecuted).toContain('test_image');
     });
 
@@ -115,7 +115,7 @@ describe('ActionProcessor', () => {
 
       expect(result.success).toBe(true);
       expect(result.assetsGenerated).toHaveLength(1);
-      expect((result.assetsGenerated[0] as any).type).toBe('audio');
+      expect('type' in result.assetsGenerated[0] && (result.assetsGenerated[0] as AssetResult & { type: string }).type).toBe('audio');
     });
 
     it('should handle parser errors gracefully', async () => {

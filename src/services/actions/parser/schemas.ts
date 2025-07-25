@@ -12,6 +12,7 @@ import { z } from 'zod';
 // Reason action schema
 export const ReasonActionSchema = z.object({
   type: z.literal('reason'),
+  id: z.string().optional(),
   ephemeral_reasoning: z.string(),
 });
 
@@ -99,6 +100,7 @@ export const ActionSchema: z.ZodSchema = z.lazy(() =>
 // When then action schema (needs to be defined after ActionSchema)
 export const WhenThenActionSchema = z.object({
   type: z.literal('when_then'),
+  id: z.string().optional(),
   condition: z.string(),
   action: ActionSchema,
 });

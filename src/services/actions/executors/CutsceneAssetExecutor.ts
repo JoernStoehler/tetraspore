@@ -107,7 +107,7 @@ export class CutsceneAssetExecutor extends BaseExecutor<AssetCutsceneAction, Cut
           });
         }
 
-        const validAnimations = ['fade_in', 'zoom_in', 'pan_left', 'pan_right', 'static'];
+        const validAnimations = ['none', 'slow_zoom', 'pan_left', 'pan_right', 'fade'];
         if (!validAnimations.includes(shot.animation)) {
           errors.push({
             field: `${shotPrefix}.animation`,
@@ -393,10 +393,10 @@ export class CutsceneAssetExecutor extends BaseExecutor<AssetCutsceneAction, Cut
 
       // Suggest better animations for certain durations
       let optimizedAnimation = shot.animation;
-      if (optimizedDuration < 3 && shot.animation === 'static') {
-        optimizedAnimation = 'fade_in'; // More dynamic for short shots
+      if (optimizedDuration < 3 && shot.animation === 'none') {
+        optimizedAnimation = 'fade'; // More dynamic for short shots
       }
-      if (optimizedDuration > 10 && shot.animation === 'fade_in') {
+      if (optimizedDuration > 10 && shot.animation === 'fade') {
         optimizedAnimation = 'pan_left'; // More engaging for long shots
       }
 

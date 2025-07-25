@@ -3,15 +3,14 @@ import type { ActionGraph, ActionNode } from './parser/types.js';
 import { ImageAssetExecutor } from './executors/ImageAssetExecutor.js';
 import { SubtitleAssetExecutor } from './executors/SubtitleAssetExecutor.js';
 import { CutsceneAssetExecutor } from './executors/CutsceneAssetExecutor.js';
-import type { AssetExecutor, ExecutionContext, AssetResult, AssetStorage } from './executors/types.js';
-import type { Action } from './parser/types.js';
+import type { AssetExecutor, ExecutionContext, AssetResult, AssetStorage, Action as ExecutorAction } from './executors/types.js';
 import { LocalAssetStorage } from './storage/LocalAssetStorage.js';
 
 export interface ActionProcessorConfig {
   executors?: {
-    asset_image?: AssetExecutor<Action, AssetResult>;
-    asset_subtitle?: AssetExecutor<Action, AssetResult>;
-    asset_cutscene?: AssetExecutor<Action, AssetResult>;
+    asset_image?: AssetExecutor<ExecutorAction, AssetResult>;
+    asset_subtitle?: AssetExecutor<ExecutorAction, AssetResult>;
+    asset_cutscene?: AssetExecutor<ExecutorAction, AssetResult>;
   };
   storage?: AssetStorage;
   apiKeys?: {
@@ -43,11 +42,12 @@ export interface ProcessorCostBreakdown {
 }
 
 export class ActionProcessor {
-  private executors: Map<string, AssetExecutor<Action, AssetResult>>;
+  private executors: Map<string, AssetExecutor<ExecutorAction, AssetResult>>;
   private storage: AssetStorage;
   private apiKeys: { fluxApiKey?: string; openaiApiKey?: string };
   private status: ProcessorStatus;
   private costTracker: Map<string, number>;
+  private assetCounts: Map<string, number>;
 
   constructor(config: ActionProcessorConfig = {}) {
     this.storage = config.storage || new LocalAssetStorage();
@@ -81,6 +81,7 @@ export class ActionProcessor {
     };
 
     this.costTracker = new Map();
+    this.assetCounts = new Map();
   }
 
   async processActions(json: string | object): Promise<ProcessResult> {
@@ -91,6 +92,10 @@ export class ActionProcessor {
 
     try {
       this.status.isProcessing = true;
+      
+      // Reset counters for new processing
+      this.costTracker.clear();
+      this.assetCounts.clear();
       
       // Parse the actions
       const parseResult = typeof json === 'string' 
@@ -126,13 +131,15 @@ export class ActionProcessor {
         try {
           const result = await this.executeAction(node, graph, actionId);
           
+          // Always mark action as executed
+          actionsExecuted.push(actionId);
+          
           if (result) {
             // Only add to assetsGenerated if it's actually an asset (not a game action)
             if (result && typeof result === 'object' && 'id' in result && 'type' in result && 
                 (result.type === 'image' || result.type === 'audio' || result.type === 'cutscene')) {
               assetsGenerated.push(result as AssetResult & { type: string });
             }
-            actionsExecuted.push(actionId);
           }
         } catch (error) {
           errors.push(error instanceof Error ? error : new Error(String(error)));
@@ -175,16 +182,20 @@ export class ActionProcessor {
       const context = this.createExecutionContext();
       
       // Estimate cost before execution
-      await executor.estimateCost(action as any);
+      await executor.estimateCost(action as ExecutorAction);
       
       // Execute the action
-      const result = await executor.execute(action as any, context);
+      const result = await executor.execute(action as ExecutorAction, context);
       
       // Track actual cost
       if (result.cost !== undefined) {
         const currentCost = this.costTracker.get(action.type) || 0;
         this.costTracker.set(action.type, currentCost + result.cost);
       }
+      
+      // Track asset counts
+      const currentCount = this.assetCounts.get(action.type) || 0;
+      this.assetCounts.set(action.type, currentCount + 1);
 
       // Add type field based on action type
       const typedResult = {
@@ -197,7 +208,7 @@ export class ActionProcessor {
 
       // For cutscenes, add the definition property
       if (action.type === 'asset_cutscene' && result.metadata?.shots) {
-        (typedResult as any).definition = {
+        (typedResult as AssetResult & { type: string; definition?: unknown }).definition = {
           id: result.id,
           shots: result.metadata.shots
         };
@@ -222,8 +233,13 @@ export class ActionProcessor {
 
     // Handle other action types
     if (action.type === 'reason') {
-      // Reasoning actions don't produce output
+      // Reasoning actions don't produce output but should be marked as executed
       return { type: 'reasoning', id: actionId };
+    }
+    
+    if (action.type === 'add_player_choice') {
+      // Player choice actions register choices in the game
+      return { type: 'player_choice', id: actionId };
     }
 
     throw new Error(`Unknown action type: ${action.type}`);
@@ -276,20 +292,16 @@ export class ActionProcessor {
 
   getCostBreakdown(): ProcessorCostBreakdown {
     const images = {
-      count: 0,
+      count: this.assetCounts.get('asset_image') || 0,
       cost: this.costTracker.get('asset_image') || 0
     };
     
     const audio = {
-      count: 0,
+      count: (this.assetCounts.get('asset_subtitle') || 0) + 
+             (this.assetCounts.get('asset_cutscene') || 0),
       cost: (this.costTracker.get('asset_subtitle') || 0) + 
             (this.costTracker.get('asset_cutscene') || 0)
     };
-
-    // Count assets generated (this is a simplified version)
-    // In a real implementation, we'd track counts during execution
-    images.count = images.cost > 0 ? Math.ceil(images.cost / 0.01) : 0;
-    audio.count = audio.cost > 0 ? Math.ceil(audio.cost / 0.006) : 0;
 
     return {
       images,

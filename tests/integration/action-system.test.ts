@@ -29,6 +29,10 @@ describe('Action System Integration Tests', () => {
     it('should process planet creation scenario successfully', async () => {
       const result = await processor.processActions(planetCreationExample);
 
+      // Log errors if test fails
+      if (!result.success) {
+        console.log('Errors:', result.errors.map(e => e.message));
+      }
       expect(result.success).toBe(true);
       expect(result.errors).toHaveLength(0);
       
@@ -61,7 +65,7 @@ describe('Action System Integration Tests', () => {
       
       const breakdown = processor.getCostBreakdown();
       expect(breakdown.images.count).toBe(2);
-      expect(breakdown.audio.count).toBe(2);
+      expect(breakdown.audio.count).toBe(3); // 2 subtitles + 1 cutscene
       expect(breakdown.total).toBe(result.totalCost);
     });
 
@@ -79,6 +83,10 @@ describe('Action System Integration Tests', () => {
   describe('Player choice with reactions', () => {
     it('should process evolution choice scenario correctly', async () => {
       const result = await processor.processActions(evolutionChoiceExample);
+
+      if (!result.success) {
+        console.log('Evolution choice errors:', result.errors.map(e => e.message));
+      }
 
       expect(result.success).toBe(true);
       
@@ -110,6 +118,10 @@ describe('Action System Integration Tests', () => {
   describe('Conditional actions', () => {
     it('should process catastrophe scenario with conditionals', async () => {
       const result = await processor.processActions(catastropheExample);
+
+      if (!result.success) {
+        console.log('Catastrophe errors:', result.errors.map(e => e.message));
+      }
 
       expect(result.success).toBe(true);
       
@@ -161,23 +173,46 @@ describe('Action System Integration Tests', () => {
     });
 
     it('should handle circular dependencies', async () => {
+      // Create a simple circular dependency: A depends on B, B depends on A
       const circularActions = {
         actions: [
           {
             type: 'asset_cutscene',
             id: 'cutscene_a',
             shots: [{
-              image_id: 'image_b',
-              duration: 5.0
+              image_id: 'cutscene_b', // References B
+              subtitle_id: 'subtitle_a',
+              duration: 5.0,
+              animation: 'fade'
             }]
           },
           {
-            type: 'asset_image',
-            id: 'image_b',
-            prompt: 'Test image',
-            size: '1024x768',
-            model: 'flux-schnell',
-            depends_on: ['cutscene_a'] // This creates a circular dependency
+            type: 'asset_cutscene',
+            id: 'cutscene_b',
+            shots: [{
+              image_id: 'cutscene_a', // References A - creates circular dependency
+              subtitle_id: 'subtitle_b',
+              duration: 5.0,
+              animation: 'fade'
+            }]
+          },
+          {
+            type: 'asset_subtitle',
+            id: 'subtitle_a',
+            text: 'Test narration A',
+            voice_tone: 'calm',
+            voice_gender: 'neutral',
+            voice_pace: 'normal',
+            model: 'openai-tts'
+          },
+          {
+            type: 'asset_subtitle',
+            id: 'subtitle_b',
+            text: 'Test narration B',
+            voice_tone: 'calm',
+            voice_gender: 'neutral',
+            voice_pace: 'normal',
+            model: 'openai-tts'
           }
         ]
       };
@@ -261,7 +296,7 @@ describe('Action System Integration Tests', () => {
               image_id: 'test_img',
               subtitle_id: 'test_audio',
               duration: 5.0,
-              animation: 'fade_in'
+              animation: 'fade'
             }]
           }
         ]
@@ -288,16 +323,15 @@ describe('Action System Integration Tests', () => {
 
   describe('Performance and cost constraints', () => {
     it('should stay under cost budget for typical cutscene', async () => {
-      // Process all examples
-      const results = await Promise.all([
-        processor.processActions(planetCreationExample),
-        processor.processActions(evolutionChoiceExample),
-        processor.processActions(catastropheExample)
-      ]);
-
-      for (const result of results) {
-        expect(result.totalCost).toBeLessThan(0.10); // Under $0.10 per cutscene
-      }
+      // Process examples one by one (not in parallel to avoid conflicts)
+      const planetResult = await processor.processActions(planetCreationExample);
+      expect(planetResult.totalCost).toBeLessThan(0.10);
+      
+      const evolutionResult = await processor.processActions(evolutionChoiceExample);
+      expect(evolutionResult.totalCost).toBeLessThan(0.10);
+      
+      const catastropheResult = await processor.processActions(catastropheExample);
+      expect(catastropheResult.totalCost).toBeLessThan(0.10);
     });
 
     it('should process actions in parallel where possible', async () => {
@@ -332,8 +366,8 @@ describe('Action System Integration Tests', () => {
             type: 'asset_cutscene',
             id: 'cutscene1',
             shots: [
-              { image_id: 'img1', duration: 3.0 },
-              { image_id: 'img2', duration: 3.0 }
+              { image_id: 'img1', subtitle_id: 'audio1', duration: 3.0, animation: 'fade' },
+              { image_id: 'img2', subtitle_id: 'audio1', duration: 3.0, animation: 'fade' }
             ]
           }
         ]
@@ -342,6 +376,10 @@ describe('Action System Integration Tests', () => {
       const startTime = Date.now();
       const result = await processor.processActions(parallelActions);
       const endTime = Date.now();
+      
+      if (!result.success) {
+        console.log('Parallel processing errors:', result.errors.map(e => e.message));
+      }
       
       expect(result.success).toBe(true);
       // With parallelization, this should be faster than sequential

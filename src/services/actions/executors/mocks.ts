@@ -525,13 +525,13 @@ export const mockActions = {
         image_id: 'test-image-1',
         subtitle_id: 'test-subtitle-1',
         duration: 5,
-        animation: 'fade_in'
+        animation: 'fade'
       },
       {
         image_id: 'test-image-2',
         subtitle_id: 'test-subtitle-2',
         duration: 4,
-        animation: 'zoom_in'
+        animation: 'slow_zoom'
       }
     ],
     ...overrides

@@ -103,7 +103,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: '',
           subtitle_id: 'test-subtitle-1',
           duration: 5,
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
       const result = executor.validate(action);
@@ -122,7 +122,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: 'test-image-1',
           subtitle_id: '',
           duration: 5,
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
       const result = executor.validate(action);
@@ -141,7 +141,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: 'test-image-1',
           subtitle_id: 'test-subtitle-1',
           duration: 0,
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
       const result = executor.validate(action);
@@ -160,7 +160,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: 'test-image-1',
           subtitle_id: 'test-subtitle-1',
           duration: 35,
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
       const result = executor.validate(action);
@@ -187,7 +187,7 @@ describe('CutsceneAssetExecutor', () => {
       expect(result.valid).toBe(false);
       expect(result.errors).toContainEqual({
         field: 'shots[0].animation',
-        message: 'Animation must be one of: fade_in, zoom_in, pan_left, pan_right, static',
+        message: 'Animation must be one of: none, slow_zoom, pan_left, pan_right, fade',
         code: 'INVALID_VALUE'
       });
     });
@@ -197,7 +197,7 @@ describe('CutsceneAssetExecutor', () => {
         image_id: `test-image-${i + 1}`,
         subtitle_id: `test-subtitle-${i + 1}`,
         duration: 35, // Each shot 35 seconds = 350 seconds total
-        animation: 'fade_in' as const
+        animation: 'fade' as const
       }));
 
       const action = mockActions.cutscene({ shots: longShots });
@@ -216,7 +216,7 @@ describe('CutsceneAssetExecutor', () => {
         image_id: `test-image-${i + 1}`,
         subtitle_id: `test-subtitle-${i + 1}`,
         duration: 2,
-        animation: 'fade_in' as const
+        animation: 'fade' as const
       }));
 
       const action = mockActions.cutscene({ shots: manyShots });
@@ -252,13 +252,13 @@ describe('CutsceneAssetExecutor', () => {
             image_id: 'test-image-1',
             subtitle_id: 'test-subtitle-1',
             duration: 5,
-            animation: 'fade_in'
+            animation: 'fade'
           },
           {
             image_id: 'test-image-2',
             subtitle_id: 'test-subtitle-2',
             duration: 4,
-            animation: 'zoom_in'
+            animation: 'slow_zoom'
           }
         ]
       });
@@ -282,7 +282,7 @@ describe('CutsceneAssetExecutor', () => {
         imageUrl: expect.stringContaining('test-image-1'),
         audioUrl: expect.stringContaining('test-subtitle-1'),
         duration: 5,
-        animation: 'fade_in',
+        animation: 'fade',
         audioDuration: 4
       });
     });
@@ -322,7 +322,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: 'nonexistent-image',
           subtitle_id: 'nonexistent-subtitle',
           duration: 5,
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
 
@@ -337,7 +337,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: 'test-image-1', // exists
           subtitle_id: 'nonexistent-subtitle', // doesn't exist
           duration: 5,
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
 
@@ -374,7 +374,7 @@ describe('CutsceneAssetExecutor', () => {
           image_id: 'test-image-1',
           subtitle_id: 'test-subtitle-1', // has 4 second duration
           duration: 2, // shot only 2 seconds - audio will be cut off
-          animation: 'fade_in'
+          animation: 'fade'
         }]
       });
 
@@ -399,21 +399,21 @@ describe('CutsceneAssetExecutor', () => {
             imageUrl: '/test.png',
             audioUrl: '/test.mp3',
             duration: 1, // Very short
-            animation: 'fade_in',
+            animation: 'fade',
             audioDuration: 0.5
           },
           {
             imageUrl: '/test2.png',
             audioUrl: '/test2.mp3',
             duration: 25, // Very long
-            animation: 'static',
+            animation: 'none',
             audioDuration: 5
           },
           {
             imageUrl: '/test3.png',
             audioUrl: '/test3.mp3',
             duration: 5,
-            animation: 'zoom_in',
+            animation: 'slow_zoom',
             audioDuration: 8 // Audio longer than shot
           }
         ]
@@ -444,7 +444,7 @@ describe('CutsceneAssetExecutor', () => {
           imageUrl: `/test${i}.png`,
           audioUrl: `/test${i}.mp3`,
           duration: 1, // Very fast pacing
-          animation: 'fade_in' as const,
+          animation: 'fade' as const,
           audioDuration: 1
         }))
       };
@@ -464,7 +464,7 @@ describe('CutsceneAssetExecutor', () => {
           imageUrl: '/test.png',
           audioUrl: '/test.mp3',
           duration: 15, // Very slow pacing
-          animation: 'static',
+          animation: 'none',
           audioDuration: 5
         }]
       };
@@ -489,21 +489,21 @@ describe('CutsceneAssetExecutor', () => {
               imageUrl: '/test1.png',
               audioUrl: '/test1.mp3',
               duration: 5,
-              animation: 'fade_in',
+              animation: 'fade',
               audioDuration: 4
             },
             {
               imageUrl: '/test2.png',
               audioUrl: '/test2.mp3',
               duration: 3,
-              animation: 'fade_in',
+              animation: 'fade',
               audioDuration: 2
             },
             {
               imageUrl: '/test3.png',
               audioUrl: '/test3.mp3',
               duration: 25, // Long shot
-              animation: 'zoom_in',
+              animation: 'slow_zoom',
               audioDuration: 6 // Audio longer than shot would be if shot was < 6s
             }
           ]
@@ -515,8 +515,8 @@ describe('CutsceneAssetExecutor', () => {
         expect(analysis.shotCount).toBe(3);
         expect(analysis.averageShotDuration).toBe(11); // 33 / 3
         expect(analysis.animationBreakdown).toEqual({
-          fade_in: 2,
-          zoom_in: 1
+          fade: 2,
+          slow_zoom: 1
         });
         expect(analysis.timingIssues).toContain('Shot 2: Very long duration (25s)');
       });
@@ -530,13 +530,13 @@ describe('CutsceneAssetExecutor', () => {
               image_id: 'test-1',
               subtitle_id: 'sub-1',
               duration: 1, // Too short
-              animation: 'static'
+              animation: 'none'
             },
             {
               image_id: 'test-2',
               subtitle_id: 'sub-2',
               duration: 20, // Too long
-              animation: 'fade_in'
+              animation: 'fade'
             }
           ]
         });
@@ -544,9 +544,9 @@ describe('CutsceneAssetExecutor', () => {
         const optimized = CutsceneAssetExecutor.optimizeCutscene(action);
         
         expect(optimized.shots[0].duration).toBe(2); // Increased from 1
-        expect(optimized.shots[0].animation).toBe('fade_in'); // Changed from static
+        expect(optimized.shots[0].animation).toBe('fade'); // Changed from static
         expect(optimized.shots[1].duration).toBe(15); // Decreased from 20
-        expect(optimized.shots[1].animation).toBe('pan_left'); // Changed from fade_in for long shots
+        expect(optimized.shots[1].animation).toBe('pan_left'); // Changed from fade for long shots
       });
     });
 
@@ -559,14 +559,14 @@ describe('CutsceneAssetExecutor', () => {
               imageUrl: '/test1.png',
               audioUrl: '/test1.mp3',
               duration: 5,
-              animation: 'fade_in',
+              animation: 'fade',
               audioDuration: 4
             },
             {
               imageUrl: '/test2.png',
               audioUrl: '/test2.mp3',
               duration: 3,
-              animation: 'zoom_in',
+              animation: 'slow_zoom',
               audioDuration: 2
             }
           ]
@@ -587,7 +587,7 @@ describe('CutsceneAssetExecutor', () => {
             imageUrl: '/test.png',
             audioUrl: '', // No audio
             duration: 2, // Too short for reading
-            animation: 'fade_in',
+            animation: 'fade',
             audioDuration: 0
           }]
         };

@@ -31,7 +31,7 @@ export interface AssetSubtitleAction {
   id: string;
   text: string;
   voice_gender: 'neutral' | 'feminine' | 'masculine';
-  voice_tone: 'epic' | 'calm' | 'mysterious' | 'urgent';
+  voice_tone: 'epic' | 'calm' | 'mysterious' | 'urgent' | 'triumphant';
   voice_pace: 'slow' | 'normal' | 'fast';
   model: 'openai-tts' | 'google-tts';
 }
@@ -46,17 +46,19 @@ export interface CutsceneShot {
   image_id: string;
   subtitle_id: string;
   duration: number;
-  animation: 'fade_in' | 'zoom_in' | 'pan_left' | 'pan_right' | 'static';
+  animation: 'none' | 'slow_zoom' | 'pan_left' | 'pan_right' | 'fade';
 }
 
 // Other action types (for completeness)
 export interface ReasonAction {
   type: 'reason';
+  id?: string;
   ephemeral_reasoning: string;
 }
 
 export interface WhenThenAction {
   type: 'when_then';
+  id?: string;
   condition: string;
   action: Action;
 }

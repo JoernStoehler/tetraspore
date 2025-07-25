@@ -387,7 +387,7 @@ export class SubtitleAssetExecutor extends BaseExecutor<AssetSubtitleAction, Aud
    */
   static getRecommendedVoice(context: 'narrator' | 'character' | 'system'): {
     voice_gender: 'neutral' | 'feminine' | 'masculine';
-    voice_tone: 'epic' | 'calm' | 'mysterious' | 'urgent';
+    voice_tone: 'epic' | 'calm' | 'mysterious' | 'urgent' | 'triumphant';
     voice_pace: 'slow' | 'normal' | 'fast';
   } {
     const voiceMap = {

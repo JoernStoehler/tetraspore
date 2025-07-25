@@ -30,7 +30,7 @@
       "type": "asset_subtitle",
       "id": "choice_intro",
       "text": "Your species stands at an evolutionary crossroads. Which path will ensure survival?",
-      "voice_tone": "thoughtful",
+      "voice_tone": "mysterious",
       "voice_gender": "neutral",
       "voice_pace": "normal",
       "model": "openai-tts"
@@ -39,7 +39,7 @@
       "type": "asset_subtitle",
       "id": "predator_description",
       "text": "The path of the predator: strength through dominance, survival through conquest.",
-      "voice_tone": "intense",
+      "voice_tone": "urgent",
       "voice_gender": "neutral",
       "voice_pace": "slow",
       "model": "openai-tts"
@@ -48,7 +48,7 @@
       "type": "asset_subtitle",
       "id": "symbiont_description",
       "text": "The path of symbiosis: strength through cooperation, survival through harmony.",
-      "voice_tone": "peaceful",
+      "voice_tone": "calm",
       "voice_gender": "neutral",
       "voice_pace": "slow",
       "model": "openai-tts"
@@ -61,7 +61,7 @@
           "image_id": "creature_base",
           "subtitle_id": "choice_intro",
           "duration": 5.0,
-          "animation": "fade_in"
+          "animation": "fade"
         }
       ]
     },
@@ -90,25 +90,25 @@
       ]
     },
     {
-      "type": "player_choice",
+      "type": "add_player_choice",
       "id": "evolution_decision",
       "prompt": "Choose your evolutionary path",
-      "choices": [
+      "options": [
         {
-          "id": "choose_predator",
-          "text": "Evolve into apex predators",
-          "reaction": {
+          "label": "Evolve into apex predators",
+          "description": "Take the path of strength and dominance",
+          "reactions": [{
             "type": "play_cutscene",
             "cutscene_id": "predator_path_preview"
-          }
+          }]
         },
         {
-          "id": "choose_symbiont",
-          "text": "Evolve symbiotic relationships",
-          "reaction": {
+          "label": "Evolve symbiotic relationships",
+          "description": "Take the path of cooperation and harmony",
+          "reactions": [{
             "type": "play_cutscene",
             "cutscene_id": "symbiont_path_preview"
-          }
+          }]
         }
       ]
     }

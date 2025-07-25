@@ -46,7 +46,7 @@
       "type": "asset_subtitle",
       "id": "impact_narration",
       "text": "The heavens rain fire. The world shakes. Evolution will be tested today.",
-      "voice_tone": "dramatic",
+      "voice_tone": "epic",
       "voice_gender": "neutral",
       "voice_pace": "slow",
       "model": "openai-tts"
@@ -55,7 +55,7 @@
       "type": "asset_subtitle",
       "id": "survival_narration",
       "text": "Your species' adaptations prove their worth. In the depths, life endures.",
-      "voice_tone": "hopeful",
+      "voice_tone": "triumphant",
       "voice_gender": "neutral",
       "voice_pace": "normal",
       "model": "openai-tts"
@@ -64,7 +64,7 @@
       "type": "asset_subtitle",
       "id": "extinction_narration",
       "text": "The impact proves too much. Your species joins the cosmic dance of extinction.",
-      "voice_tone": "somber",
+      "voice_tone": "mysterious",
       "voice_gender": "neutral",
       "voice_pace": "slow",
       "model": "openai-tts"
@@ -77,7 +77,7 @@
           "image_id": "asteroid_approach",
           "subtitle_id": "warning_narration",
           "duration": 5.0,
-          "animation": "shake"
+          "animation": "none"
         }
       ]
     },
@@ -89,7 +89,7 @@
           "image_id": "impact_devastation",
           "subtitle_id": "impact_narration",
           "duration": 4.0,
-          "animation": "flash"
+          "animation": "fade"
         }
       ]
     },
@@ -101,7 +101,7 @@
           "image_id": "underground_shelter",
           "subtitle_id": "survival_narration",
           "duration": 5.0,
-          "animation": "fade_in"
+          "animation": "fade"
         }
       ]
     },
@@ -138,7 +138,7 @@
     {
       "type": "when_then",
       "id": "survival_outcome",
-      "condition": "game.species_has_underground_adaptation AND game.catastrophe_triggered",
+      "condition": "game.species_has_underground_adaptation",
       "action": {
         "type": "play_cutscene",
         "cutscene_id": "survival_ending"
@@ -147,7 +147,7 @@
     {
       "type": "when_then",
       "id": "extinction_outcome",
-      "condition": "NOT game.species_has_underground_adaptation AND game.catastrophe_triggered",
+      "condition": "game.species_without_adaptation",
       "action": {
         "type": "play_cutscene",
         "cutscene_id": "extinction_ending"
