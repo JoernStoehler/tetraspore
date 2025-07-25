@@ -26,6 +26,8 @@ export const CutsceneStage: FC<CutsceneStageProps> = ({ shot, isPlaying }) => {
   const getAnimationClass = () => {
     if (!isPlaying || !imageLoaded) return '';
     
+    // Ken Burns animations using CSS transforms for GPU acceleration
+    // These animations are optimized for smooth 60fps performance
     switch (shot.animation) {
       case 'slow_zoom':
         return 'animate-slow-zoom';
@@ -44,7 +46,7 @@ export const CutsceneStage: FC<CutsceneStageProps> = ({ shot, isPlaying }) => {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-white text-center">
-          <div className="text-6xl mb-4">=÷</div>
+          <div className="text-6xl mb-4">=ï¿½</div>
           <p className="text-xl">Image not found</p>
         </div>
       </div>

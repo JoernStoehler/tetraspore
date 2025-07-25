@@ -14,9 +14,16 @@ export const ProgressIndicator: FC<ProgressIndicatorProps> = ({
   const overallProgress = ((current + progress) / total) * 100;
 
   return (
-    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-64 max-w-[80vw]">
+    <div 
+      className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-64 max-w-[80vw]"
+      role="progressbar"
+      aria-valuenow={Math.round(overallProgress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Cutscene progress: ${Math.round(overallProgress)}% complete`}
+    >
       {/* Progress Bar */}
-      <div className="mb-3">
+      <div className="mb-3" aria-hidden="true">
         <div className="w-full bg-white bg-opacity-20 rounded-full h-1 backdrop-blur-sm">
           <div
             className="bg-white h-1 rounded-full transition-all duration-100 ease-out"
@@ -26,7 +33,7 @@ export const ProgressIndicator: FC<ProgressIndicatorProps> = ({
       </div>
 
       {/* Progress Dots */}
-      <div className="flex justify-center gap-2">
+      <div className="flex justify-center gap-2" role="group" aria-label="Shot indicators">
         {Array.from({ length: total }).map((_, index) => (
           <div
             key={index}
@@ -44,14 +51,15 @@ export const ProgressIndicator: FC<ProgressIndicatorProps> = ({
                 ? ' (current)'
                 : ' (upcoming)'
             }`}
+            role="img"
           />
         ))}
       </div>
 
       {/* Shot Counter */}
       <div className="text-center mt-2">
-        <span className="text-white text-sm font-medium opacity-80">
-          {current + 1} / {total}
+        <span className="text-white text-sm font-medium opacity-80" aria-live="polite">
+          Shot {current + 1} of {total}
         </span>
       </div>
     </div>

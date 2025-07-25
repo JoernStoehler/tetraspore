@@ -247,10 +247,23 @@ export const CutscenePlayer: FC<CutscenePlayerProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [allowSkip, allowReplay, handlePause, handleSkip, handleReplay]);
 
+  // Preload next shot's image for smoother transitions
+  useEffect(() => {
+    if (definition && currentShot < definition.shots.length - 1) {
+      const nextShot = definition.shots[currentShot + 1];
+      const img = new Image();
+      img.src = nextShot.imageUrl;
+    }
+  }, [definition, currentShot]);
+
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center">
-        <div className="text-white text-xl">Loading cutscene...</div>
+      <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center" role="status" aria-label="Loading cutscene">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+          <div className="text-white text-xl">Loading cutscene...</div>
+          <div className="text-gray-400 text-sm mt-2">Preparing assets...</div>
+        </div>
       </div>
     );
   }

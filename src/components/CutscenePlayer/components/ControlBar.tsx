@@ -67,13 +67,18 @@ export const ControlBar: FC<ControlBarProps> = ({
   allowReplay
 }) => {
   return (
-    <div className="absolute bottom-10 right-10 flex gap-4 z-10">
+    <div 
+      className="absolute bottom-10 right-10 flex gap-4 z-10"
+      role="toolbar"
+      aria-label="Cutscene player controls"
+    >
       {/* Play/Pause Button */}
       <button
         onClick={onPause}
-        className="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white hover:bg-opacity-30 transition-all duration-200 hover:scale-105"
-        title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        className="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white hover:bg-opacity-30 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+        title={isPlaying ? 'Pause cutscene (Space)' : 'Play cutscene (Space)'}
+        aria-label={isPlaying ? 'Pause cutscene' : 'Play cutscene'}
+        aria-pressed={isPlaying}
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>
@@ -82,9 +87,9 @@ export const ControlBar: FC<ControlBarProps> = ({
       {allowReplay && (
         <button
           onClick={onReplay}
-          className="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white hover:bg-opacity-30 transition-all duration-200 hover:scale-105"
-          title="Replay (R)"
-          aria-label="Replay cutscene"
+          className="flex items-center justify-center w-12 h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white hover:bg-opacity-30 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          title="Replay cutscene from beginning (R)"
+          aria-label="Replay cutscene from beginning"
         >
           <ReplayIcon />
         </button>
@@ -94,12 +99,12 @@ export const ControlBar: FC<ControlBarProps> = ({
       {allowSkip && (
         <button
           onClick={onSkip}
-          className="flex items-center gap-2 px-4 py-2 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white hover:bg-opacity-30 transition-all duration-200 hover:scale-105"
-          title="Skip (Esc)"
+          className="flex items-center gap-2 px-4 py-2 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white hover:bg-opacity-30 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          title="Skip cutscene (Escape)"
           aria-label="Skip cutscene"
         >
           <SkipIcon />
-          <span className="text-sm font-medium hidden sm:inline">Skip</span>
+          <span className="text-sm font-medium hidden sm:inline" aria-hidden="true">Skip</span>
         </button>
       )}
     </div>
