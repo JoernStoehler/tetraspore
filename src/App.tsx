@@ -11,6 +11,8 @@ import { NavBar, PlanetSelectionView, MapView, EvolutionView, TechnologyView, Se
 import type { ViewType } from '@/stores';
 
 function App() {
+  // UI state from Zustand store - using selectors for performance optimization
+  // Each selector creates a separate subscription to minimize re-renders
   const currentView = useUIStore((state) => state.currentView);
   const isSettingsOpen = useUIStore((state) => state.isSettingsOpen);
   const setCurrentView = useUIStore((state) => state.setCurrentView);

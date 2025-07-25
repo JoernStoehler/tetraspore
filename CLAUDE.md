@@ -132,6 +132,7 @@ _(Add new requirements here with date)_
 - 2025-01-25: Rapid UI prototyping first - mock data before real game logic
 - 2025-01-25: Use Radix UI for standard components - AI-friendly, accessible, tiny bundle
 - 2025-01-25: Zod for validation - especially for command/event schemas
+- 2025-01-25: UI state in Zustand store - separate from game state, use selectors
 
 ## Common Mistakes Log
 

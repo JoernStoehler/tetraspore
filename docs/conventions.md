@@ -90,10 +90,19 @@ This document defines the development conventions for the Tetraspore project. Al
    ```
 
 6. **State Management**
-   - UI state: React state or Zustand UI store
+   - UI state: Zustand store (not local React state for shared UI state)
    - Game state: Event sourcing with aggregates
    - Never mix UI and game state
    - Use selectors to prevent unnecessary re-renders
+   - Example:
+
+     ```typescript
+     // Good - selective subscription
+     const view = useUIStore((state) => state.currentView);
+
+     // Bad - subscribes to all changes
+     const store = useUIStore();
+     ```
 
 ## Test-Driven Development
 
