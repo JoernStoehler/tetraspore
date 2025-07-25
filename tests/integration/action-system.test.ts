@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ActionProcessor } from '../../src/services/actions/ActionProcessor.js';
 import { LocalAssetStorage } from '../../src/services/actions/storage/LocalAssetStorage.js';
 import { MockImageAssetExecutor, MockSubtitleAssetExecutor, MockCutsceneAssetExecutor } from '../../src/services/actions/executors/mocks.js';
+import type { AssetExecutor, AssetResult, Action } from '../../src/services/actions/executors/types.js';
 import planetCreationExample from '../../src/services/actions/examples/planet-creation.json';
 import evolutionChoiceExample from '../../src/services/actions/examples/evolution-choice.json';
 import catastropheExample from '../../src/services/actions/examples/catastrophe.json';
@@ -503,7 +504,7 @@ describe('Action System Integration Tests', () => {
       // Create processor with null executor
       const brokenProcessor = new ActionProcessor({
         executors: {
-          asset_image: null as any // Force a broken executor
+          asset_image: null as unknown as AssetExecutor<Action, AssetResult> // Force a broken executor
         }
       });
 
