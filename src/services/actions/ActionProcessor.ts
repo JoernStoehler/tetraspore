@@ -1,3 +1,20 @@
+/**
+ * ActionProcessor - Main orchestrator for the action system
+ * 
+ * This class integrates the DSL parser, asset executors, and cutscene player
+ * into a cohesive pipeline. It handles:
+ * - Parsing action definitions
+ * - Executing asset generation in dependency order
+ * - Tracking costs and progress
+ * - Passing game actions to the React layer
+ * 
+ * Design Decision: Type Alignment
+ * The parser and executor components were developed separately and had slight
+ * type mismatches (e.g., animation values 'fade_in' vs 'fade', voice_tone 'triumphant').
+ * We chose to align on the parser's type definitions as they were more descriptive
+ * and matched the cutscene player's expectations.
+ */
+
 import { parseActionDSL, parseActionObject } from './parser/index.js';
 import type { ActionGraph, ActionNode } from './parser/types.js';
 import { ImageAssetExecutor } from './executors/ImageAssetExecutor.js';
@@ -84,6 +101,19 @@ export class ActionProcessor {
     this.assetCounts = new Map();
   }
 
+  /**
+   * Process a set of actions, generating assets and preparing game actions
+   * 
+   * Design Decision: Cost Tracking
+   * Cost tracking is reset for each processActions call. This allows each
+   * processing session to have its own cost budget. If cumulative tracking
+   * is needed, getCostBreakdown() should be called before the next processActions.
+   * 
+   * Design Decision: Error Recovery
+   * The processor continues executing actions even if individual actions fail.
+   * This allows partial success - if image generation fails but audio succeeds,
+   * the user still gets the audio. Failed actions are reported in the errors array.
+   */
   async processActions(json: string | object): Promise<ProcessResult> {
     const startTime = Date.now();
     const errors: Error[] = [];
@@ -217,6 +247,20 @@ export class ActionProcessor {
       return typedResult;
     }
 
+    /**
+     * Design Decision: Game Action Handling
+     * 
+     * Game actions (play_cutscene, when_then, etc.) are not executed by the ActionProcessor.
+     * Instead, they are passed through to the React component layer. This is because:
+     * 
+     * 1. Game actions require access to game state (player choices, conditions)
+     * 2. UI actions need to be handled by React components (showing modals, playing cutscenes)
+     * 3. Conditional actions need real-time game state evaluation
+     * 
+     * The ActionProcessor's role is to prepare all assets and provide the execution plan.
+     * The React components then use this plan to orchestrate the actual gameplay.
+     */
+    
     // Handle game actions
     if (action.type === 'play_cutscene') {
       // This will be handled by the React component layer

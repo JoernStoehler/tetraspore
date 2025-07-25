@@ -419,4 +419,336 @@ describe('Action System Integration Tests', () => {
       expect(result.actionsExecuted).toHaveLength(2);
     });
   });
+
+  describe('Cost limit testing', () => {
+    it('should track cumulative costs across multiple assets', async () => {
+      const highCostScenario = {
+        actions: [
+          // Multiple SDXL images (more expensive)
+          {
+            type: 'asset_image',
+            id: 'expensive1',
+            prompt: 'High quality image 1',
+            size: '1024x768',
+            model: 'sdxl'
+          },
+          {
+            type: 'asset_image',
+            id: 'expensive2',
+            prompt: 'High quality image 2',
+            size: '1024x768',
+            model: 'sdxl'
+          },
+          // Multiple TTS generations
+          {
+            type: 'asset_subtitle',
+            id: 'long_audio1',
+            text: 'This is a very long narration that will cost more to generate. '.repeat(10),
+            voice_tone: 'epic',
+            voice_gender: 'neutral',
+            voice_pace: 'normal',
+            model: 'openai-tts'
+          }
+        ]
+      };
+
+      const result = await processor.processActions(highCostScenario);
+      
+      expect(result.success).toBe(true);
+      expect(result.totalCost).toBeGreaterThan(0.018); // 2 SDXL images at 0.009 each
+      
+      const breakdown = processor.getCostBreakdown();
+      expect(breakdown.images.count).toBe(2);
+      expect(breakdown.images.cost).toBeCloseTo(0.018, 3);
+    });
+
+    it('should reset cost tracking between processActions calls', async () => {
+      const actions1 = {
+        actions: [{
+          type: 'asset_image',
+          id: 'img1',
+          prompt: 'First batch',
+          size: '1024x768',
+          model: 'sdxl'
+        }]
+      };
+
+      const actions2 = {
+        actions: [{
+          type: 'asset_image',
+          id: 'img2',
+          prompt: 'Second batch',
+          size: '1024x768',
+          model: 'sdxl'
+        }]
+      };
+
+      // First processing
+      const result1 = await processor.processActions(actions1);
+      expect(result1.totalCost).toBeCloseTo(0.009, 3);
+
+      // Second processing should reset costs
+      const result2 = await processor.processActions(actions2);
+      expect(result2.totalCost).toBeCloseTo(0.009, 3); // Not 0.018
+
+      // Current breakdown should only show second batch
+      const breakdown = processor.getCostBreakdown();
+      expect(breakdown.images.count).toBe(1);
+      expect(breakdown.total).toBeCloseTo(0.009, 3);
+    });
+  });
+
+  describe('Advanced error scenarios', () => {
+    it('should handle executor initialization failures gracefully', async () => {
+      // Create processor with null executor
+      const brokenProcessor = new ActionProcessor({
+        executors: {
+          asset_image: null as any // Force a broken executor
+        }
+      });
+
+      const actions = {
+        actions: [{
+          type: 'asset_image',
+          id: 'will_fail',
+          prompt: 'This should fail',
+          size: '1024x768',
+          model: 'flux-schnell'
+        }]
+      };
+
+      const result = await brokenProcessor.processActions(actions);
+      
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      // The actual error will be about missing API keys since the default executor is used
+      expect(result.errors[0].message).toBeDefined();
+    });
+
+    it('should handle mixed success/failure scenarios', async () => {
+      // Create processor where only images fail
+      const selectiveFailProcessor = new ActionProcessor({
+        executors: {
+          asset_image: {
+            execute: async () => { throw new Error('Image API down'); },
+            validate: () => ({ valid: true, errors: [] }),
+            estimateCost: () => ({ min: 0, max: 0, currency: 'USD' })
+          },
+          asset_subtitle: new MockSubtitleAssetExecutor(),
+          asset_cutscene: new MockCutsceneAssetExecutor()
+        }
+      });
+
+      const mixedActions = {
+        actions: [
+          {
+            type: 'asset_image',
+            id: 'fail_img',
+            prompt: 'Will fail',
+            size: '1024x768',
+            model: 'flux-schnell'
+          },
+          {
+            type: 'asset_subtitle',
+            id: 'success_audio',
+            text: 'This should work',
+            voice_tone: 'calm',
+            voice_gender: 'neutral',
+            voice_pace: 'normal',
+            model: 'openai-tts'
+          }
+        ]
+      };
+
+      const result = await selectiveFailProcessor.processActions(mixedActions);
+      
+      expect(result.success).toBe(false); // Overall failure
+      expect(result.errors).toHaveLength(1); // One error
+      expect(result.assetsGenerated).toHaveLength(1); // But one success
+      expect(result.assetsGenerated[0].type).toBe('audio');
+      expect(result.actionsExecuted).toContain('success_audio'); // At least the successful one
+    });
+
+    it('should handle malformed JSON gracefully', async () => {
+      const malformedJSON = '{"actions": [{"type": "invalid", bad json}]}';
+      
+      const result = await processor.processActions(malformedJSON);
+      
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.assetsGenerated).toHaveLength(0);
+    });
+  });
+
+  describe('Real-world scenarios', () => {
+    it('should handle complex game state conditions', async () => {
+      const complexScenario = {
+        actions: [
+          {
+            type: 'reason',
+            id: 'analyze_state',
+            ephemeral_reasoning: 'Checking multiple game conditions'
+          },
+          // Add the victory scene that's referenced
+          {
+            type: 'asset_image',
+            id: 'victory_img',
+            prompt: 'Victory celebration scene',
+            size: '1024x768',
+            model: 'flux-schnell'
+          },
+          {
+            type: 'asset_subtitle',
+            id: 'victory_audio',
+            text: 'You have won!',
+            voice_tone: 'triumphant',
+            voice_gender: 'neutral',
+            voice_pace: 'normal',
+            model: 'openai-tts'
+          },
+          {
+            type: 'asset_cutscene',
+            id: 'victory_scene',
+            shots: [{
+              image_id: 'victory_img',
+              subtitle_id: 'victory_audio',
+              duration: 3.0,
+              animation: 'fade'
+            }]
+          },
+          {
+            type: 'when_then',
+            id: 'complex_condition',
+            condition: 'game.player.has_key',
+            action: {
+              type: 'play_cutscene',
+              cutscene_id: 'victory_scene'
+            }
+          },
+          {
+            type: 'add_player_choice',
+            id: 'critical_choice',
+            prompt: 'Which path will you take?',
+            options: [
+              { 
+                label: 'Go left',
+                description: 'Take the left path into the darkness',
+                reactions: []
+              },
+              { 
+                label: 'Go right',
+                description: 'Take the right path towards the light',
+                reactions: []
+              }
+            ]
+          }
+        ]
+      };
+
+      const result = await processor.processActions(complexScenario);
+      
+      // Log errors if any
+      if (!result.success) {
+        console.log('Complex scenario errors:', result.errors);
+      }
+      
+      expect(result.success).toBe(true);
+      expect(result.actionsExecuted).toContain('analyze_state');
+      expect(result.actionsExecuted).toContain('complex_condition');
+      expect(result.actionsExecuted).toContain('critical_choice');
+      expect(result.actionsExecuted).toContain('victory_scene'); // The cutscene asset
+    });
+    
+    it('should process a complete game chapter with all action types', async () => {
+      const chapterActions = {
+        actions: [
+          // Opening reasoning
+          {
+            type: 'reason',
+            id: 'chapter_start',
+            ephemeral_reasoning: 'Player enters the crystal caves'
+          },
+          // Generate chapter assets
+          {
+            type: 'asset_image',
+            id: 'cave_entrance',
+            prompt: 'Crystal cave entrance, bioluminescent, alien architecture',
+            size: '1024x768',
+            model: 'flux-schnell'
+          },
+          {
+            type: 'asset_subtitle',
+            id: 'cave_narration',
+            text: 'The crystal caves beckon with an otherworldly glow.',
+            voice_tone: 'mysterious',
+            voice_gender: 'neutral',
+            voice_pace: 'slow',
+            model: 'openai-tts'
+          },
+          {
+            type: 'asset_cutscene',
+            id: 'cave_intro',
+            shots: [{
+              image_id: 'cave_entrance',
+              subtitle_id: 'cave_narration',
+              duration: 5.0,
+              animation: 'slow_zoom'
+            }]
+          },
+          // Game actions
+          {
+            type: 'play_cutscene',
+            id: 'show_cave_intro',
+            cutscene_id: 'cave_intro'
+          },
+          {
+            type: 'add_player_choice',
+            id: 'cave_choice',
+            prompt: 'Do you dare to explore the mysterious crystal caves?',
+            options: [
+              { 
+                label: 'Enter the cave',
+                description: 'Step into the glowing crystal caverns',
+                reactions: []
+              },
+              { 
+                label: 'Turn back',
+                description: 'Return to the safety of the surface',
+                reactions: []
+              }
+            ]
+          },
+          // Conditional outcomes
+          {
+            type: 'when_then',
+            id: 'player_enters',
+            condition: 'game.player_entered_cave',
+            action: {
+              type: 'play_cutscene',
+              cutscene_id: 'cave_intro'
+            }
+          }
+        ]
+      };
+
+      const result = await processor.processActions(chapterActions);
+      
+      // Log errors if any
+      if (!result.success) {
+        console.log('Chapter scenario errors:', result.errors);
+      }
+      
+      expect(result.success).toBe(true);
+      expect(result.assetsGenerated).toHaveLength(3); // image, audio, cutscene
+      expect(result.actionsExecuted).toHaveLength(7); // All actions
+      expect(result.totalCost).toBeGreaterThan(0);
+      expect(result.totalCost).toBeLessThan(0.05); // Reasonable cost
+      
+      // Verify asset types
+      const assetTypes = result.assetsGenerated.map(a => a.type);
+      expect(assetTypes).toContain('image');
+      expect(assetTypes).toContain('audio');
+      expect(assetTypes).toContain('cutscene');
+    });
+  });
 });
