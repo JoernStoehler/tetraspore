@@ -173,8 +173,8 @@ export class DSLParser {
             status: deps.size === 0 ? 'ready' : 'pending'
           });
         });
-      } else if (action.type !== 'reason') {
-        // Create synthetic nodes for actions without IDs (like show_modal)
+      } else {
+        // Create synthetic nodes for actions without IDs (including reason)
         const syntheticId = `${action.type}_${index}`;
         nodes.set(syntheticId, {
           action,

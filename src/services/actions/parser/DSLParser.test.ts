@@ -563,7 +563,7 @@ describe('DSLParser', () => {
       const result = parser.parseObject(mixedDSL);
       expect(result.success).toBe(true);
       expect(result.graph!.assetActions).toEqual(['test_image']);
-      expect(result.graph!.gameActions).toHaveLength(1); // show_modal
+      expect(result.graph!.gameActions).toHaveLength(2); // reason_0 and show_modal_2
     });
   });
 

@@ -313,7 +313,7 @@ export function categorizeActions(actions: Action[]): {
     
     if (['asset_image', 'asset_subtitle', 'asset_cutscene'].includes(action.type)) {
       assetActions.push(...ids);
-    } else if (action.type !== 'reason') { // reason actions are not executed
+    } else { // All non-asset actions including reason
       if (ids.length > 0) {
         gameActions.push(...ids);
       } else {
