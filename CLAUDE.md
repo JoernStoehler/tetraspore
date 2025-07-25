@@ -48,9 +48,17 @@ Add new learnings there, not in the guidelines above.
 ### Key References
 
 - **Development**: [development-principles.md](docs/development-principles.md) - Code standards, testing, patterns
+- **Conventions**: [conventions.md](docs/conventions.md) - Comprehensive coding and documentation standards
 - **Issues**: [style-guide-implementing-issues.md](docs/style-guide-implementing-issues.md) - How to work on issues
 - **Infrastructure**: [milestone-00.md](docs/rfc/milestone-00.md) - What's already built
 - **CI/CD**: [tool-guide-ci.md](docs/tool-guide-ci.md) - Continuous integration and automated testing
+
+### Architecture Guides
+
+- **Event Sourcing**: [event-sourcing.md](docs/architecture/event-sourcing.md) - Commands, events, and state management
+- **Mock Data**: [mock-data-spec.md](docs/architecture/mock-data-spec.md) - Data structures for UI prototyping
+- **Components**: [component-interfaces.md](docs/architecture/component-interfaces.md) - UI component contracts
+- **Radix UI**: [radix-ui-setup.md](docs/guides/radix-ui-setup.md) - Component library integration
 
 ### Quick Links
 
@@ -117,6 +125,13 @@ _(Add new requirements here with date)_
 - 2025-01-16: DevContainer self-contained - all env files in `.devcontainer/`
 - 2025-01-22: GitHub issue workflow - tasks managed via issues
 - 2025-01-22: One issue = One branch = One worktree = One agent
+- 2025-01-25: Event Sourcing architecture - Commands (intent) vs DomainEvents (facts)
+- 2025-01-25: Commands execute immediately - no batching, instant UI feedback
+- 2025-01-25: Turn mechanics for phase separation - not for command batching
+- 2025-01-25: Thin server architecture - game logic on client, server provides services only
+- 2025-01-25: Rapid UI prototyping first - mock data before real game logic
+- 2025-01-25: Use Radix UI for standard components - AI-friendly, accessible, tiny bundle
+- 2025-01-25: Zod for validation - especially for command/event schemas
 
 ## Common Mistakes Log
 
@@ -128,6 +143,9 @@ _(Add mistakes to avoid here)_
 - 2025-01-25: Missing `push.autoSetupRemote` causes upstream branch errors
 - 2025-01-25: Claiming PR is merge-ready without checking actual CI status
 - 2025-01-25: Skipping comprehensive local checks before PR creation
+- 2025-01-25: Confusing Actions with Events - Actions are Redux, we use Commands
+- 2025-01-25: Thinking turns batch commands - they just separate player/GM phases
+- 2025-01-25: Not documenting conventions clearly - always create docs first
 
 ## Key Reminders
 
