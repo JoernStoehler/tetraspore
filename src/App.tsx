@@ -1,30 +1,36 @@
 // External dependencies
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+
+// Internal imports
+import { useUIStore } from '@/stores';
 
 // Relative imports
 import { NavBar, PlanetSelectionView, MapView, EvolutionView, TechnologyView, SettingsModal } from './components';
 
+// Type imports
+import type { ViewType } from '@/stores';
+
 function App() {
-  const [currentView, setCurrentView] = useState('planet-selection');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const currentView = useUIStore((state) => state.currentView);
+  const isSettingsOpen = useUIStore((state) => state.isSettingsOpen);
+  const setCurrentView = useUIStore((state) => state.setCurrentView);
+  const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
+  const toggleSettings = useUIStore((state) => state.toggleSettings);
+  const navigateToMap = useUIStore((state) => state.navigateToMap);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsSettingsOpen(prev => !prev);
+        toggleSettings();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [toggleSettings]);
 
   const handleViewChange = (view: string): void => {
-    setCurrentView(view);
-  };
-
-  const handleNavigateToMap = (): void => {
-    setCurrentView('map');
+    setCurrentView(view as ViewType);
   };
 
   const handleReportBug = (): void => {
@@ -34,7 +40,7 @@ function App() {
   const renderCurrentView = (): JSX.Element => {
     switch (currentView) {
       case 'planet-selection':
-        return <PlanetSelectionView onNavigateToMap={handleNavigateToMap} />;
+        return <PlanetSelectionView onNavigateToMap={navigateToMap} />;
       case 'map':
         return <MapView />;
       case 'evolution':
@@ -42,7 +48,7 @@ function App() {
       case 'technology':
         return <TechnologyView />;
       default:
-        return <PlanetSelectionView onNavigateToMap={handleNavigateToMap} />;
+        return <PlanetSelectionView onNavigateToMap={navigateToMap} />;
     }
   };
 
@@ -51,7 +57,7 @@ function App() {
       <NavBar
         currentView={currentView}
         onViewChange={handleViewChange}
-        onSettingsClick={() => setIsSettingsOpen(true)}
+        onSettingsClick={() => setSettingsOpen(true)}
         onReportBugClick={handleReportBug}
       />
       
@@ -61,7 +67,7 @@ function App() {
       
       <SettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={() => setSettingsOpen(false)}
       />
     </div>
   );
