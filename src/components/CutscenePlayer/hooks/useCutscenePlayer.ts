@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { type CutsceneDefinition, type PlayerState, type CutsceneShot } from '../CutscenePlayer';
+import type { CutsceneDefinition, PlayerState, CutsceneShot } from '../types';
 
 // Mock cutscene data for development
 const mockCutscenes: Record<string, CutsceneDefinition> = {
@@ -222,12 +222,14 @@ export const useCutscenePlayer = ({
   const currentShotData = definition?.shots[currentShot] || null;
 
   return {
-    definition,
-    currentShot,
+    // PlayerState properties
     isPlaying,
+    currentShot,
     progress,
     isLoading,
     error,
+    // Additional properties
+    definition,
     currentShotData,
     play,
     pause,

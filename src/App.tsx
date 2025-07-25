@@ -1,4 +1,7 @@
+// External dependencies
 import { useState, useEffect } from 'react';
+
+// Relative imports
 import { NavBar, PlanetSelectionView, MapView, EvolutionView, TechnologyView, SettingsModal } from './components';
 
 function App() {
@@ -16,19 +19,19 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleViewChange = (view: string) => {
+  const handleViewChange = (view: string): void => {
     setCurrentView(view);
   };
 
-  const handleNavigateToMap = () => {
+  const handleNavigateToMap = (): void => {
     setCurrentView('map');
   };
 
-  const handleReportBug = () => {
+  const handleReportBug = (): void => {
     window.open('https://github.com/JoernStoehler/tetraspore/issues/new', '_blank');
   };
 
-  const renderCurrentView = () => {
+  const renderCurrentView = (): JSX.Element => {
     switch (currentView) {
       case 'planet-selection':
         return <PlanetSelectionView onNavigateToMap={handleNavigateToMap} />;

@@ -1,107 +1,20 @@
-import { type FC, useState, useEffect, useCallback, useRef } from 'react';
+// External dependencies
+import { useState, useEffect, useCallback, useRef } from 'react';
+
+// Relative imports
 import { CutsceneStage } from './components/CutsceneStage';
 import { SubtitleDisplay } from './components/SubtitleDisplay';
 import { ControlBar } from './components/ControlBar';
 import { ProgressIndicator } from './components/ProgressIndicator';
 import { CutsceneErrorBoundary } from './components/CutsceneErrorBoundary';
 
-export interface CutscenePlayerProps {
-  cutsceneId: string;
-  onComplete: () => void;
-  onSkip?: () => void;
-  autoplay?: boolean;
-  allowSkip?: boolean;
-  allowReplay?: boolean;
-}
+// Type imports
+import type { FC } from 'react';
+import type { CutscenePlayerProps, CutsceneDefinition } from './types';
 
-export interface CutsceneDefinition {
-  id: string;
-  shots: CutsceneShot[];
-}
+// Internal imports
+import { loadCutsceneDefinition } from './mocks';
 
-export interface CutsceneShot {
-  imageUrl: string;
-  audioUrl: string;
-  duration: number;
-  animation: 'none' | 'slow_zoom' | 'pan_left' | 'pan_right' | 'fade';
-  audioDuration: number;
-}
-
-export interface PlayerState {
-  isPlaying: boolean;
-  currentShot: number;
-  progress: number;
-  isLoading: boolean;
-  error: Error | null;
-}
-
-// Mock cutscene data for development
-const mockCutscenes: Record<string, CutsceneDefinition> = {
-  'test-cutscene-1': {
-    id: 'test-cutscene-1',
-    shots: [
-      {
-        imageUrl: '/test-assets/planet-1.jpg',
-        audioUrl: '/test-assets/narration-1.mp3',
-        duration: 5,
-        animation: 'slow_zoom',
-        audioDuration: 4.5
-      },
-      {
-        imageUrl: '/test-assets/planet-2.jpg',
-        audioUrl: '/test-assets/narration-2.mp3',
-        duration: 6,
-        animation: 'pan_right',
-        audioDuration: 5.8
-      }
-    ]
-  },
-  'animation-showcase': {
-    id: 'animation-showcase',
-    shots: [
-      {
-        imageUrl: '/test-assets/demo-1.jpg',
-        audioUrl: '/test-assets/demo-1.mp3',
-        duration: 4,
-        animation: 'slow_zoom',
-        audioDuration: 3.5
-      },
-      {
-        imageUrl: '/test-assets/demo-2.jpg',
-        audioUrl: '/test-assets/demo-2.mp3',
-        duration: 4,
-        animation: 'pan_left',
-        audioDuration: 3.8
-      },
-      {
-        imageUrl: '/test-assets/demo-3.jpg',
-        audioUrl: '/test-assets/demo-3.mp3',
-        duration: 4,
-        animation: 'pan_right',
-        audioDuration: 3.2
-      },
-      {
-        imageUrl: '/test-assets/demo-4.jpg',
-        audioUrl: '/test-assets/demo-4.mp3',
-        duration: 5,
-        animation: 'fade',
-        audioDuration: 4.7
-      }
-    ]
-  }
-};
-
-const loadCutsceneDefinition = async (cutsceneId: string): Promise<CutsceneDefinition> => {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const definition = mockCutscenes[cutsceneId];
-  if (!definition) {
-    throw new Error(`Cutscene not found: ${cutsceneId}`);
-  }
-  
-  return definition;
-};
 
 export const CutscenePlayer: FC<CutscenePlayerProps> = ({
   cutsceneId,
@@ -321,9 +234,9 @@ export const CutscenePlayerWithErrorBoundary: FC<CutscenePlayerProps> = (props) 
   return (
     <CutsceneErrorBoundary
       onSkip={props.onComplete}
-      onError={(error, errorInfo) => {
-        console.error('Cutscene player error:', error, errorInfo);
-        // Could send to error reporting service here
+      onError={() => {
+        // TODO: Send to error reporting service
+        // Temporarily suppress error until logging service is implemented
       }}
     >
       <CutscenePlayer {...props} />

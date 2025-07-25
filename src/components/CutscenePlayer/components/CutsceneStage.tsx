@@ -1,5 +1,5 @@
 import { type FC, useState, useEffect } from 'react';
-import { type CutsceneShot } from '../CutscenePlayer';
+import type { CutsceneShot } from '../types';
 
 interface CutsceneStageProps {
   shot: CutsceneShot;

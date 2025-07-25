@@ -135,7 +135,7 @@ describe('CutscenePlayer', () => {
   it('exports correct TypeScript types', () => {
     // This test ensures the types are properly exported
     // TypeScript compilation will fail if types are not exported correctly
-    const playerProps: import('./CutscenePlayer').CutscenePlayerProps = {
+    const playerProps: import('./types').CutscenePlayerProps = {
       cutsceneId: "test",
       onComplete: () => {}
     };

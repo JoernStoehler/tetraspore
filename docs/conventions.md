@@ -401,6 +401,86 @@ These conventions are enforced through:
 5. **CI/CD** - Automated checks
 6. **Code Review** - Human and AI review
 
+## Additional Conventions
+
+### Error Handling Strategy
+
+1. **Error Boundaries**
+   - Use for component tree protection
+   - Place at strategic component boundaries
+   - Always provide fallback UI
+   - Log errors to monitoring service (when available)
+
+2. **Error Patterns**
+   ```typescript
+   // Prefer specific error handling
+   try {
+     await riskyOperation();
+   } catch (error) {
+     if (error instanceof SpecificError) {
+       // Handle specific case
+     } else {
+       // Handle unknown errors
+       const message = error instanceof Error ? error.message : "Unknown error";
+       // Log and handle appropriately
+     }
+   }
+   ```
+
+### Mock Data Organization
+
+1. **Location**
+   - Development mocks: `src/mocks/`
+   - Test fixtures: `src/__fixtures__/`
+   - Component-specific mocks: `ComponentName/mocks.ts`
+
+2. **Naming**
+   - Prefix with `mock` for clarity
+   - Group by feature/domain
+
+### Logging Strategy
+
+1. **Development**
+   - Use structured logging (no console.log in production code)
+   - Implement logging service interface
+   - Use log levels appropriately
+
+2. **Production**
+   - No console statements
+   - Use error reporting service
+   - Include context in error reports
+
+### Async Operation Patterns
+
+1. **Promise Handling**
+
+   ```typescript
+   // Prefer async/await over .then()
+   const result = await operation();
+
+   // Handle loading states explicitly
+   const [isLoading, setIsLoading] = useState(true);
+   ```
+
+2. **Cleanup**
+   - Always cleanup subscriptions/timers
+   - Use abort controllers for cancellable operations
+   - Handle component unmounting
+
+### Performance Decisions
+
+1. **When to Document**
+   - Non-obvious optimizations
+   - Trade-offs made for performance
+   - Why specific algorithms were chosen
+
+2. **Example**
+   ```typescript
+   // Performance: Using Map instead of object for O(1) lookups
+   // with frequent additions/deletions
+   const cache = new Map<string, CachedItem>();
+   ```
+
 ## Updates
 
 This document is living and should be updated when:
