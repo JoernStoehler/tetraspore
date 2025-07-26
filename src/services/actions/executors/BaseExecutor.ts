@@ -15,6 +15,7 @@ import {
   AssetGenerationError,
   RateLimitError
 } from './types';
+import { toError } from '../../../utils/errors';
 
 export abstract class BaseExecutor<T extends Action, R extends AssetResult> 
   implements AssetExecutor<T, R> {
@@ -40,7 +41,7 @@ export abstract class BaseExecutor<T extends Action, R extends AssetResult>
       try {
         return await operation();
       } catch (error) {
-        lastError = error as Error;
+        lastError = toError(error);
 
         // Don't retry non-retryable errors
         if (error instanceof AssetGenerationError && !error.retryable) {

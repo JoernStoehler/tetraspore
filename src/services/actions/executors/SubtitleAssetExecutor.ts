@@ -17,6 +17,7 @@ import {
   OpenAITTSResponse,
   GoogleTTSResponse
 } from './types';
+import { toError } from '../../../utils/errors';
 
 export class SubtitleAssetExecutor extends BaseExecutor<AssetSubtitleAction, AudioAssetResult> {
 
@@ -310,11 +311,12 @@ export class SubtitleAssetExecutor extends BaseExecutor<AssetSubtitleAction, Aud
       };
 
     } catch (error) {
+      const errorObj = toError(error, 'OpenAI TTS API call failed');
       throw this.createError(
-        `OpenAI TTS API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `OpenAI TTS API call failed: ${errorObj.message}`,
         { type: 'asset_subtitle', id: 'temp', text, voice_gender: 'neutral', voice_tone: 'calm', voice_pace: 'normal', model: 'openai-tts' } as AssetSubtitleAction,
         true, // Retryable
-        { originalError: error }
+        { originalError: errorObj }
       );
     }
   }
@@ -344,11 +346,12 @@ export class SubtitleAssetExecutor extends BaseExecutor<AssetSubtitleAction, Aud
       };
 
     } catch (error) {
+      const errorObj = toError(error, 'Google TTS API call failed');
       throw this.createError(
-        `Google TTS API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Google TTS API call failed: ${errorObj.message}`,
         { type: 'asset_subtitle', id: 'temp', text, voice_gender: 'neutral', voice_tone: 'calm', voice_pace: 'normal', model: 'google-tts' } as AssetSubtitleAction,
         true, // Retryable
-        { originalError: error }
+        { originalError: errorObj }
       );
     }
   }

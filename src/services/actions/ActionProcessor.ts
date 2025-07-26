@@ -22,6 +22,7 @@ import { SubtitleAssetExecutor } from './executors/SubtitleAssetExecutor.js';
 import { CutsceneAssetExecutor } from './executors/CutsceneAssetExecutor.js';
 import type { AssetExecutor, ExecutionContext, AssetResult, AssetStorage, Action as ExecutorAction } from './executors/types.js';
 import { LocalAssetStorage } from './storage/LocalAssetStorage.js';
+import { toError } from '../../utils/errors.js';
 
 export interface ActionProcessorConfig {
   executors?: {
@@ -169,7 +170,7 @@ export class ActionProcessor {
             }
           }
         } catch (error) {
-          errors.push(error instanceof Error ? error : new Error(String(error)));
+          errors.push(toError(error, 'Action execution failed'));
           // Continue processing other actions even if one fails
         }
       }
