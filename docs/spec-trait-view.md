@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Trait View is a core visualization component in Tetraspore that displays the evolutionary and developmental pathways available to species and civilizations. It presents traits as an interconnected graph where players can observe current capabilities, potential developments, and guide evolution through strategic resource allocation.
+The Trait View is a core visualization component in Tetraspore that displays the evolutionary and developmental pathways available to the player's species and civilization. It presents traits as an interconnected graph where players can observe current capabilities, potential developments, and guide evolution through discrete choice events.
 
 ## Purpose
 
@@ -10,15 +10,15 @@ The Trait View is a core visualization component in Tetraspore that displays the
 
 1. **Strategic Visibility**: Players need to see the full landscape of possible developments to make informed decisions about guiding evolution
 2. **Progress Tracking**: Visual representation of adopted vs. available traits shows advancement
-3. **Relationship Understanding**: Graph structure reveals dependencies and evolutionary distances between traits
-4. **Multi-species Comparison**: Switching between species/civilizations enables strategic planning
+3. **Relationship Understanding**: Graph structure reveals qualitative relationships between traits
+4. **Limited Influence**: Players guide evolution through discrete choices rather than direct control
 
 ### Game Design Goals
 
 - Enable "guided evolution" gameplay where players are smarter than pure Darwinian selection
-- Show how traits across different domains (biological, behavioral, cultural) interconnect
-- Visualize evolutionary "distance" and resource costs
-- Support strategic planning by revealing blocked paths and requirements
+- Show how traits across different domains interconnect through qualitative relationships
+- Support decision-making through clear visualization of choices and their implications
+- Represent both species traits and environmental context
 
 ## Visual Design
 
@@ -26,57 +26,76 @@ The Trait View is a core visualization component in Tetraspore that displays the
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Species: [Dropdown Selector]                   │
+│  Player Species Trait View                      │
 ├─────────────────────────────────────────────────┤
 │                                                 │
-│    ○ Photosynthesis          ● Tool Use        │
-│   ╱ ╲                       ╱   ╲              │
-│  ●   ○ Chloroplasts    ◐ Stone  ○ Metal       │
-│  │    ╲                Tools     Working       │
-│  ●      ○ C4 Photo.    │                      │
-│ Cells    synthesis      ● Fire                 │
-│                         Making                  │
+│    ○ Photosynthesis     ● Tool Use    ◇ Rocky  │
+│   ╱ ╲                  ╱   ╲          Terrain   │
+│  ●   ○ Chloroplasts ✨ Stone  ○ Metal          │
+│  │    ╲              Tools     Working          │
+│  ●      ○ C4 Photo.  │                         │
+│ Cells    synthesis    ● Fire    ◇ Abundant     │
+│                       Making      Minerals      │
 │                                                 │
 │  Legend:                                        │
-│  ● Adopted  ◐ In-adoption  ○ Available  ⊗ Blocked │
+│  ● Adopted  ○ Discovered  ◇ Environmental      │
+│  ✨ Choice Available  ⊗ Not Discovered          │
 │                                                 │
 └─────────────────────────────────────────────────┘
 ```
 
 ### Node States
 
-1. **Adopted** (●): Fully integrated trait
-   - Solid fill color based on category
-   - Slightly larger size for emphasis
+1. **Not Discovered** (⊗): Unknown to the species
+   - Grayed out, low opacity
+   - No details visible on hover
 
-2. **In-adoption** (◐): Currently acquiring
-   - Half-filled or animated fill
-   - Shows progress visually
-
-3. **Available** (○): Can be pursued
+2. **Discovered but Not Adoptable** (○): Known but currently unreachable
    - Outlined only, no fill
    - Category color for outline
+   - Shows requirements on hover
 
-4. **Blocked** (⊗): Too distant/costly
-   - Grayed out or cross-hatched
-   - Reduced opacity
+3. **Adoptable** (✨): Available as part of a choice
+   - Golden sparkly border/glow
+   - Part of current decision set
+   - Clicking opens choice modal (future feature)
+
+4. **Adopted** (●): Fully integrated trait
+   - Solid fill color based on category
+   - Cannot be lost (unless marked as losable)
+
+5. **Losable** (✨●): Can be abandoned as part of a choice
+   - Golden sparkly border around filled node
+   - Part of current decision set
+
+6. **Environmental** (◇): Present in species' environment
+   - Diamond shape to distinguish from species traits
+   - Category-based coloring
+   - Affects fitness of other traits
 
 ### Edge Visualization
 
-- **Thickness**: Represents evolutionary distance/difficulty
-- **Style**: Solid for direct paths, dashed for complex multi-step paths
-- **Color**: Gradient from source to target node categories
-- **Arrows**: Show directionality of evolution
+- **Style**: Consistent line style (no thickness variation as edges are qualitative)
+- **Color**: Subtle gray to avoid visual clutter
+- **Hover**: Highlights edge and shows description tooltip
+- **No arrows**: Relationships are contextual, not strictly directional
 
 ### Categories & Color Coding
 
 ```typescript
-enum TraitCategory {
+// Adopted trait categories
+enum AdoptedTraitCategory {
   Biological = "biological", // Green palette
   Behavioral = "behavioral", // Blue palette
-  Technological = "technological", // Orange palette
-  Cultural = "cultural", // Purple palette
   Social = "social", // Yellow palette
+  Technological = "technological", // Orange palette
+}
+
+// Environmental trait categories
+enum EnvironmentalTraitCategory {
+  Geological = "geological", // Brown palette
+  Ecological = "ecological", // Teal palette
+  Industrial = "industrial", // Gray palette
 }
 ```
 
@@ -88,26 +107,38 @@ enum TraitCategory {
 interface Trait {
   id: string;
   name: string;
-  category: TraitCategory;
+  category: AdoptedTraitCategory | EnvironmentalTraitCategory;
   description: string;
-  requirements: string[]; // IDs of prerequisite traits
-  baseCost: number; // Base resource cost
-  benefits: string[]; // Gameplay effects
+  isEnvironmental: boolean;
 }
 
 interface TraitEdge {
   from: string; // Trait ID
   to: string; // Trait ID
-  distance: number; // Evolutionary distance
-  intermediateSteps?: string[]; // Required intermediate traits
+  description: string; // Natural language description of relationship
+  edgeType: EdgeType; // Type of influence
 }
 
-interface SpeciesTraitState {
-  speciesId: string;
+enum EdgeType {
+  AdoptedToDiscovered = "adopted_to_discovered", // Having trait A reveals trait B
+  AdoptedToFitness = "adopted_to_fitness", // Having trait A affects fitness of B
+  EnvironmentToFitness = "environment_to_fitness", // Environmental trait affects fitness
+}
+
+interface PlayerTraitState {
   adoptedTraits: Set<string>;
-  inAdoption: Map<string, number>; // trait ID -> progress %
   discoveredTraits: Set<string>;
-  blockedTraits: Set<string>;
+  environmentalTraits: Set<string>; // Traits present in environment
+
+  // Current choice events
+  adoptableChoices?: TraitChoice[];
+  losableChoices?: TraitChoice[];
+}
+
+interface TraitChoice {
+  id: string;
+  options: string[]; // Trait IDs that can be chosen
+  choiceType: "adopt" | "lose";
 }
 ```
 
@@ -119,75 +150,88 @@ interface TraitViewProps {
   traits: Trait[];
   edges: TraitEdge[];
 
-  // Current selection
-  selectedSpeciesId: string;
-  speciesStates: Map<string, SpeciesTraitState>;
-  availableSpecies: Species[];
+  // Player state
+  playerState: PlayerTraitState;
+  visibleTraits: Set<string>; // Which traits player can see
 
   // Callbacks
-  onSpeciesChange: (speciesId: string) => void;
   onTraitClick: (traitId: string) => void;
   onTraitHover: (traitId: string | null) => void;
+  onChoiceSelect?: (choiceId: string, selectedTraitId: string) => void;
 }
 ```
 
 ### Graph Layout Algorithm
 
-Use a force-directed graph layout with constraints:
+Use a force-directed graph layout optimized for stability:
 
-1. Group nodes by category into regions
-2. Apply repulsion between nodes
-3. Apply attraction along edges (stronger for shorter evolutionary distances)
-4. Pin adopted traits near center
-5. Push blocked traits to periphery
+1. **Stable positioning**: Nodes maintain positions between turns to aid recognition
+2. **Category clustering**: Group nodes by category into loose regions
+3. **Force constraints**:
+   - Gentle repulsion between nodes to prevent overlap
+   - Mild attraction along edges to minimize edge length
+   - Environmental traits anchored to periphery
+   - Adopted traits gravitate toward center
+4. **Smooth animations**: When adding new nodes/edges, animate the layout adjustment
 
 ## User Interactions
 
 ### Selection & Viewing
 
-- **Species Selector**: Dropdown/tabs to switch between species/civilizations
-- **Trait Click**: Shows detailed panel with requirements, benefits, path options
-- **Trait Hover**: Highlights connected traits and shows tooltip
+- **Trait Click**: Shows detailed panel with trait information
+- **Trait Hover**:
+  - Highlights connected edges and nodes
+  - Shows tooltip with trait name and brief description
+  - For edges: Shows relationship description
 - **Pan/Zoom**: Navigate large trait graphs
+- **Choice Nodes**: Golden sparkly nodes indicate pending choices (future: click to open choice modal)
 
 ### Information Display
 
-- **Detail Panel**: Shows on trait selection
-  - Current adoption progress
-  - Requirements (with met/unmet indicators)
-  - Benefits when adopted
-  - Shortest paths from current traits
-  - Resource cost estimate
+- **Hover Tooltips**:
+  - Node: Name, category, brief description
+  - Edge: Relationship description
+  - Not discovered nodes: No information shown
+
+- **Detail Panel** (on click):
+  - Full trait description
+  - Category and type (adopted/environmental)
+  - Connected traits and relationships
+  - For discovered traits: Why not adoptable
 
 ### Visual Feedback
 
-- **Path Highlighting**: When hovering a trait, highlight possible paths
-- **Requirement Lines**: Show which adopted traits enable an available trait
-- **Progress Animation**: Animate fill for in-adoption traits
+- **Hover Effects**:
+  - Hovered node: Slight scale increase, glow
+  - Connected nodes: Highlighted
+  - Connected edges: Highlighted with descriptions visible
+- **Golden Sparkles**: Animated effect on choice-available nodes
+- **Visibility**: Not discovered traits are very faint/ghosted
 
 ## Implementation Priorities
 
 ### Phase 1: Core Visualization
 
 1. Basic graph rendering with D3.js or React Flow
-2. Node states and categories
-3. Species selector
-4. Static layout
+2. All node states (not discovered, discovered, adoptable, adopted, environmental)
+3. Category-based styling
+4. Force-directed layout with stability
 
 ### Phase 2: Interactivity
 
 1. Click and hover interactions
-2. Detail panel
-3. Path highlighting
-4. Zoom/pan controls
+2. Edge/node highlighting on hover
+3. Tooltips for traits and edges
+4. Pan/zoom controls
+5. Golden sparkle effect for choice nodes
 
 ### Phase 3: Advanced Features
 
-1. Animated transitions when switching species
-2. Progress animations for adoptions
-3. Filtering by category
-4. Search functionality
-5. Comparison mode (show multiple species)
+1. Smooth animations for layout changes
+2. Detail panel for clicked traits
+3. Choice modal integration (when that component exists)
+4. Performance optimization for large graphs
+5. Keyboard navigation support
 
 ## Performance Considerations
 
@@ -212,10 +256,10 @@ Use a force-directed graph layout with constraints:
 
 ## Open Questions
 
-1. Should resource allocation be directly manipulable in this view or just visualized?
-2. How should we handle traits that can be lost/abandoned?
-3. Should there be a timeline view showing trait adoption history?
-4. How to best visualize traits shared across multiple species?
+1. Should the graph show all traits globally or filter based on discoverability distance?
+2. How should we indicate the number of active prerequisites for trait discoverability?
+3. Should edge descriptions be always visible or only on hover?
+4. What's the best visual indicator for traits that have multiple paths to adoption?
 
 ## Success Criteria
 
