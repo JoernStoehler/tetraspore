@@ -123,7 +123,6 @@ export class ActionProcessor {
     try {
       this.status.isProcessing = true;
       
-      // Reset counters for new processing
       this.costTracker.clear();
       this.assetCounts.clear();
       
@@ -148,7 +147,6 @@ export class ActionProcessor {
       const graph = parseResult.graph;
       this.status.queueLength = graph.executionOrder.length;
 
-      // Process actions in execution order
       for (let i = 0; i < graph.executionOrder.length; i++) {
         const actionId = graph.executionOrder[i];
         const node = graph.nodes.get(actionId);
@@ -161,7 +159,6 @@ export class ActionProcessor {
         try {
           const result = await this.executeAction(node, graph, actionId);
           
-          // Always mark action as executed
           actionsExecuted.push(actionId);
           
           if (result) {

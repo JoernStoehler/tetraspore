@@ -49,7 +49,10 @@ export class SubtitleAssetExecutor extends BaseExecutor<AssetSubtitleAction, Aud
   };
 
   /**
-   * Execute TTS generation with caching and error handling
+   * Generate audio narration from text input
+   *
+   * Why complex caching: TTS API calls are expensive (time and cost)
+   * and narrative text often repeats across game sessions.
    */
   async execute(action: AssetSubtitleAction, context: ExecutionContext): Promise<AudioAssetResult> {
     const startTime = Date.now();
@@ -82,7 +85,10 @@ export class SubtitleAssetExecutor extends BaseExecutor<AssetSubtitleAction, Aud
   }
 
   /**
-   * Validate subtitle action parameters
+   * Ensure action parameters meet TTS API requirements
+   *
+   * Why strict validation: TTS APIs fail silently or produce poor quality
+   * output with invalid parameters, wasting API credits.
    */
   validate(action: AssetSubtitleAction): ValidationResult {
     const errors: ExecutorValidationError[] = [];

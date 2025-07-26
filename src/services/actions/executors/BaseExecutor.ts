@@ -81,19 +81,23 @@ export abstract class BaseExecutor<T extends Action, R extends AssetResult>
   }
 
   /**
-   * Generate cache key from action parameters
+   * Generate deterministic cache key from action parameters
+   *
+   * Why normalization: Action objects may have properties in different orders
+   * or contain functions that break cache key consistency.
    */
   protected getCacheKey(action: T): string {
-    // Create a normalized representation of the action for caching
     const normalized = this.normalizeAction(action);
     return this.hashObject(normalized);
   }
 
   /**
-   * Normalize action for consistent caching
+   * Normalize action object for deterministic hashing
+   *
+   * Why needed: Objects with identical content but different key ordering
+   * would generate different cache keys without normalization.
    */
   protected normalizeAction(action: T): Record<string, unknown> {
-    // Create a copy and sort keys for consistent hashing
     const copy = { ...action };
     return this.sortObjectKeys(copy) as Record<string, unknown>;
   }
