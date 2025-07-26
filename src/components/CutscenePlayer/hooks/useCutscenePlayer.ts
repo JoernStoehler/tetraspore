@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { CutsceneDefinition, PlayerState, CutsceneShot } from '../types';
+import { toError } from '../../../utils/errors';
 
 // Mock cutscene data for development
 const mockCutscenes: Record<string, CutsceneDefinition> = {
@@ -118,7 +119,7 @@ export const useCutscenePlayer = ({
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Failed to load cutscene'));
+          setError(toError(err, 'Failed to load cutscene'));
           setIsLoading(false);
         }
       }

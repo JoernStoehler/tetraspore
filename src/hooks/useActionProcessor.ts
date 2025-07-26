@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { ActionProcessor } from '../services/actions/ActionProcessor.js';
 import type { ProcessResult, ProcessorStatus, ProcessorCostBreakdown } from '../services/actions/ActionProcessor.js';
+import { toError } from '../utils/errors.js';
 
 export interface UseActionProcessorOptions {
   fluxApiKey?: string;
@@ -112,7 +113,7 @@ export function useActionProcessor(options: UseActionProcessorOptions = {}): Use
         options.onError?.(err);
       }
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error = toError(err, 'Action processing failed');
       setError(error);
       options.onError?.(error);
       

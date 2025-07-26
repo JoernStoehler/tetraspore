@@ -414,27 +414,277 @@ These conventions are enforced through:
 
 ### Error Handling Strategy
 
-1. **Error Boundaries**
-   - Use for component tree protection
-   - Place at strategic component boundaries
-   - Always provide fallback UI
-   - Log errors to monitoring service (when available)
+Tetraspore follows a layered error handling approach with consistent patterns across all components and services.
 
-2. **Error Patterns**
-   ```typescript
-   // Prefer specific error handling
-   try {
-     await riskyOperation();
-   } catch (error) {
-     if (error instanceof SpecificError) {
-       // Handle specific case
-     } else {
-       // Handle unknown errors
-       const message = error instanceof Error ? error.message : "Unknown error";
-       // Log and handle appropriately
-     }
-   }
-   ```
+#### 1. Error Casting Utility
+
+Always use the standardized error casting function to ensure consistent error handling:
+
+```typescript
+// src/utils/errors.ts
+export function toError(
+  error: unknown,
+  fallbackMessage = "An unknown error occurred",
+): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === "string") return new Error(error);
+  return new Error(fallbackMessage);
+}
+
+// Usage throughout codebase
+setError(toError(err, "Failed to load cutscene"));
+```
+
+#### 2. Error Boundaries
+
+**Application-Level Error Boundary**
+
+- Wrap the entire app with a global error boundary
+- Provide user-friendly error reporting and recovery options
+- Include error reporting to monitoring service
+
+**Component-Level Error Boundaries**
+
+- Use for protecting component subtrees that handle risky operations
+- Place at strategic boundaries (feature modules, async data loaders)
+- Always provide meaningful fallback UI with recovery actions
+- Include user-friendly error messages and retry mechanisms
+
+**Error Boundary Placement Strategy**:
+
+```
+App
+├── GlobalErrorBoundary (catches all unhandled React errors)
+│   ├── CutsceneErrorBoundary (protects cutscene features)
+│   ├── ActionErrorBoundary (protects action processing)
+│   └── AssetErrorBoundary (protects asset generation)
+```
+
+#### 3. Error Logging Strategy
+
+**Development Logging**
+
+```typescript
+// Use structured logging with context
+console.error("Action processing failed", {
+  actionId,
+  actionType,
+  error: error.message,
+  stack: error.stack,
+  timestamp: new Date().toISOString(),
+});
+```
+
+**Production Logging**
+
+- No console statements in production builds
+- Use centralized error reporting service
+- Include component stack traces and user context
+- Implement log levels: ERROR, WARN, INFO, DEBUG
+
+#### 4. Component Error Handling Patterns
+
+**Hook Error Handling**
+
+```typescript
+// Custom hooks should return error state
+const useActionProcessor = () => {
+  const [error, setError] = useState<Error | null>(null);
+
+  const processAction = async (action: Action) => {
+    try {
+      setError(null);
+      await actionService.process(action);
+    } catch (err) {
+      const error = toError(err, "Failed to process action");
+      setError(error);
+      logError("Action processing failed", { actionId: action.id, error });
+    }
+  };
+
+  return { processAction, error };
+};
+```
+
+**Component Error State**
+
+```typescript
+// Components should handle error display consistently
+const ActionComponent: FC<ActionComponentProps> = ({ actionId }) => {
+  const { processAction, error } = useActionProcessor();
+
+  if (error) {
+    return (
+      <ErrorDisplay
+        error={error}
+        onRetry={() => processAction(actionId)}
+        fallbackMessage="Unable to process action"
+      />
+    );
+  }
+
+  // Normal component rendering
+};
+```
+
+#### 5. Service Layer Error Handling
+
+**Retry Strategy with Exponential Backoff**
+
+```typescript
+// Follow BaseExecutor pattern for retryable operations
+const retryWithBackoff = async <T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000,
+): Promise<T> => {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = toError(error);
+
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError!;
+};
+```
+
+**Error Type Hierarchy**
+
+- Extend existing custom error types for specific domains
+- Use `retryable` flags for automatic retry decisions
+- Include context information in error objects
+
+#### 6. Error Recovery Strategies
+
+**UI Error Recovery**
+
+- Provide specific retry actions for different error types
+- Show degraded functionality when possible
+- Cache successful states for fallback display
+- Guide users to alternative actions when operations fail
+
+**Data Error Recovery**
+
+- Use cached data when network requests fail
+- Implement offline-first patterns for critical features
+- Provide clear indicators when using stale data
+
+#### 7. Error Message Standards
+
+**User-Facing Messages**
+
+- Use consistent, non-technical language
+- Provide actionable guidance when possible
+- Include contact information for persistent issues
+- Avoid exposing internal error details
+
+**Developer Messages**
+
+- Include full context (action IDs, user IDs, timestamps)
+- Preserve original error messages and stack traces
+- Add debugging information for quick issue resolution
+
+#### 8. Validation Error Patterns
+
+**Schema Validation with Zod**
+
+```typescript
+// Use consistent validation error handling
+const validateAction = (data: unknown): Action => {
+  try {
+    return ActionSchema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ValidationError("Invalid action data", error.errors);
+    }
+    throw toError(error, "Action validation failed");
+  }
+};
+```
+
+#### 9. Async Operation Error Handling
+
+**Promise-based Operations**
+
+```typescript
+// Always handle both success and error cases
+const loadCutscene = async (id: string): Promise<Cutscene> => {
+  const controller = new AbortController();
+
+  try {
+    const response = await fetch(`/api/cutscenes/${id}`, {
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load cutscene: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Handle AbortError specifically
+    if (error.name === "AbortError") {
+      throw new Error("Cutscene loading was cancelled");
+    }
+
+    throw toError(error, "Failed to load cutscene");
+  } finally {
+    // Cleanup logic
+    controller.abort();
+  }
+};
+```
+
+#### 10. Testing Error Scenarios
+
+**Error Boundary Testing**
+
+```typescript
+// Test error boundaries with intentional errors
+it('catches and displays error when child component throws', () => {
+  const ThrowingComponent = () => {
+    throw new Error('Test error');
+  };
+
+  render(
+    <CutsceneErrorBoundary>
+      <ThrowingComponent />
+    </CutsceneErrorBoundary>
+  );
+
+  expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+});
+```
+
+**Error Hook Testing**
+
+```typescript
+// Test error state management in custom hooks
+it("handles service errors correctly", async () => {
+  const mockError = new Error("Service failure");
+  vi.mocked(actionService.process).mockRejectedValue(mockError);
+
+  const { result } = renderHook(() => useActionProcessor());
+
+  await act(async () => {
+    await result.current.processAction(mockAction);
+  });
+
+  expect(result.current.error).toEqual(mockError);
+});
+```
 
 ### Mock Data Organization
 

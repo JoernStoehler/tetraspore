@@ -14,6 +14,7 @@ import type { CutscenePlayerProps, CutsceneDefinition } from './types';
 
 // Internal imports
 import { loadCutsceneDefinition } from './mocks';
+import { toError } from '../../utils/errors';
 
 
 export const CutscenePlayer: FC<CutscenePlayerProps> = ({
@@ -49,7 +50,7 @@ export const CutscenePlayer: FC<CutscenePlayerProps> = ({
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Failed to load cutscene'));
+          setError(toError(err, 'Failed to load cutscene'));
           setIsLoading(false);
         }
       }

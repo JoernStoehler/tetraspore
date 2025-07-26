@@ -16,6 +16,7 @@ import {
   FluxAPIResponse,
   SDXLAPIResponse
 } from './types';
+import { toError } from '../../../utils/errors';
 
 export class ImageAssetExecutor extends BaseExecutor<AssetImageAction, ImageAssetResult> {
 
@@ -228,11 +229,12 @@ export class ImageAssetExecutor extends BaseExecutor<AssetImageAction, ImageAsse
       };
 
     } catch (error) {
+      const errorObj = toError(error, 'Flux API call failed');
       throw this.createError(
-        `Flux API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Flux API call failed: ${errorObj.message}`,
         { type: 'asset_image', id: 'temp', prompt, size, model: 'flux-schnell' } as AssetImageAction,
         true, // Retryable
-        { originalError: error }
+        { originalError: errorObj }
       );
     }
   }
@@ -259,11 +261,12 @@ export class ImageAssetExecutor extends BaseExecutor<AssetImageAction, ImageAsse
       };
 
     } catch (error) {
+      const errorObj = toError(error, 'SDXL API call failed');
       throw this.createError(
-        `SDXL API call failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `SDXL API call failed: ${errorObj.message}`,
         { type: 'asset_image', id: 'temp', prompt, size, model: 'sdxl' } as AssetImageAction,
         true, // Retryable
-        { originalError: error }
+        { originalError: errorObj }
       );
     }
   }
