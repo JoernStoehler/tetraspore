@@ -125,7 +125,7 @@ export const PlanetSelectionView: FC<PlanetSelectionViewProps> = ({
       
       {/* Controls */}
       <div className="absolute top-4 right-4 bg-gray-900 bg-opacity-80 p-4 rounded-lg">
-        <h2 className="text-white text-lg font-bold mb-2">Galaxy View</h2>
+        <h1 className="text-white text-lg font-bold mb-2">Galaxy View</h1>
         <div className="space-y-2">
           <label className="flex items-center text-white text-sm">
             <input
@@ -134,7 +134,7 @@ export const PlanetSelectionView: FC<PlanetSelectionViewProps> = ({
               onChange={(e) => setShowMarkers(e.target.checked)}
               className="mr-2"
             />
-            Show planet markers
+            Show Planet Markers
           </label>
           <label className="flex items-center text-white text-sm">
             <input
@@ -143,7 +143,7 @@ export const PlanetSelectionView: FC<PlanetSelectionViewProps> = ({
               onChange={(e) => setAutoRotate(e.target.checked)}
               className="mr-2"
             />
-            Auto-rotate galaxy
+            Auto Rotate
           </label>
         </div>
       </div>

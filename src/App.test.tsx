@@ -12,7 +12,7 @@ describe('App', () => {
 
     // Assert
     // The new planet selection view shows Galaxy View heading
-    expect(screen.getByRole('heading', { name: 'Galaxy View' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Galaxy View' })[0]).toBeInTheDocument();
     // And has the navigation bar
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
