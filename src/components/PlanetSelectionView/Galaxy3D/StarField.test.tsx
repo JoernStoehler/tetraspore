@@ -18,11 +18,14 @@ vi.mock('@react-three/drei', () => ({
 // Mock THREE
 vi.mock('three', () => ({
   PointsMaterial: vi.fn(),
-  BufferGeometry: vi.fn(),
-  BufferAttribute: vi.fn(),
+  BufferGeometry: vi.fn(() => ({
+    setAttribute: vi.fn()
+  })),
+  BufferAttribute: vi.fn((array, itemSize) => ({ array, itemSize })),
   AdditiveBlending: 'AdditiveBlending',
   Color: vi.fn(),
-  Vector3: vi.fn()
+  Vector3: vi.fn(),
+  Points: vi.fn()
 }));
 
 describe('StarField', () => {
