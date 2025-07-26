@@ -74,7 +74,8 @@ describe('ActionProcessor', () => {
   });
 
   describe('processActions', () => {
-    it('should process valid JSON string correctly', async () => {
+    it('successfully processes valid JSON action definitions', async () => {
+      // Arrange
       const json = JSON.stringify({
         actions: [
           {
@@ -87,8 +88,10 @@ describe('ActionProcessor', () => {
         ]
       });
 
+      // Act
       const result = await processor.processActions(json);
 
+      // Assert
       expect(result.success).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.assetsGenerated).toHaveLength(1);
@@ -96,7 +99,8 @@ describe('ActionProcessor', () => {
       expect(result.actionsExecuted).toContain('test_image');
     });
 
-    it('should process object input correctly', async () => {
+    it('processes object input without JSON parsing', async () => {
+      // Arrange
       const actions = {
         actions: [
           {
@@ -111,18 +115,23 @@ describe('ActionProcessor', () => {
         ]
       };
 
+      // Act
       const result = await processor.processActions(actions);
 
+      // Assert
       expect(result.success).toBe(true);
       expect(result.assetsGenerated).toHaveLength(1);
       expect('type' in result.assetsGenerated[0] && (result.assetsGenerated[0] as AssetResult & { type: string }).type).toBe('audio');
     });
 
-    it('should handle parser errors gracefully', async () => {
+    it('handles invalid JSON input gracefully', async () => {
+      // Arrange
       const invalidJson = '{ invalid json }';
       
+      // Act
       const result = await processor.processActions(invalidJson);
 
+      // Assert
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.assetsGenerated).toHaveLength(0);
