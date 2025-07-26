@@ -56,17 +56,28 @@ A visually stunning 3D galaxy that:
    - Already in package.json ✓
 
 2. **@react-three/drei** (Helper components)
-   - Pros: Camera controls, effects, utilities
+   - Pros: Camera controls, effects, utilities, sprite support
    - Cons: Additional dependency
    - Already in package.json ✓
 
 3. **@react-three/postprocessing** (Visual effects)
    - Pros: Bloom, glow effects for stars
    - Cons: Performance impact
-   - Need to install
+   - Installed ✓
 
 4. **Zustand** (State management)
    - Already in use ✓
+
+### Rendering Approach
+
+- **Stars**: Use sprites instead of 3D spheres for efficiency
+  - Circular halos with transparency
+  - Z-ordering for proper depth
+  - Varying sizes and brightness
+- **Nebulas**: Volumetric filling technique
+  - Efficient alternative to thousands of extra sprites
+  - Provides non-blackness to the galaxy
+- **Postprocessing**: Bloom effects for enhanced visuals
 
 ### Component Architecture
 
@@ -88,25 +99,22 @@ PlanetSelectionView/
 ### Data Structures
 
 ```typescript
-interface SavedPlanet {
+interface Planet {
   id: string;
   name: string;
   position: [number, number, number];
-  gameState: string; // e.g., "Landfall of the Flufficons"
-  lastPlayed: Date;
-  colorIntensity: number; // 0-1, affects surrounding color
-}
-
-interface PregeneratedPlanet {
-  id: string;
-  position: [number, number, number];
-  seed: number;
-  type: "barren" | "lush" | "oceanic" | "volcanic";
+  isPlayed: boolean;
+  // For played planets
+  gameState?: string; // e.g., "Landfall of the Flufficons"
+  lastPlayed?: Date;
+  colorIntensity?: number; // 0-1, affects surrounding color
+  // For pregenerated planets
+  seed?: number;
+  type?: "barren" | "lush" | "oceanic" | "volcanic";
 }
 
 interface GalaxyState {
-  savedPlanets: SavedPlanet[];
-  pregeneratedPlanets: PregeneratedPlanet[];
+  planets: Planet[];
   hoveredPlanetId: string | null;
   cameraRotation: number;
   autoRotate: boolean;
@@ -164,7 +172,7 @@ interface GalaxyState {
 - Y-axis constrained (no full 3D rotation)
 - Zoom limits to prevent disorientation
 - Smooth momentum-based movement
-- Auto-rotation: ~10 degrees per second
+- Auto-rotation: ~3-5 degrees per second (adjustable)
 
 ## Mock Data Approach
 
@@ -182,9 +190,18 @@ Initially use mock data for:
 - Save game persistence
 - Planet customization view integration
 
-## Questions for Clarification
+## Questions for Clarification (Answered)
 
-1. Should pregenerated planets contribute to galaxy coloration?
-2. Preferred color palette for the "life" gradient?
-3. Any specific galaxy shape preference (spiral, elliptical)?
-4. Desired complexity for planet preview information?
+1. ~~Should pregenerated planets contribute to galaxy coloration?~~ **No, only played planets**
+2. ~~Preferred color palette for the "life" gradient?~~ **Warm colors, can include greens/blues on tails**
+3. ~~Any specific galaxy shape preference (spiral, elliptical)?~~ **Spiral (maybe with bar)**
+4. ~~Desired complexity for planet preview information?~~ **Image + name + one-line summary + last played**
+
+## Implementation Notes
+
+- Use TDD approach with tests first
+- Focus on Storybook for development (higher priority than App.tsx integration)
+- Generate star positions algorithmically for semi-realistic galaxy shape
+- Store generated positions in JSON for consistency
+- Consider spatial correlation for color distribution
+- Nebulas primarily for volumetric filling, not individual objects
