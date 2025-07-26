@@ -1,0 +1,1 @@
+export { Galaxy2DVisualization } from './Galaxy2DVisualization';
