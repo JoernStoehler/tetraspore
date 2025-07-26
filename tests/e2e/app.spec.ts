@@ -7,8 +7,8 @@ test.describe('Tetraspore App', () => {
     // Check that the app has a navigation bar
     await expect(page.locator('nav')).toBeVisible();
     
-    // Check that the Planet Selection heading is visible
-    await expect(page.locator('h1')).toContainText('Planet Selection');
+    // Check that the Galaxy View heading is visible
+    await expect(page.locator('h1')).toContainText('Galaxy View');
     
     // Check that navigation buttons exist
     const planetSelectionButton = page.locator('button:has-text("Planet Selection")');
@@ -24,16 +24,15 @@ test.describe('Tetraspore App', () => {
     await expect(technologyButton).toBeVisible();
   });
 
-  test('should display planet selection cards', async ({ page }) => {
+  test('should display galaxy view controls', async ({ page }) => {
     await page.goto('/');
     
-    // Check that planet cards are visible by targeting the heading specifically
-    await expect(page.getByRole('heading', { name: 'Planet 1' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Planet 2' })).toBeVisible(); 
-    await expect(page.getByRole('heading', { name: 'Planet 3' })).toBeVisible();
+    // Check that galaxy controls are visible
+    await expect(page.locator('text=Show Planet Markers')).toBeVisible();
+    await expect(page.locator('text=Auto Rotate')).toBeVisible();
     
-    // Check that instruction text exists
-    await expect(page.locator('text=Select a planet to begin exploration')).toBeVisible();
+    // Check that the canvas container exists (3D galaxy view)
+    await expect(page.locator('canvas')).toBeVisible();
   });
 
   test('should have functional navigation', async ({ page }) => {

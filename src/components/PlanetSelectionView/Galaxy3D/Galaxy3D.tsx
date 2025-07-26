@@ -1,4 +1,4 @@
-import { type FC, useRef, Suspense } from 'react';
+import { type FC, useRef, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
 import { Group } from 'three';
@@ -70,9 +70,58 @@ const GalaxyContent: FC<GalaxyContentProps> = ({
 };
 
 export const Galaxy3D: FC<Galaxy3DProps> = (props) => {
+  const [hasWebGL, setHasWebGL] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for WebGL support
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) {
+        setHasWebGL(false);
+      }
+    } catch {
+      setHasWebGL(false);
+    }
+  }, []);
+
+  if (!hasWebGL) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <h2 className="text-xl mb-2">WebGL Not Available</h2>
+          <p>This feature requires WebGL support.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-center">
+          <h2 className="text-xl mb-2">3D View Error</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full">
-      <Canvas>
+      <Canvas
+        onCreated={({ gl }) => {
+          // Additional WebGL checks
+          if (!gl) {
+            setError('WebGL context creation failed');
+          }
+        }}
+        onError={(error) => {
+          console.error('Canvas error:', error);
+          setError('Failed to initialize 3D view');
+        }}
+      >
         <Suspense fallback={null}>
           <GalaxyContent {...props} />
         </Suspense>

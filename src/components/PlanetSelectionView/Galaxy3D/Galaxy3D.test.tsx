@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { Galaxy3D } from './Galaxy3D';
 import type { Planet } from '../types';
@@ -35,6 +35,15 @@ vi.mock('@react-three/drei', () => ({
 }));
 
 describe('Galaxy3D', () => {
+  beforeEach(() => {
+    // Mock WebGL support in tests
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation((type) => {
+      if (type === 'webgl' || type === 'experimental-webgl') {
+        return {} as WebGLRenderingContext; // Return a mock WebGL context
+      }
+      return null;
+    }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+  });
   const mockPlanets: Planet[] = [
     {
       id: 'planet-1',
