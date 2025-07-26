@@ -17,13 +17,11 @@ export type ViewType = 'planet-selection' | 'map' | 'evolution' | 'technology';
  * DevTools and selective subscriptions for performance optimization.
  */
 interface UIState {
-  // State
   /** Currently active view in the main application area */
   currentView: ViewType;
   /** Whether the settings modal is currently open */
   isSettingsOpen: boolean;
   
-  // Actions
   /** Navigate to a specific view */
   setCurrentView: (view: ViewType) => void;
   /** Explicitly set the settings modal open/closed state */
@@ -52,11 +50,9 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   devtools(
     (set) => ({
-      // Initial state
       currentView: 'planet-selection',
       isSettingsOpen: false,
       
-      // Actions
       setCurrentView: (view) => set({ currentView: view }, false, 'setCurrentView'),
       
       setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }, false, 'setSettingsOpen'),

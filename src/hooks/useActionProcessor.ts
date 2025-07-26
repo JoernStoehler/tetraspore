@@ -39,12 +39,10 @@ export function useActionProcessor(options: UseActionProcessorOptions = {}): Use
   const processorRef = useRef<ActionProcessor | null>(null);
   const statusIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize processor
   useEffect(() => {
     const initProcessor = async () => {
       let executors = undefined;
       
-      // Use mock executors if requested
       if (options.useMockExecutors) {
         const { MockImageAssetExecutor, MockSubtitleAssetExecutor, MockCutsceneAssetExecutor } = 
           await import('../services/actions/executors/mocks.js');

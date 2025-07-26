@@ -7,7 +7,11 @@ import type { Action, ActionGraph, ActionNode, ParserResult, ValidationError } f
 import { ActionInputSchema, extractActionIds } from './schemas';
 
 /**
- * Utility function to safely cast Action to Record for schema functions
+ * Type casting helper for Zod schema compatibility
+ *
+ * Why: Zod schemas expect Record<string, unknown> but our Action type
+ * is more specific. This cast bridges the type gap safely since we know
+ * Action objects will always be compatible with the Zod schema structure.
  */
 function toRecord(action: Action): Record<string, unknown> {
   return action as unknown as Record<string, unknown>;
@@ -157,7 +161,7 @@ export class DSLParser {
   ): ActionGraph {
     const nodes = new Map<string, ActionNode>();
     
-    // Create nodes for all actions with IDs
+    // Build dependency graph - actions with IDs become trackable nodes
     actions.forEach((action, index) => {
       const ids = extractActionIds(toRecord(action));
       
@@ -174,7 +178,7 @@ export class DSLParser {
           });
         });
       } else {
-        // Create synthetic nodes for actions without IDs (including reason)
+        // Actions without IDs still need execution tracking
         const syntheticId = `${action.type}_${index}`;
         nodes.set(syntheticId, {
           action,

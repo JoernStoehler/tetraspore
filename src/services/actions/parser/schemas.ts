@@ -9,14 +9,12 @@ import { z } from 'zod';
 //   type: z.string(),
 // });
 
-// Reason action schema
 export const ReasonActionSchema = z.object({
   type: z.literal('reason'),
   id: z.string().optional(),
   ephemeral_reasoning: z.string(),
 });
 
-// Asset image action schema
 export const AssetImageActionSchema = z.object({
   type: z.literal('asset_image'),
   id: z.string(),
@@ -25,7 +23,6 @@ export const AssetImageActionSchema = z.object({
   model: z.enum(['flux-schnell', 'sdxl']),
 });
 
-// Asset subtitle action schema
 export const AssetSubtitleActionSchema = z.object({
   type: z.literal('asset_subtitle'),
   id: z.string(),
@@ -36,7 +33,6 @@ export const AssetSubtitleActionSchema = z.object({
   model: z.enum(['openai-tts', 'google-tts']),
 });
 
-// Cutscene shot schema
 export const CutsceneShotSchema = z.object({
   image_id: z.string(),
   subtitle_id: z.string(),
@@ -44,20 +40,17 @@ export const CutsceneShotSchema = z.object({
   animation: z.enum(['none', 'slow_zoom', 'pan_left', 'pan_right', 'fade']),
 });
 
-// Asset cutscene action schema
 export const AssetCutsceneActionSchema = z.object({
   type: z.literal('asset_cutscene'),
   id: z.string(),
   shots: z.array(CutsceneShotSchema).min(1),
 });
 
-// Play cutscene action schema
 export const PlayCutsceneActionSchema = z.object({
   type: z.literal('play_cutscene'),
   cutscene_id: z.string(),
 });
 
-// Show modal action schema
 export const ShowModalActionSchema = z.object({
   type: z.literal('show_modal'),
   title: z.string(),
@@ -66,7 +59,6 @@ export const ShowModalActionSchema = z.object({
   subtitle_id: z.string().nullable(),
 });
 
-// Add feature action schema
 export const AddFeatureActionSchema = z.object({
   type: z.literal('add_feature'),
   feature_type: z.string(),
@@ -74,7 +66,6 @@ export const AddFeatureActionSchema = z.object({
   target: z.string(),
 });
 
-// Remove feature action schema
 export const RemoveFeatureActionSchema = z.object({
   type: z.literal('remove_feature'),
   feature_type: z.string(),
