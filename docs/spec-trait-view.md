@@ -116,13 +116,7 @@ interface TraitEdge {
   from: string; // Trait ID
   to: string; // Trait ID
   description: string; // Natural language description of relationship
-  edgeType: EdgeType; // Type of influence
-}
-
-enum EdgeType {
-  AdoptedToDiscovered = "adopted_to_discovered", // Having trait A reveals trait B
-  AdoptedToFitness = "adopted_to_fitness", // Having trait A affects fitness of B
-  EnvironmentToFitness = "environment_to_fitness", // Environmental trait affects fitness
+  // Edge type can be computed from the traits: if from.isEnvironmental then it's environment→fitness, etc.
 }
 
 interface PlayerTraitState {
@@ -163,16 +157,34 @@ interface TraitViewProps {
 
 ### Graph Layout Algorithm
 
-Use a force-directed graph layout optimized for stability:
+Use a well-established graph layout algorithm that prioritizes stability under incremental changes:
 
-1. **Stable positioning**: Nodes maintain positions between turns to aid recognition
-2. **Category clustering**: Group nodes by category into loose regions
-3. **Force constraints**:
-   - Gentle repulsion between nodes to prevent overlap
-   - Mild attraction along edges to minimize edge length
-   - Environmental traits anchored to periphery
-   - Adopted traits gravitate toward center
-4. **Smooth animations**: When adding new nodes/edges, animate the layout adjustment
+**Recommended Algorithm**: **Fruchterman-Reingold** with modifications for stability
+
+- Well-documented force-directed algorithm
+- Good at minimizing edge crossings and maintaining uniform edge lengths
+- Can be made stable with position constraints
+
+**Alternative Options**:
+
+1. **D3 Force Simulation** - Popular, well-documented, built for web
+2. **Graphviz Neato** - Stable layouts, good for static graphs
+3. **CoSE (Compound Spring Embedder)** - Good for hierarchical relationships
+
+**Implementation Approach**:
+
+1. Treat as standard unlabeled graph (V, E) problem
+2. Use force-directed layout without category clustering
+3. Pin existing node positions softly (weak constraints)
+4. Allow gentle drift for better layouts as graph evolves
+5. Smooth transitions when adding/removing nodes/edges
+
+**Key Priorities** (in order):
+
+1. Minimize edge lengths
+2. Avoid node overlap
+3. Maintain relative positions (stability)
+4. Minimize edge crossings
 
 ## User Interactions
 
@@ -208,16 +220,28 @@ Use a force-directed graph layout optimized for stability:
 - **Golden Sparkles**: Animated effect on choice-available nodes
 - **Visibility**: Not discovered traits are very faint/ghosted
 
-## Implementation Priorities
+## Development Approach
 
-### Phase 1: Core Visualization
+### Test-Driven Development (TDD)
+
+This component will be built using TDD principles:
+
+1. **Write tests first** for each feature before implementation
+2. **Red-Green-Refactor** cycle for all functionality
+3. **Component tests** for user interactions
+4. **Unit tests** for graph algorithms and state management
+5. **Visual regression tests** using Storybook
+
+### Implementation Phases
+
+#### Phase 1: Core Visualization
 
 1. Basic graph rendering with D3.js or React Flow
 2. All node states (not discovered, discovered, adoptable, adopted, environmental)
 3. Category-based styling
-4. Force-directed layout with stability
+4. Standard force-directed layout (Fruchterman-Reingold or D3 Force)
 
-### Phase 2: Interactivity
+#### Phase 2: Interactivity
 
 1. Click and hover interactions
 2. Edge/node highlighting on hover
@@ -225,22 +249,21 @@ Use a force-directed graph layout optimized for stability:
 4. Pan/zoom controls
 5. Golden sparkle effect for choice nodes
 
-### Phase 3: Advanced Features
+#### Phase 3: Advanced Features
 
 1. Smooth animations for layout changes
 2. Detail panel for clicked traits
 3. Choice modal integration (when that component exists)
-4. Performance optimization for large graphs
-5. Keyboard navigation support
+4. Improved layout stability algorithms
 
-## Performance Considerations
+#### Phase 4: Performance Optimization
 
 - **Virtualization**: For large graphs (>100 nodes), implement viewport culling
 - **Level of Detail**: Simplify distant nodes, show full detail for nearby nodes
-- **Caching**: Cache layout calculations per species
+- **Caching**: Cache layout calculations
 - **Progressive Loading**: Load trait details on demand
 
-## Accessibility
+#### Phase 5: Accessibility
 
 - **Keyboard Navigation**: Tab through traits, arrow keys for graph traversal
 - **Screen Reader**: Descriptive labels for all states and relationships
@@ -252,18 +275,39 @@ Use a force-directed graph layout optimized for stability:
 1. **Unit Tests**: Graph algorithms, state calculations
 2. **Component Tests**: User interactions, state changes
 3. **Visual Tests**: Storybook stories for different graph sizes/states
-4. **Performance Tests**: Rendering speed with large graphs
+4. **Integration Tests**: Graph layout stability under changes
 
-## Open Questions
+## Open Questions (with Answers)
 
-1. Should the graph show all traits globally or filter based on discoverability distance?
-2. How should we indicate the number of active prerequisites for trait discoverability?
-3. Should edge descriptions be always visible or only on hover?
-4. What's the best visual indicator for traits that have multiple paths to adoption?
+1. **Q: Should the graph show all traits globally or filter based on discoverability distance?**
+   - A: Show all traits visible to the player (discovered and undiscovered that are visible)
+
+2. **Q: How should we indicate the number of active prerequisites for trait discoverability?**
+   - A: No explicit number needed - the GenAI handles non-linear thresholds dynamically
+
+3. **Q: Should edge descriptions be always visible or only on hover?**
+   - A: Only on hover (descriptions are long, edge existence matters most)
+
+4. **Q: What's the best visual indicator for traits that have multiple paths to adoption?**
+   - A: Multiple edges naturally show different paths from disconnected graph regions
 
 ## Success Criteria
 
+### User Experience
+
 - Players can quickly understand their species' current capabilities
-- Evolutionary paths and requirements are clear
+- Evolutionary paths and relationships are clear
 - Strategic planning is enhanced by seeing the full possibility space
 - Performance remains smooth with 100+ traits
+
+### Developer Experience
+
+- **Simple, Common Patterns**: Uses well-known graph libraries and algorithms
+- **Well-Documented "Why"**: Clear comments explaining design decisions
+- **Maintainable**: Simple code that's easy to refactor and extend
+- **Good Meta-Documentation**:
+  - Descriptive file names (e.g., `TraitGraphLayout.ts`, `TraitNodeRenderer.tsx`)
+  - Clear component boundaries
+  - Obvious file organization
+- **Testable**: TDD approach ensures good test coverage
+- **AI-Agent Friendly**: Clear naming and structure for easy navigation
