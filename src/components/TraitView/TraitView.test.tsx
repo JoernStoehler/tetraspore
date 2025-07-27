@@ -30,6 +30,10 @@ vi.mock('d3', () => ({
   forceCollide: vi.fn(() => ({
     radius: vi.fn().mockReturnThis(),
   })),
+  zoom: vi.fn(() => ({
+    scaleExtent: vi.fn().mockReturnThis(),
+    on: vi.fn().mockReturnThis(),
+  })),
   select: vi.fn(() => ({
     selectAll: vi.fn(() => ({
       remove: vi.fn(),
@@ -46,8 +50,9 @@ vi.mock('d3', () => ({
         })),
       })),
     })),
-    append: vi.fn(() => ({
+    append: vi.fn().mockImplementation(() => ({
       attr: vi.fn().mockReturnThis(),
+      append: vi.fn().mockReturnThis(),
       selectAll: vi.fn(() => ({
         data: vi.fn(() => ({
           enter: vi.fn(() => ({
@@ -64,6 +69,7 @@ vi.mock('d3', () => ({
       })),
     })),
     node: vi.fn(() => true),
+    call: vi.fn().mockReturnThis(),
   })),
   drag: vi.fn(() => ({
     on: vi.fn().mockReturnThis(),

@@ -88,6 +88,20 @@ export const TraitView: FC<TraitViewProps> = ({
     // Clear previous content
     svg.selectAll("*").remove();
 
+    // Create main group for pan/zoom
+    const g = svg.append("g").attr("class", "main-group");
+
+    // Set up zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+
+    // Apply zoom to SVG
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    svg.call(zoom as any);
+
     // Create simulation
     const simulation = d3.forceSimulation(traitNodes)
       .force("link", d3.forceLink(visibleLinks)
@@ -99,7 +113,7 @@ export const TraitView: FC<TraitViewProps> = ({
       .force("collision", d3.forceCollide().radius(25));
 
     // Create links
-    const link = svg.append("g")
+    const link = g.append("g")
       .attr("class", "links")
       .selectAll("line")
       .data(visibleLinks)
@@ -109,29 +123,13 @@ export const TraitView: FC<TraitViewProps> = ({
       .attr("stroke-opacity", 0.6);
 
     // Create nodes
-    const node = svg.append("g")
+    const node = g.append("g")
       .attr("class", "nodes")
       .selectAll("g")
       .data(traitNodes)
       .enter().append("g")
       .attr("class", "trait-node")
-      .style("cursor", "pointer")
-      .call(d3.drag<SVGGElement, TraitNode>()
-        .on("start", (event, d) => {
-          if (!event.active) simulation.alphaTarget(0.3).restart();
-          d.fx = d.x;
-          d.fy = d.y;
-        })
-        .on("drag", (event, d) => {
-          d.fx = event.x;
-          d.fy = event.y;
-        })
-        .on("end", (event, d) => {
-          if (!event.active) simulation.alphaTarget(0);
-          d.fx = null;
-          d.fy = null;
-        })
-      );
+      .style("cursor", "pointer");
 
     // Add node shapes based on type
     node.each(function(d) {
@@ -179,12 +177,12 @@ export const TraitView: FC<TraitViewProps> = ({
       .on("mouseenter", (_, d) => {
         onTraitHover(d.id);
         // Highlight connected nodes and edges
-        highlightConnections(d.id, svg, edges);
+        highlightConnections(d.id, g, edges);
       })
       .on("mouseleave", () => {
         onTraitHover(null);
         // Remove highlights
-        clearHighlights(svg);
+        clearHighlights(g);
       });
 
     // Update positions on simulation tick
@@ -312,9 +310,9 @@ function addSparkleEffect(nodeGroup: any): void {
   });
 }
 
-function highlightConnections(traitId: string, svg: d3.Selection<SVGSVGElement | null, unknown, null, undefined>, edges: TraitEdge[]): void {
+function highlightConnections(traitId: string, g: d3.Selection<SVGGElement, unknown, null, undefined>, edges: TraitEdge[]): void {
   // Highlight connected edges
-  svg.selectAll("line")
+  g.selectAll("line")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .style("stroke", (d: any) => {
       const edge = d as TraitEdge;
@@ -339,7 +337,7 @@ function highlightConnections(traitId: string, svg: d3.Selection<SVGSVGElement |
   });
 
   // Highlight connected nodes
-  svg.selectAll(".trait-node")
+  g.selectAll(".trait-node")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .style("opacity", (d: any) => {
       const node = d as TraitNode;
@@ -347,12 +345,12 @@ function highlightConnections(traitId: string, svg: d3.Selection<SVGSVGElement |
     });
 }
 
-function clearHighlights(svg: d3.Selection<SVGSVGElement | null, unknown, null, undefined>): void {
-  svg.selectAll("line")
+function clearHighlights(g: d3.Selection<SVGGElement, unknown, null, undefined>): void {
+  g.selectAll("line")
     .style("stroke", "#666")
     .style("stroke-width", 1.5)
     .style("stroke-opacity", 0.6);
 
-  svg.selectAll(".trait-node")
+  g.selectAll(".trait-node")
     .style("opacity", 1);
 }
