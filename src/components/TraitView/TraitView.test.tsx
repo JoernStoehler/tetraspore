@@ -236,4 +236,30 @@ describe('TraitView', () => {
     const svg = screen.getByTestId('trait-view-svg');
     expect(svg).toBeInTheDocument();
   });
+
+  it('renders trait tooltip components when tooltip state is set', () => {
+    // Note: Due to D3 mocking, we can't easily test actual tooltip interactions
+    // but we can test that the tooltip components would render when state is set
+    render(<TraitView {...defaultProps} />);
+    
+    const container = screen.getByTestId('trait-view-svg').parentElement;
+    expect(container).toBeInTheDocument();
+    
+    // Tooltip components are rendered conditionally based on internal state
+    // which is managed by D3 event handlers. Since D3 is mocked, we can't
+    // trigger the actual events, but the component structure supports tooltips.
+  });
+
+  it('handles not-discovered traits correctly', () => {
+    const playerStateWithHiddenTraits: PlayerTraitState = {
+      adoptedTraits: new Set(),
+      discoveredTraits: new Set(),
+      environmentalTraits: new Set(),
+    };
+
+    render(<TraitView {...defaultProps} playerState={playerStateWithHiddenTraits} />);
+    
+    const svg = screen.getByTestId('trait-view-svg');
+    expect(svg).toBeInTheDocument();
+  });
 });

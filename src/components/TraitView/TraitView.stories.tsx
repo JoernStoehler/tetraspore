@@ -302,3 +302,54 @@ export const LargeGraph: Story = {
     onTraitHover: () => {},
   },
 };
+
+export const InteractiveFeatures: Story = {
+  name: 'Interactive Features (Tooltips & Detail Panel)',
+  args: {
+    traits: allTraits.slice(0, 8),
+    edges: allEdges.slice(0, 6),
+    playerState: {
+      adoptedTraits: new Set(['photosynthesis', 'cells']),
+      discoveredTraits: new Set(['photosynthesis', 'chloroplasts', 'cells', 'tool-use']),
+      environmentalTraits: new Set(['rocky-terrain']),
+      adoptableChoices: [{
+        id: 'choice-1',
+        options: ['chloroplasts'],
+        choiceType: 'adopt',
+      }],
+    },
+    visibleTraits: new Set(allTraits.slice(0, 8).map(t => t.id)),
+    onTraitClick: () => {},
+    onTraitHover: () => {},
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Hover over nodes to see tooltips and hover effects. Click on nodes to open the detail panel. Try hovering over edges to see relationship descriptions.',
+      },
+    },
+  },
+};
+
+export const NotDiscoveredTraits: Story = {
+  name: 'Not Discovered Traits (Ghosted)',
+  args: {
+    traits: allTraits.slice(0, 6),
+    edges: allEdges.slice(0, 4),
+    playerState: {
+      adoptedTraits: new Set(['cells']),
+      discoveredTraits: new Set(['cells', 'photosynthesis']),
+      environmentalTraits: new Set(['rocky-terrain']),
+    },
+    visibleTraits: new Set(allTraits.slice(0, 6).map(t => t.id)),
+    onTraitClick: () => {},
+    onTraitHover: () => {},
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Shows how not-discovered traits appear ghosted with reduced opacity. Notice how the undiscovered traits (chloroplasts, tool-use, etc.) are very faint.',
+      },
+    },
+  },
+};
