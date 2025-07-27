@@ -1,13 +1,16 @@
-import { type FC, useRef, useEffect, useMemo } from 'react';
+import { type FC, useRef, useEffect, useMemo, useState } from 'react';
 import * as d3 from 'd3';
 import { 
   type TraitViewProps, 
   type TraitNode, 
   type TraitNodeState,
   type TraitEdge,
+  type Trait,
   AdoptedTraitCategory,
   EnvironmentalTraitCategory 
 } from './types';
+import { TraitTooltip, EdgeTooltip } from './TraitTooltip';
+import { TraitDetailPanel } from './TraitDetailPanel';
 
 const CATEGORY_COLORS = {
   // Adopted trait categories
@@ -33,6 +36,21 @@ export const TraitView: FC<TraitViewProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const width = 800;
   const height = 600;
+  
+  // Tooltip state
+  const [tooltip, setTooltip] = useState<{
+    type: 'trait' | 'edge';
+    data: TraitNode | TraitEdge;
+    x: number;
+    y: number;
+    visible: boolean;
+  } | null>(null);
+
+  // Detail panel state
+  const [detailPanel, setDetailPanel] = useState<{
+    trait: TraitNode;
+    visible: boolean;
+  } | null>(null);
 
   // Determine node states based on player state
   const traitNodes: TraitNode[] = useMemo(() => {
@@ -81,12 +99,56 @@ export const TraitView: FC<TraitViewProps> = ({
       }));
   }, [edges, visibleTraits, traitNodes]);
 
+  // Calculate connected traits for detail panel
+  const getConnectedTraits = useMemo(() => {
+    return (traitId: string) => {
+      const connections: Array<{ trait: Trait; relationship: string }> = [];
+      const traitMap = new Map(traits.map(t => [t.id, t]));
+      
+      edges.forEach(edge => {
+        if (edge.from === traitId && visibleTraits.has(edge.to)) {
+          const connectedTrait = traitMap.get(edge.to);
+          if (connectedTrait) {
+            connections.push({
+              trait: connectedTrait,
+              relationship: edge.description,
+            });
+          }
+        } else if (edge.to === traitId && visibleTraits.has(edge.from)) {
+          const connectedTrait = traitMap.get(edge.from);
+          if (connectedTrait) {
+            connections.push({
+              trait: connectedTrait,
+              relationship: edge.description,
+            });
+          }
+        }
+      });
+      
+      return connections;
+    };
+  }, [edges, traits, visibleTraits]);
+
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     if (!svg.node()) return;
 
     // Clear previous content
     svg.selectAll("*").remove();
+
+    // Create main group for pan/zoom
+    const g = svg.append("g").attr("class", "main-group");
+
+    // Set up zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+
+    // Apply zoom to SVG
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    svg.call(zoom as any);
 
     // Create simulation
     const simulation = d3.forceSimulation(traitNodes)
@@ -99,44 +161,45 @@ export const TraitView: FC<TraitViewProps> = ({
       .force("collision", d3.forceCollide().radius(25));
 
     // Create links
-    const link = svg.append("g")
+    const link = g.append("g")
       .attr("class", "links")
       .selectAll("line")
       .data(visibleLinks)
       .enter().append("line")
       .attr("stroke", "#666")
       .attr("stroke-width", 1.5)
-      .attr("stroke-opacity", 0.6);
+      .attr("stroke-opacity", 0.6)
+      .style("cursor", "pointer")
+      .on("mouseenter", (event, d) => {
+        const svgRect = svgRef.current?.getBoundingClientRect();
+        if (svgRect) {
+          setTooltip({
+            type: 'edge',
+            data: d as TraitEdge,
+            x: event.pageX - svgRect.left,
+            y: event.pageY - svgRect.top,
+            visible: true,
+          });
+        }
+      })
+      .on("mouseleave", () => {
+        setTooltip(null);
+      });
 
     // Create nodes
-    const node = svg.append("g")
+    const node = g.append("g")
       .attr("class", "nodes")
       .selectAll("g")
       .data(traitNodes)
       .enter().append("g")
       .attr("class", "trait-node")
-      .style("cursor", "pointer")
-      .call(d3.drag<SVGGElement, TraitNode>()
-        .on("start", (event, d) => {
-          if (!event.active) simulation.alphaTarget(0.3).restart();
-          d.fx = d.x;
-          d.fy = d.y;
-        })
-        .on("drag", (event, d) => {
-          d.fx = event.x;
-          d.fy = event.y;
-        })
-        .on("end", (event, d) => {
-          if (!event.active) simulation.alphaTarget(0);
-          d.fx = null;
-          d.fy = null;
-        })
-      );
+      .style("cursor", "pointer");
 
     // Add node shapes based on type
     node.each(function(d) {
       const nodeGroup = d3.select(this);
       const color = CATEGORY_COLORS[d.trait.category];
+      const opacity = d.state === "not-discovered" ? 0.3 : 1.0;
       
       if (d.trait.isEnvironmental) {
         // Diamond shape for environmental traits
@@ -144,14 +207,16 @@ export const TraitView: FC<TraitViewProps> = ({
           .attr("points", "0,-15 15,0 0,15 -15,0")
           .attr("fill", getNodeFill(d.state, color))
           .attr("stroke", getNodeStroke(d.state, color))
-          .attr("stroke-width", getNodeStrokeWidth(d.state));
+          .attr("stroke-width", getNodeStrokeWidth(d.state))
+          .style("opacity", opacity);
       } else {
         // Circle for species traits
         nodeGroup.append("circle")
           .attr("r", 15)
           .attr("fill", getNodeFill(d.state, color))
           .attr("stroke", getNodeStroke(d.state, color))
-          .attr("stroke-width", getNodeStrokeWidth(d.state));
+          .attr("stroke-width", getNodeStrokeWidth(d.state))
+          .style("opacity", opacity);
       }
 
       // Add sparkle effect for choice nodes
@@ -166,8 +231,9 @@ export const TraitView: FC<TraitViewProps> = ({
         .attr("text-anchor", "middle")
         .attr("font-size", "10px")
         .attr("font-family", "Arial, sans-serif")
-        .attr("fill", "#000")
+        .attr("fill", d.state === "not-discovered" ? "#9ca3af" : "#000")
         .attr("pointer-events", "none")
+        .style("opacity", opacity)
         .text(d.trait.name.length > 8 ? d.trait.name.substring(0, 8) + "..." : d.trait.name);
     });
 
@@ -175,16 +241,38 @@ export const TraitView: FC<TraitViewProps> = ({
     node
       .on("click", (_, d) => {
         onTraitClick(d.id);
+        // Show detail panel
+        setDetailPanel({
+          trait: d,
+          visible: true,
+        });
       })
-      .on("mouseenter", (_, d) => {
+      .on("mouseenter", (event, d) => {
         onTraitHover(d.id);
+        // Add hover effects
+        addHoverEffects(d.id, g);
         // Highlight connected nodes and edges
-        highlightConnections(d.id, svg, edges);
+        highlightConnections(d.id, g, edges);
+        // Show tooltip
+        const svgRect = svgRef.current?.getBoundingClientRect();
+        if (svgRect) {
+          setTooltip({
+            type: 'trait',
+            data: d,
+            x: event.pageX - svgRect.left,
+            y: event.pageY - svgRect.top,
+            visible: true,
+          });
+        }
       })
       .on("mouseleave", () => {
         onTraitHover(null);
+        // Remove hover effects
+        removeHoverEffects(g);
         // Remove highlights
-        clearHighlights(svg);
+        clearHighlights(g);
+        // Hide tooltip
+        setTooltip(null);
       });
 
     // Update positions on simulation tick
@@ -209,7 +297,7 @@ export const TraitView: FC<TraitViewProps> = ({
   }, [traitNodes, visibleLinks, onTraitClick, onTraitHover, edges]);
 
   return (
-    <div className="trait-view">
+    <div className="trait-view" style={{ position: 'relative' }}>
       <svg
         ref={svgRef}
         width={width}
@@ -217,6 +305,32 @@ export const TraitView: FC<TraitViewProps> = ({
         style={{ border: '1px solid #ccc', background: '#fafafa' }}
         data-testid="trait-view-svg"
       />
+      {tooltip && tooltip.type === 'trait' && (
+        <TraitTooltip
+          trait={(tooltip.data as TraitNode).trait}
+          state={(tooltip.data as TraitNode).state}
+          x={tooltip.x}
+          y={tooltip.y}
+          visible={tooltip.visible}
+        />
+      )}
+      {tooltip && tooltip.type === 'edge' && (
+        <EdgeTooltip
+          edge={tooltip.data as TraitEdge}
+          x={tooltip.x}
+          y={tooltip.y}
+          visible={tooltip.visible}
+        />
+      )}
+      {detailPanel && (
+        <TraitDetailPanel
+          trait={detailPanel.trait.trait}
+          state={detailPanel.trait.state}
+          connectedTraits={getConnectedTraits(detailPanel.trait.id)}
+          onClose={() => setDetailPanel(null)}
+          visible={detailPanel.visible}
+        />
+      )}
     </div>
   );
 };
@@ -224,7 +338,7 @@ export const TraitView: FC<TraitViewProps> = ({
 function getNodeFill(state: TraitNodeState, categoryColor: string): string {
   switch (state) {
     case "not-discovered":
-      return "rgba(128, 128, 128, 0.2)";
+      return "rgba(128, 128, 128, 0.1)"; // Even more ghosted
     case "discovered":
       return "none";
     case "adoptable":
@@ -240,7 +354,7 @@ function getNodeFill(state: TraitNodeState, categoryColor: string): string {
 function getNodeStroke(state: TraitNodeState, categoryColor: string): string {
   switch (state) {
     case "not-discovered":
-      return "rgba(128, 128, 128, 0.4)";
+      return "rgba(128, 128, 128, 0.2)"; // More ghosted
     case "discovered":
       return categoryColor;
     case "adoptable":
@@ -312,9 +426,9 @@ function addSparkleEffect(nodeGroup: any): void {
   });
 }
 
-function highlightConnections(traitId: string, svg: d3.Selection<SVGSVGElement | null, unknown, null, undefined>, edges: TraitEdge[]): void {
+function highlightConnections(traitId: string, g: d3.Selection<SVGGElement, unknown, null, undefined>, edges: TraitEdge[]): void {
   // Highlight connected edges
-  svg.selectAll("line")
+  g.selectAll("line")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .style("stroke", (d: any) => {
       const edge = d as TraitEdge;
@@ -339,7 +453,7 @@ function highlightConnections(traitId: string, svg: d3.Selection<SVGSVGElement |
   });
 
   // Highlight connected nodes
-  svg.selectAll(".trait-node")
+  g.selectAll(".trait-node")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .style("opacity", (d: any) => {
       const node = d as TraitNode;
@@ -347,12 +461,51 @@ function highlightConnections(traitId: string, svg: d3.Selection<SVGSVGElement |
     });
 }
 
-function clearHighlights(svg: d3.Selection<SVGSVGElement | null, unknown, null, undefined>): void {
-  svg.selectAll("line")
+function clearHighlights(g: d3.Selection<SVGGElement, unknown, null, undefined>): void {
+  g.selectAll("line")
     .style("stroke", "#666")
     .style("stroke-width", 1.5)
     .style("stroke-opacity", 0.6);
 
-  svg.selectAll(".trait-node")
+  g.selectAll(".trait-node")
     .style("opacity", 1);
+}
+
+function addHoverEffects(traitId: string, g: d3.Selection<SVGGElement, unknown, null, undefined>): void {
+  g.selectAll(".trait-node")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((d: any) => (d as TraitNode).id === traitId)
+    .select("circle, polygon")
+    .transition()
+    .duration(200)
+    .attr("transform", "scale(1.2)")
+    .style("filter", "url(#glow)");
+
+  // Add glow filter if it doesn't exist
+  if (g.select("#glow").empty()) {
+    const defs = g.append("defs");
+    const filter = defs.append("filter")
+      .attr("id", "glow")
+      .attr("x", "-50%")
+      .attr("y", "-50%")
+      .attr("width", "200%")
+      .attr("height", "200%");
+    
+    filter.append("feGaussianBlur")
+      .attr("stdDeviation", "3")
+      .attr("result", "coloredBlur");
+    
+    const feMerge = filter.append("feMerge");
+    feMerge.append("feMergeNode").attr("in", "coloredBlur");
+    feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+  }
+}
+
+function removeHoverEffects(g: d3.Selection<SVGGElement, unknown, null, undefined>): void {
+  g.selectAll(".trait-node")
+    .select("circle, polygon")
+    .transition()
+    .duration(200)
+    .attr("transform", "scale(1)")
+    .style("filter", null);
 }
