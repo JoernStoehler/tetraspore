@@ -11,6 +11,9 @@ describe('App', () => {
     render(<App />);
 
     // Assert
-    expect(screen.getByRole('heading', { name: 'Planet Selection' })).toBeInTheDocument();
+    // The new planet selection view shows Galaxy View heading
+    expect(screen.getAllByRole('heading', { name: 'Galaxy View' })[0]).toBeInTheDocument();
+    // And has the navigation bar
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 });
